@@ -34,6 +34,15 @@ void __stdcall Bootstrap_Loader(kiv_hal::TRegisters &context) {
 	//v ramci ukazky jeste vypiseme dostupne disky
 	kiv_hal::TRegisters regs;
 	for (regs.rdx.l = 0; ; regs.rdx.l++) {
+
+		// najit prvni dostupny disk, ze ktereho lze "bootovat"
+		// v tomto pripade najit ten jediny co tam je a vytvorit nad nim FS
+
+		// disk je pouze virtualni v pameti, po kazdem spusteni se vytvori FS
+		// prvni sektor je MBR (master boot record), kde budou informace o FS viz FAT
+
+		// s diskem se pracuji pomoci handleru, kde prvni parametr je obsluzna rutina a druhy registry obsahujici data
+
 		kiv_hal::TDrive_Parameters params;		
 		regs.rax.h = static_cast<uint8_t>(kiv_hal::NDisk_IO::Drive_Parameters);;
 		regs.rdi.r = reinterpret_cast<decltype(regs.rdi.r)>(&params);
@@ -62,6 +71,10 @@ void __stdcall Bootstrap_Loader(kiv_hal::TRegisters &context) {
 
 		if (regs.rdx.l == 255) break;
 	}
+
+
+	// inicializace thread a process manager
+	// spustit pod managerem shell
 
 	//spustime shell - v realnem OS bychom ovsem spousteli login
 	kiv_os::TThread_Proc shell = (kiv_os::TThread_Proc)GetProcAddress(User_Programs, "shell");

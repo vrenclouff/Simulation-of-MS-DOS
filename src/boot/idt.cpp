@@ -11,6 +11,7 @@ extern kiv_hal::TInterrupt_Handler* interrupt_descriptor_table;
 kiv_hal::TInterrupt_Handler interrupt_descriptor_table_storage[256];
 
 bool Init_IDT() {
+	// vycisteni pameti
 	memset(interrupt_descriptor_table_storage, 0, sizeof(interrupt_descriptor_table_storage));
 	interrupt_descriptor_table = interrupt_descriptor_table_storage;
 
