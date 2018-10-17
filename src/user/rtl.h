@@ -18,6 +18,10 @@ namespace kiv_os_rtl {
 	//vraci true, kdyz vse OK
 	bool Write_File(const kiv_os::THandle file_handle, const char *buffer, const size_t buffer_size, size_t &written);
 
+	bool Open_File(const char *buffer, const size_t buffer_size, kiv_os::THandle &file_handle);
+
+	bool Close_Handle(const kiv_os::THandle file_handle);
+
 	kiv_os::THandle Clone(char* args);
 
 	bool Wait_For(kiv_os::THandle handlers[]);
@@ -25,7 +29,6 @@ namespace kiv_os_rtl {
 	bool Exit(bool exitcode);
 
 	bool Read_Exit_Code(kiv_os::THandle handle);
-
 	bool Shutdown();
 
 }

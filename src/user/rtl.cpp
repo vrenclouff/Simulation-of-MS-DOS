@@ -38,6 +38,25 @@ bool kiv_os_rtl::Write_File(const kiv_os::THandle file_handle, const char *buffe
 	return result;
 }
 
+bool kiv_os_rtl::Open_File(const char *buffer, const size_t buffer_size, kiv_os::THandle &file_handle) {
+	kiv_hal::TRegisters regs = Prepare_SysCall_Context(kiv_os::NOS_Service_Major::File_System, static_cast<uint8_t>(kiv_os::NOS_File_System::Open_File));
+
+	regs.rdx.r = reinterpret_cast<decltype(regs.rdx.r)>(buffer);
+	//regs.rcx.x = static_cast<decltype(regs.rcx.x )>(buffer_size);
+	regs.rcx.l = static_cast<decltype(regs.rcx.l )>(kiv_os::NOpen_File::fmOpen_Always);
+	regs.rdi.i = static_cast<decltype(regs.rdi.i )>(kiv_os::NFile_Attributes::Read_Only);
+
+	const bool result = kiv_os::Sys_Call(regs);
+	file_handle = regs.rax.x;
+	return result;	
+}
+
+bool kiv_os_rtl::Close_Handle(const kiv_os::THandle file_handle) {
+	kiv_hal::TRegisters regs = Prepare_SysCall_Context(kiv_os::NOS_Service_Major::File_System, static_cast<uint8_t>(kiv_os::NOS_File_System::Close_Handle));
+	regs.rdx.x = file_handle;
+	return kiv_os::Sys_Call(regs);
+}
+
 kiv_os::THandle kiv_os_rtl::Clone(char* args) {
 
 	char* arguments;

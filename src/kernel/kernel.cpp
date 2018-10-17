@@ -2,6 +2,9 @@
 
 #include "kernel.h"
 #include "io.h"
+#include "fat.h"
+#include "fat_tools.h"
+#include "fat_file.h"
 #include "process.h"
 #include <Windows.h>
 #include "common.h"
@@ -18,6 +21,7 @@ void Shutdown_Kernel() {
 }
 
 void __stdcall Sys_Call(kiv_hal::TRegisters &regs) {
+
 	switch (static_cast<kiv_os::NOS_Service_Major>(regs.rax.h)) {
 	
 		case kiv_os::NOS_Service_Major::File_System:		
@@ -46,7 +50,7 @@ void __stdcall Bootstrap_Loader(kiv_hal::TRegisters &context) {
 
 		// s diskem se pracuji pomoci handleru, kde prvni parametr je obsluzna rutina a druhy registry obsahujici data
 
-		kiv_hal::TDrive_Parameters params;
+		kiv_hal::TDrive_Parameters params;		
 		regs.rax.h = static_cast<uint8_t>(kiv_hal::NDisk_IO::Drive_Parameters);
 		regs.rdi.r = reinterpret_cast<decltype(regs.rdi.r)>(&params);
 		kiv_hal::Call_Interrupt_Handler(kiv_hal::NInterrupt::Disk_IO, regs);
@@ -60,16 +64,39 @@ void __stdcall Bootstrap_Loader(kiv_hal::TRegisters &context) {
 				Handle_IO(regs);
 			};
 
-			const char dec_2_hex[16] = { L'0', L'1', L'2', L'3', L'4', L'5', L'6', L'7', L'8', L'9', L'A', L'B', L'C', L'D', L'E', L'F' };
-			char hexa[3];
-			hexa[0] = dec_2_hex[regs.rdx.l >> 4];
-			hexa[1] = dec_2_hex[regs.rdx.l & 0xf];
-			hexa[2] = 0;
+			auto hard_drive = [&regs](unsigned char* data, uint16_t sector, kiv_hal::NDisk_IO operation) {
+				kiv_hal::TDisk_Address_Packet dap;
+				dap.sectors = static_cast<void*>(data);
+				dap.count = 1;
+				dap.lba_index = sector;
+				regs.rax.h = static_cast<uint8_t>(operation);
+				regs.rdi.r = reinterpret_cast<decltype(regs.rdi.r)>(&dap);
+				kiv_hal::Call_Interrupt_Handler(kiv_hal::NInterrupt::Disk_IO, regs);
+			};
 
-			print_str("Nalezen disk: 0x");
-			print_str(hexa);
-			print_str("\n");
 
+			// Loading the first sector (Boot Block) -> nacte prvni sektor disku
+			std::vector<unsigned char> arr(params.bytes_per_sector);
+			hard_drive(arr.data(), 0, kiv_hal::NDisk_IO::Read_Sectors);
+
+			// kontrola pro formatovani -> pripadne formatovani
+			if (!kiv_fs::is_formatted(arr.data())) {
+				kiv_fs::format_disk(kiv_fs::FAT_Version::FAT16, arr.data(), params);
+				hard_drive(arr.data(), 0, kiv_hal::NDisk_IO::Write_Sectors);
+			}
+
+			// preulozeni boot_block do struktury -> vypsani na obrazovku
+			kiv_fs::FATBoot_Block boot_block;
+			kiv_fs::boot_block(boot_block, params.bytes_per_sector, arr.data());
+
+			// nacteni root entire_directory
+			hard_drive(arr.data(), kiv_fs::root_directory_addr(boot_block), kiv_hal::NDisk_IO::Read_Sectors);
+			std::vector<kiv_fs::FATEntire_Directory> dir_entries;
+			kiv_fs::entire_directory(dir_entries, boot_block, arr.data());
+
+			const auto file = dir_entries.at(2);
+
+			break;
 		}
 
 		if (regs.rdx.l == 255) break;

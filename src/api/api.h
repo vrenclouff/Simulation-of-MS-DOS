@@ -40,7 +40,7 @@ namespace kiv_os {
 		Open_File = 1,					//rdx je pointer na null - terminated ANSI char string udavajici file_name;
 										//rcx jsou flags k otevreni souboru - viz NOpen_File konstanty
 										//rdi jsou atributy souboru - viz NFile_Attributes
-										//OUT : ax je handle nove otevreneho souboru
+										//OUT : rax je handle nove otevreneho souboru
 
 		Write_File,						//IN : dx je handle souboru, rdi je pointer na buffer, rcx je pocet bytu v bufferu k zapsani
 										//OUT : rax je pocet zapsanych bytu

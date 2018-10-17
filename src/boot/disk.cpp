@@ -110,6 +110,7 @@ void CDisk_Image::Read_Sectors(kiv_hal::TRegisters &context) {
 void CDisk_Image::Write_Sectors(kiv_hal::TRegisters &context) {
 	if (Check_DAP(context)) {
 		kiv_hal::TDisk_Address_Packet &dap = *reinterpret_cast<kiv_hal::TDisk_Address_Packet*>(context.rdi.r);
+
 		mDisk_Image.seekg(mBytes_Per_Sector*dap.lba_index, std::ios::beg);
 		const auto bytes_to_write = dap.count*mBytes_Per_Sector;
 
