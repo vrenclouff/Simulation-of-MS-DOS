@@ -4,9 +4,10 @@
 #include "io.h"
 #include "process.h"
 #include <Windows.h>
+#include "common.h"
 
 HMODULE User_Programs;
-
+ProcessManager *process_manager = new ProcessManager();
 
 void Initialize_Kernel() {
 	User_Programs = LoadLibraryW(L"user.dll");
@@ -17,17 +18,14 @@ void Shutdown_Kernel() {
 }
 
 void __stdcall Sys_Call(kiv_hal::TRegisters &regs) {
-
 	switch (static_cast<kiv_os::NOS_Service_Major>(regs.rax.h)) {
 	
 		case kiv_os::NOS_Service_Major::File_System:		
 			Handle_IO(regs);
 			break;
-
 		case kiv_os::NOS_Service_Major::Process:
-			Handle_Process(regs);
+			process_manager->SysCall(regs);
 			break;
-
 	}
 
 }
@@ -48,7 +46,7 @@ void __stdcall Bootstrap_Loader(kiv_hal::TRegisters &context) {
 
 		// s diskem se pracuji pomoci handleru, kde prvni parametr je obsluzna rutina a druhy registry obsahujici data
 
-		kiv_hal::TDrive_Parameters params;		
+		kiv_hal::TDrive_Parameters params;
 		regs.rax.h = static_cast<uint8_t>(kiv_hal::NDisk_IO::Drive_Parameters);
 		regs.rdi.r = reinterpret_cast<decltype(regs.rdi.r)>(&params);
 		kiv_hal::Call_Interrupt_Handler(kiv_hal::NInterrupt::Disk_IO, regs);
@@ -82,10 +80,22 @@ void __stdcall Bootstrap_Loader(kiv_hal::TRegisters &context) {
 	// spustit pod managerem shell
 
 	//spustime shell - v realnem OS bychom ovsem spousteli login
-	//spravne se ma shell spustit pres clone!
-	//ale ten v kostre pochopitelne neni implementovan		
-	Call_User_Function("shell", regs);
+	char* initProgram = "shell";
+	char* initProgramArgs = "";
+	regs.rdx.r = reinterpret_cast<uint64_t>(initProgram);
+	regs.rdi.r = reinterpret_cast<uint64_t>(initProgramArgs);
+	uint16_t stdin_handle = 0;
+	uint16_t stdout_handle = 1;
+	regs.rbx.e = (stdin_handle << 16) | stdout_handle;
 
+	process_manager->createProcess(regs, true);
+	kiv_os::THandle shell_handle = static_cast<kiv_os::THandle>(regs.rax.x);
+	// wait for shell to exit (syscall Wait_For)
+	regs.rax.h = static_cast<uint8_t>(kiv_os::NOS_Service_Major::Process);
+	regs.rax.l = static_cast<uint8_t>(kiv_os::NOS_Process::Wait_For);
+	regs.rdx.r = reinterpret_cast<uint64_t>(&shell_handle);
+	regs.rcx.r = 1;
+	process_manager->handleWaitFor(regs);
 	Shutdown_Kernel();
 }
 

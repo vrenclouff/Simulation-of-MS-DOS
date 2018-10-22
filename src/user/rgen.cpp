@@ -15,6 +15,5 @@ size_t __stdcall rgen(const kiv_hal::TRegisters &regs) {
 
 	const char* linebreak = "\n";
 	kiv_os_rtl::Write_File(std_out, linebreak, strlen(linebreak), counter);
-
 	return 0;
 }

@@ -24,14 +24,17 @@
     <ClCompile Include="..\..\src\kernel\io.cpp" />
     <ClCompile Include="..\..\src\kernel\kernel.cpp" />
     <ClCompile Include="..\..\src\kernel\process.cpp" />
+    <ClCompile Include="..\..\src\kernel\process_manager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\api\api.h" />
     <ClInclude Include="..\..\src\api\hal.h" />
+    <ClInclude Include="..\..\src\kernel\common.h" />
     <ClInclude Include="..\..\src\kernel\handles.h" />
     <ClInclude Include="..\..\src\kernel\io.h" />
     <ClInclude Include="..\..\src\kernel\kernel.h" />
     <ClInclude Include="..\..\src\kernel\process.h" />
+    <ClInclude Include="..\..\src\kernel\process_manager.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{B4305463-59C5-40C3-9A1A-92976A40562D}</ProjectGuid>

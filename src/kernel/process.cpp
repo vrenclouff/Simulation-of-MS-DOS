@@ -1,61 +1,30 @@
-#include "kernel.h"
-#include <Windows.h>
-#include <string>
+#include "process.h"
+#include "common.h"
 
-void Clone(kiv_hal::TRegisters &regs) {
-	// TODO clone process
+std::condition_variable Process::endCond;
+std::mutex Process::endMtx;
 
-	char* funcname = reinterpret_cast<char*>(regs.rdx.r);
-	Call_User_Function(funcname, regs);
+Process::Process(std::string userfunc_name, size_t parent_pid) : 
+	userfunc_name(userfunc_name), parent_pid(parent_pid)
+{
+	state = ProcessState::prepared;
 }
 
-void Exit(kiv_hal::TRegisters &regs) {
-	// TODO
+void Process::start(kiv_hal::TRegisters child_context)
+{
+	context = child_context;
+
+	kiv_os::TThread_Proc program = (kiv_os::TThread_Proc)GetProcAddress(User_Programs, userfunc_name.c_str());
+	thread_obj = new std::thread(program, context);
+
+	pid = std::hash<std::thread::id>()(thread_obj->get_id());
+	state = ProcessState::running;
 }
 
-void Read_Exit_Code(kiv_hal::TRegisters &regs) {
-	// TODO
-}
-
-void Register_Signal_Handler(kiv_hal::TRegisters &regs) {
-	// TODO
-}
-
-void Shutdown(kiv_hal::TRegisters &regs) {
-	// TODO
-}
-
-void Wait_For(kiv_hal::TRegisters &regs) {
-	// TODO
-}
-
-void Handle_Process(kiv_hal::TRegisters &regs) {
-
-	switch (static_cast<kiv_os::NOS_Process>(regs.rax.l)) {
-
-		case kiv_os::NOS_Process::Clone:
-			Clone(regs);
-			break;
-		
-		case kiv_os::NOS_Process::Exit:
-			Exit(regs);
-			break;
-
-		case kiv_os::NOS_Process::Read_Exit_Code:
-			Read_Exit_Code(regs);
-			break;
-
-		case kiv_os::NOS_Process::Register_Signal_Handler:
-			Register_Signal_Handler(regs);
-			break;
-
-		case kiv_os::NOS_Process::Shutdown:
-			Shutdown(regs);
-			break;
-
-		case kiv_os::NOS_Process::Wait_For:
-			Wait_For(regs);
-			break;
-	}
-
+void Process::stop(uint16_t code)
+{
+	exitCode = code;
+	state = ProcessState::stopped;
+	Process::endCond.notify_all();
+	// TODO how to kill current thread?
 }
