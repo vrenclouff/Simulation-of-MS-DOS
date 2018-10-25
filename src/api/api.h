@@ -61,7 +61,7 @@ namespace kiv_os {
 		Close_Handle,					//IN : dx  je handle libovolneho typu k zavreni
 
 		Delete_File,					//IN : rdx je pointer na null - terminated ANSI char string udavajici file_name
-
+		
 
 
 		Set_Working_Dir,				//IN : rdx je pointer na null - terminated ANSI char string udavajici novy adresar(muze byt relativni cesta)
@@ -85,7 +85,8 @@ namespace kiv_os {
 									//	Create_Process: rdx je je pointer na null - terminated string udavajici jmeno souboru ke spusteni(tj.retezec pro GetProcAddress v kernelu)
 									//		rdi je pointer na null-termined ANSI char string udavajici argumenty programu
 									//		bx obsahuje 2x THandle na stdin a stdout, tj. bx.e = (stdin << 16) | stdout
-									//OUT - ve spustenem programu:	ax a bx jsou hodnoty stdin a stdout, stderr pro jednoduchost nepodporujeme
+									//OUT - v programu, ktery zavolal Clone: ax je handle noveho procesu 
+									//		ve spustenem programu:	ax a bx jsou hodnoty stdin a stdout, stderr pro jednoduchost nepodporujeme
 									//
 									//anebo
 									//	Create_Thread a pak rdx je TThread_Proc a rdi jsou *data
@@ -99,8 +100,11 @@ namespace kiv_os {
 									//funkce se vraci jakmile je signalizovan prvni handle
 									//OUT : rax je index handle, ktery byl signalizovan
 
+		Read_Exit_Code,				//IN:  dx je handle procesu/thread jehoz exit code se ma cist
+									//OUT: cx je exitcode
+
 		Exit,						//ukonci proces/vlakno
-									//IN: ax je exit code
+									//IN: cx je exit code
 
 		Shutdown,					//nema parametry, nejprve korektne ukonci vsechny bezici procesy a pak kernel, cimz se preda rizeni do boot.exe, ktery provede simulaci vypnuti pocitace pres ACPI
 
@@ -160,7 +164,7 @@ namespace kiv_os {
 	//rezim otevreni noveho souboru
 	enum class NOpen_File : std::uint8_t {
 		fmOpen_Always = 1	//pokud je nastavena, pak soubor musi existovat, aby byl otevren
-							//není-li fmOpen_Always nastaveno, pak je soubor vždy vytvoøen - tj. i pøepsán starý soubor
+								//není-li fmOpen_Always nastaveno, pak je soubor vždy vytvoøen - tj. i pøepsán starý soubor
 	};
 
 
