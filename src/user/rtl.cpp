@@ -1,5 +1,11 @@
 #include "rtl.h"
 
+#include <string>
+#include <iterator>
+#include <iostream>
+#include <sstream>
+#include <vector>
+
 std::atomic<kiv_os::NOS_Error> kiv_os_rtl::Last_Error;
 
 kiv_hal::TRegisters Prepare_SysCall_Context(kiv_os::NOS_Service_Major major, uint8_t minor) {
@@ -29,5 +35,45 @@ bool kiv_os_rtl::Write_File(const kiv_os::THandle file_handle, const char *buffe
 
 	const bool result = kiv_os::Sys_Call(regs);
 	written = regs.rax.r;
+	return result;
+}
+
+bool kiv_os_rtl::Clone(char* args) {
+
+	char* arguments;
+	char* tofunc = strtok_s(args, " ", &arguments);
+
+	if (tofunc == NULL)
+	{
+		return NULL;
+	}
+
+	size_t origsize = strlen(tofunc);
+	size_t size = origsize + sizeof(char);
+	char* function = (char*)malloc(size);
+	strncpy_s(function, size, tofunc, size);
+
+	// TODO protoze api/user.def - asi vyresit lip
+	if (!strcmp(function, "find")) {
+		function = "wc";
+	}
+	else if (!strcmp(function, "tasklist")) {
+		function = "ps";
+	}
+	else if (!strcmp(function, "wc") || ! strcmp(function, "ps")) {
+		function = "";
+	}
+
+	kiv_hal::TRegisters regs = Prepare_SysCall_Context(kiv_os::NOS_Service_Major::Process, static_cast<uint8_t>(kiv_os::NOS_Process::Clone));
+	regs.rdx.r = reinterpret_cast<decltype(regs.rdx.r)>(function);
+	regs.rdi.r = reinterpret_cast<decltype(regs.rdi.r)>(arguments);
+
+	const bool result = kiv_os::Sys_Call(regs);
+	return result;
+}
+
+bool kiv_os_rtl::Shutdown() {
+	kiv_hal::TRegisters regs = Prepare_SysCall_Context(kiv_os::NOS_Service_Major::Process, static_cast<uint8_t>(kiv_os::NOS_Process::Shutdown));
+	const bool result = kiv_os::Sys_Call(regs);
 	return result;
 }

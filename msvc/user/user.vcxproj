@@ -21,13 +21,33 @@
   <ItemGroup>
     <ClInclude Include="..\..\src\api\api.h" />
     <ClInclude Include="..\..\src\api\hal.h" />
+    <ClInclude Include="..\..\src\user\echo.h" />
+    <ClInclude Include="..\..\src\user\wc.h" />
+    <ClInclude Include="..\..\src\user\freq.h" />
+    <ClInclude Include="..\..\src\user\md.h" />
+    <ClInclude Include="..\..\src\user\rd.h" />
+    <ClInclude Include="..\..\src\user\rgen.h" />
     <ClInclude Include="..\..\src\user\rtl.h" />
     <ClInclude Include="..\..\src\user\shell.h" />
+    <ClInclude Include="..\..\src\user\shutdown.h" />
+    <ClInclude Include="..\..\src\user\sort.h" />
+    <ClInclude Include="..\..\src\user\ps.h" />
+    <ClInclude Include="..\..\src\user\type.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\api\api.cpp" />
+    <ClCompile Include="..\..\src\user\echo.cpp" />
+    <ClCompile Include="..\..\src\user\wc.cpp" />
+    <ClCompile Include="..\..\src\user\freq.cpp" />
+    <ClCompile Include="..\..\src\user\md.cpp" />
+    <ClCompile Include="..\..\src\user\rd.cpp" />
+    <ClCompile Include="..\..\src\user\rgen.cpp" />
     <ClCompile Include="..\..\src\user\rtl.cpp" />
     <ClCompile Include="..\..\src\user\shell.cpp" />
+    <ClCompile Include="..\..\src\user\shutdown.cpp" />
+    <ClCompile Include="..\..\src\user\sort.cpp" />
+    <ClCompile Include="..\..\src\user\ps.cpp" />
+    <ClCompile Include="..\..\src\user\type.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{A5F63FF3-DE9A-4B0B-BBF9-AD27200CE81F}</ProjectGuid>

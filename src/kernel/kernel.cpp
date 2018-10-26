@@ -2,6 +2,7 @@
 
 #include "kernel.h"
 #include "io.h"
+#include "process.h"
 #include <Windows.h>
 
 HMODULE User_Programs;
@@ -21,6 +22,10 @@ void __stdcall Sys_Call(kiv_hal::TRegisters &regs) {
 	
 		case kiv_os::NOS_Service_Major::File_System:		
 			Handle_IO(regs);
+			break;
+
+		case kiv_os::NOS_Service_Major::Process:
+			Handle_Process(regs);
 			break;
 
 	}
@@ -44,10 +49,10 @@ void __stdcall Bootstrap_Loader(kiv_hal::TRegisters &context) {
 		// s diskem se pracuji pomoci handleru, kde prvni parametr je obsluzna rutina a druhy registry obsahujici data
 
 		kiv_hal::TDrive_Parameters params;		
-		regs.rax.h = static_cast<uint8_t>(kiv_hal::NDisk_IO::Drive_Parameters);;
+		regs.rax.h = static_cast<uint8_t>(kiv_hal::NDisk_IO::Drive_Parameters);
 		regs.rdi.r = reinterpret_cast<decltype(regs.rdi.r)>(&params);
 		kiv_hal::Call_Interrupt_Handler(kiv_hal::NInterrupt::Disk_IO, regs);
-			
+
 		if (!regs.flags.carry) {
 			auto print_str = [](const char* str) {
 				kiv_hal::TRegisters regs;
@@ -77,13 +82,9 @@ void __stdcall Bootstrap_Loader(kiv_hal::TRegisters &context) {
 	// spustit pod managerem shell
 
 	//spustime shell - v realnem OS bychom ovsem spousteli login
-	kiv_os::TThread_Proc shell = (kiv_os::TThread_Proc)GetProcAddress(User_Programs, "shell");
-	if (shell) {
-		//spravne se ma shell spustit pres clone!
-		//ale ten v kostre pochopitelne neni implementovan		
-		shell(regs);
-	}
-
+	//spravne se ma shell spustit pres clone!
+	//ale ten v kostre pochopitelne neni implementovan		
+	Call_User_Function("shell", regs);
 
 	Shutdown_Kernel();
 }
@@ -96,4 +97,11 @@ void Set_Error(const bool failed, kiv_hal::TRegisters &regs) {
 	}
 	else
 		regs.flags.carry = false;
+}
+
+void Call_User_Function(char* funcname, kiv_hal::TRegisters regs) {
+	kiv_os::TThread_Proc to_call = (kiv_os::TThread_Proc)GetProcAddress(User_Programs, funcname);
+	if (to_call) {
+		to_call(regs);
+	}
 }

@@ -50,13 +50,61 @@ void Handle_IO(kiv_hal::TRegisters &regs) {
 	
 
 	switch (static_cast<kiv_os::NOS_File_System>(regs.rax.l)) {
+
+		/* Nasledujici dve vetve jsou ukazka, ze starsiho zadani, ktere ukazuji, jak mate mapovat Windows HANDLE na kiv_os handle a zpet, vcetne jejich alokace a uvolneni
+
+			case kiv_os::scCreate_File: {
+				HANDLE result = CreateFileA((char*)regs.rdx.r, GENERIC_READ | GENERIC_WRITE, (DWORD)regs.rcx.r, 0, OPEN_EXISTING, 0, 0);
+				//zde je treba podle Rxc doresit shared_read, shared_write, OPEN_EXISING, etc. podle potreby
+				regs.flags.carry = result == INVALID_HANDLE_VALUE;
+				if (!regs.flags.carry) regs.rax.x = Convert_Native_Handle(result);
+				else regs.rax.r = GetLastError();
+				}
+				break;	//scCreateFile
+
+			case kiv_os::scClose_Handle: {
+				HANDLE hnd = Resolve_kiv_os_Handle(regs.rdx.x);
+				regs.flags.carry = !CloseHandle(hnd);
+				if (!regs.flags.carry) Remove_Handle(regs.rdx.x);
+				else regs.rax.r = GetLastError();
+				}
+				break;	//CloseFile
+
+		*/
 		
+		case kiv_os::NOS_File_System::Close_Handle:
+			//TODO
+			break;
+
+		case kiv_os::NOS_File_System::Create_Pipe:
+			//TODO
+			break;
+
+		case kiv_os::NOS_File_System::Delete_File:
+			//TODO
+			break;
+
+		case kiv_os::NOS_File_System::Get_Working_Dir:
+			//TODO
+			break;
+
+		case kiv_os::NOS_File_System::Open_File:
+			//TODO
+			break;
+
 		case kiv_os::NOS_File_System::Read_File: {
 				//viz uvodni komentar u Write_File
 				regs.rax.r = Read_Line_From_Console(reinterpret_cast<char*>(regs.rdi.r), regs.rcx.r);
 				}
 				break;
 
+		case kiv_os::NOS_File_System::Seek:
+			//TODO
+			break;
+
+		case kiv_os::NOS_File_System::Set_Working_Dir:
+			//TODO
+			break;
 
 		case kiv_os::NOS_File_System::Write_File: {
 					//Spravne bychom nyni meli pouzit interni struktury kernelu a zadany handle resolvovat na konkretni objekt, ktery pise na konkretni zarizeni/souboru/roury.
@@ -74,27 +122,5 @@ void Handle_IO(kiv_hal::TRegisters &regs) {
 				}
 				break; //Write_File
 
-
-	/* Nasledujici dve vetve jsou ukazka, ze starsiho zadani, ktere ukazuji, jak mate mapovat Windows HANDLE na kiv_os handle a zpet, vcetne jejich alokace a uvolneni
-
-		case kiv_os::scCreate_File: {
-			HANDLE result = CreateFileA((char*)regs.rdx.r, GENERIC_READ | GENERIC_WRITE, (DWORD)regs.rcx.r, 0, OPEN_EXISTING, 0, 0);
-			//zde je treba podle Rxc doresit shared_read, shared_write, OPEN_EXISING, etc. podle potreby
-			regs.flags.carry = result == INVALID_HANDLE_VALUE;
-			if (!regs.flags.carry) regs.rax.x = Convert_Native_Handle(result);
-			else regs.rax.r = GetLastError();
-		}
-									break;	//scCreateFile
-
-		case kiv_os::scClose_Handle: {
-				HANDLE hnd = Resolve_kiv_os_Handle(regs.rdx.x);
-				regs.flags.carry = !CloseHandle(hnd);
-				if (!regs.flags.carry) Remove_Handle(regs.rdx.x);				
-					else regs.rax.r = GetLastError();
-			}
-
-			break;	//CloseFile
-
-	*/
 	}
 }

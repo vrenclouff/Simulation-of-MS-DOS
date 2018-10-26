@@ -164,7 +164,7 @@ namespace kiv_os {
 	//rezim otevreni noveho souboru
 	enum class NOpen_File : std::uint8_t {
 		fmOpen_Always = 1	//pokud je nastavena, pak soubor musi existovat, aby byl otevren
-								//není-li fmOpen_Always nastaveno, pak je soubor vždy vytvoøen - tj. i pøepsán starý soubor
+							//není-li fmOpen_Always nastaveno, pak je soubor vždy vytvoøen - tj. i pøepsán starý soubor
 	};
 
 
