@@ -67,6 +67,7 @@ bool kiv_os_rtl::Clone(char* args) {
 	kiv_hal::TRegisters regs = Prepare_SysCall_Context(kiv_os::NOS_Service_Major::Process, static_cast<uint8_t>(kiv_os::NOS_Process::Clone));
 	regs.rdx.r = reinterpret_cast<decltype(regs.rdx.r)>(function);
 	regs.rdi.r = reinterpret_cast<decltype(regs.rdi.r)>(arguments);
+	regs.rcx.r = static_cast<uint64_t>(kiv_os::NClone::Create_Process);
 
 	const bool result = kiv_os::Sys_Call(regs);
 	return result;
