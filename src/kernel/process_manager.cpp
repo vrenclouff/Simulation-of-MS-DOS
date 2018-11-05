@@ -1,6 +1,7 @@
 #include "process_manager.h"
 #include <iostream>
 #include <vector>
+#include "common.h"
 
 Process* ProcessManager::getRunningProcess()
 {
@@ -42,6 +43,17 @@ void ProcessManager::handleClone(kiv_hal::TRegisters &regs)
 
 void ProcessManager::createProcess(kiv_hal::TRegisters &regs, bool first_process)
 {
+	regs.flags.carry = 0;
+	char* funcName = reinterpret_cast<char*>(regs.rdx.r);
+	kiv_os::TThread_Proc programAddress = (kiv_os::TThread_Proc)GetProcAddress(User_Programs, funcName);
+
+	if (!programAddress)
+	{
+		regs.flags.carry = 1;
+		regs.rax.x = static_cast<uint16_t>(kiv_os::NOS_Error::Invalid_Argument);
+		return;
+	}
+
 	size_t parent_pid = 0;
 	kiv_os::THandle stdin_handle = regs.rbx.e >> 16;
 	kiv_os::THandle stdout_handle = regs.rbx.e & 0x00ff;
@@ -51,8 +63,6 @@ void ProcessManager::createProcess(kiv_hal::TRegisters &regs, bool first_process
 		Process* currentProcess = getRunningProcess();
 		parent_pid = currentProcess->pid;
 	}
-	
-	char* funcName = reinterpret_cast<char*>(regs.rdx.r);
 
 	Process* newProcess = new Process(funcName, parent_pid);
 	kiv_hal::TRegisters child_context{ 0 };
@@ -61,7 +71,7 @@ void ProcessManager::createProcess(kiv_hal::TRegisters &regs, bool first_process
 	child_context.rbx.x = stdout_handle; // stdout
 
 	create_process_mtx.lock();
-	newProcess->start(child_context);
+	newProcess->start(child_context, programAddress);
 	processes[newProcess->pid] = newProcess;
 	handles[++last_handle] = newProcess->pid;
 	create_process_mtx.unlock();
@@ -79,12 +89,19 @@ void ProcessManager::handleWaitFor(kiv_hal::TRegisters &regs)
 {
 	// RDX = array of handles
 	// RCX = array size
+	regs.flags.carry = 0;
 	kiv_os::THandle *registered_handles = reinterpret_cast<kiv_os::THandle*>(regs.rdx.r);
 	size_t handles_size = static_cast<size_t>(regs.rcx.r);
 	std::vector<Process*> waiting_for(handles_size);
 
 	for (int i = 0; i < handles_size; i++)
 	{
+		if (handles.count(registered_handles[i]) == 0)
+		{
+			regs.flags.carry = 1;
+			regs.rax.x = static_cast<uint16_t>(kiv_os::NOS_Error::Invalid_Argument);
+			return;
+		}
 		waiting_for[i] = processes[handles[registered_handles[i]]];
 		if (waiting_for[i]->state == ProcessState::stopped)
 		{
