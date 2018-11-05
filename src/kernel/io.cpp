@@ -5,8 +5,6 @@
 #include "fat_file.h"
 #include "fat_tools.h"
 
-#include <stdlib.h>
-
 size_t Read_Line_From_Console(char *buffer, const size_t buffer_size) {
 	kiv_hal::TRegisters registers;
 	
