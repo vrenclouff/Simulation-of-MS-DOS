@@ -15,6 +15,7 @@ kiv_hal::TRegisters Prepare_SysCall_Context(kiv_os::NOS_Service_Major major, uin
 	return regs;
 }
 
+// FILE SYSTEM
 
 bool kiv_os_rtl::Read_File(const kiv_os::THandle file_handle, char* const buffer, const size_t buffer_size, size_t &read) {
 	kiv_hal::TRegisters regs =  Prepare_SysCall_Context(kiv_os::NOS_Service_Major::File_System, static_cast<uint8_t>(kiv_os::NOS_File_System::Read_File));
@@ -57,30 +58,16 @@ bool kiv_os_rtl::Close_Handle(const kiv_os::THandle file_handle) {
 	return kiv_os::Sys_Call(regs);
 }
 
-kiv_os::THandle kiv_os_rtl::Clone(char* args) {
+bool kiv_os_rtl::Create_Pipe() {
+	kiv_hal::TRegisters regs = Prepare_SysCall_Context(kiv_os::NOS_Service_Major::File_System, static_cast<uint8_t>(kiv_os::NOS_File_System::Create_Pipe));
 
-	char* arguments;
-	char* tofunc = strtok_s(args, " ", &arguments);
+	const bool result = kiv_os::Sys_Call(regs);
+	return result;
+}
 
-	if (tofunc == NULL) {
-		return NULL;
-	}
+// PROCESS
 
-	size_t origsize = strlen(tofunc);
-	size_t size = origsize + sizeof(char);
-	char* function = (char*)malloc(size);
-	strncpy_s(function, size, tofunc, size);
-
-	// TODO protoze api/user.def - asi vyresit lip
-	if (!strcmp(function, "find")) {
-		function = "wc";
-	}
-	else if (!strcmp(function, "tasklist")) {
-		function = "ps";
-	}
-	else if (!strcmp(function, "wc") || ! strcmp(function, "ps")) {
-		function = "";
-	}
+kiv_os::THandle kiv_os_rtl::Clone(char* function, char* arguments) {
 
 	kiv_hal::TRegisters regs = Prepare_SysCall_Context(kiv_os::NOS_Service_Major::Process, static_cast<uint8_t>(kiv_os::NOS_Process::Clone));
 	regs.rdx.r = reinterpret_cast<decltype(regs.rdx.r)>(function);
@@ -123,6 +110,13 @@ bool kiv_os_rtl::Read_Exit_Code(kiv_os::THandle handle) {
 
 bool kiv_os_rtl::Shutdown() {
 	kiv_hal::TRegisters regs = Prepare_SysCall_Context(kiv_os::NOS_Service_Major::Process, static_cast<uint8_t>(kiv_os::NOS_Process::Shutdown));
+	const bool result = kiv_os::Sys_Call(regs);
+	return result;
+}
+
+bool kiv_os_rtl::Register_Signal_Handler() {
+	kiv_hal::TRegisters regs = Prepare_SysCall_Context(kiv_os::NOS_Service_Major::Process, static_cast<uint8_t>(kiv_os::NOS_Process::Register_Signal_Handler));
+
 	const bool result = kiv_os::Sys_Call(regs);
 	return result;
 }

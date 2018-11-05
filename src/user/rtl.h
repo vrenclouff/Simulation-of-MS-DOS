@@ -22,7 +22,9 @@ namespace kiv_os_rtl {
 
 	bool Close_Handle(const kiv_os::THandle file_handle);
 
-	kiv_os::THandle Clone(char* args);
+	bool Create_Pipe();
+
+	kiv_os::THandle Clone(char* function, char* arguments);
 
 	bool Wait_For(kiv_os::THandle handlers[]);
 
@@ -30,5 +32,7 @@ namespace kiv_os_rtl {
 
 	bool Read_Exit_Code(kiv_os::THandle handle);
 	bool Shutdown();
+
+	bool Register_Signal_Handler();
 
 }
