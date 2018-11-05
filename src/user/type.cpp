@@ -10,5 +10,6 @@ size_t __stdcall type(const kiv_hal::TRegisters &regs) {
 	kiv_os_rtl::Write_File(std_out, input, strlen(input), counter);
 	kiv_os_rtl::Write_File(std_out, linebreak, strlen(linebreak), counter);
 
+	kiv_os_rtl::Exit(0);
 	return 0;
 }

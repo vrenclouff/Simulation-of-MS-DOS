@@ -21,5 +21,6 @@ size_t __stdcall freq(const kiv_hal::TRegisters &regs) {
 		kiv_os_rtl::Write_File(std_out, out, strlen(out), counter);
 	}
 	
+	kiv_os_rtl::Exit(0);
 	return 0;
 }

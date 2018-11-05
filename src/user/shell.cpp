@@ -17,6 +17,7 @@ size_t __stdcall shell(const kiv_hal::TRegisters &regs) {
 
 	const char* prompt = "C:\\>";
 	const char* linebreak = "\n";
+	const char* exit = "exit";
 	do {
 		kiv_os_rtl::Write_File(std_out, prompt, strlen(prompt), counter);
 
@@ -25,12 +26,16 @@ size_t __stdcall shell(const kiv_hal::TRegisters &regs) {
 			buffer[counter] = 0;	//udelame z precteneho vstup null-terminated retezec
 
 			kiv_os_rtl::Write_File(std_out, linebreak, strlen(linebreak), counter);
-			kiv_os_rtl::Clone(buffer);
+
+			kiv_os::THandle handlers[1];
+			handlers[0] = kiv_os_rtl::Clone(buffer);
+			kiv_os_rtl::Wait_For(handlers);
+			kiv_os_rtl::Read_Exit_Code(handlers[0]);
 		}
 		else {
 			break;	//EOF
 		}
-	} while (strcmp(buffer, "exit") != 0);
+	} while (strcmp(buffer, exit) != 0);
 
 	// call exit
 	kiv_hal::TRegisters contx;

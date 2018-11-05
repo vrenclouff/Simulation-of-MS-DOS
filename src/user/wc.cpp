@@ -20,6 +20,7 @@ size_t __stdcall wc(const kiv_hal::TRegisters &regs) {
 	{
 		const char* notImplementedYet = "Incorrect use of find command. Try: find \\v \\c \"<some text or file>\"\n";
 		kiv_os_rtl::Write_File(std_out, notImplementedYet, strlen(notImplementedYet), counter);
+		kiv_os_rtl::Exit(1);
 		return 1;
 	}
 
@@ -46,5 +47,6 @@ size_t __stdcall wc(const kiv_hal::TRegisters &regs) {
 	kiv_os_rtl::Write_File(std_out, output, strlen(output), counter);
 	kiv_os_rtl::Write_File(std_out, linebreak, strlen(linebreak), counter);
 
+	kiv_os_rtl::Exit(0);
 	return 0;
 }

@@ -7,6 +7,7 @@
 #include <limits>
 
 size_t __stdcall rgen(const kiv_hal::TRegisters &regs) {
+	//TODO ctrl+z
 
 	const kiv_os::THandle std_out = static_cast<kiv_os::THandle>(regs.rbx.x);
 	size_t counter;
@@ -15,8 +16,9 @@ size_t __stdcall rgen(const kiv_hal::TRegisters &regs) {
 	char* arg = strtok_s(input, " ", &input);
 
 	if (arg != NULL) {
-		char* tooMuchArguments = "Rgen function has no arguments.";
+		char* tooMuchArguments = "Rgen function has no arguments.\n";
 		kiv_os_rtl::Write_File(std_out, tooMuchArguments, strlen(tooMuchArguments), counter);
+		kiv_os_rtl::Exit(1);
 		return 1;
 	}
 
@@ -28,5 +30,6 @@ size_t __stdcall rgen(const kiv_hal::TRegisters &regs) {
 	snprintf(fltout, sizeof(rndflt), "%f\n", rndflt);
 	kiv_os_rtl::Write_File(std_out, fltout, strlen(fltout), counter);
 
+	kiv_os_rtl::Exit(0);
 	return 0;
 }
