@@ -5,6 +5,8 @@
 #include "fat_file.h"
 #include "fat_tools.h"
 
+#include <stdlib.h>
+
 size_t Read_Line_From_Console(char *buffer, const size_t buffer_size) {
 	kiv_hal::TRegisters registers;
 	
@@ -52,16 +54,13 @@ bool Open_File(FATFile & fat_file, std::string file_name, const kiv_os::NOpen_Fi
 
 	const auto file = fat_tool::parse_file_name(file_name);
 
+	const char* path = "C://home/test.txt";
+
 	return false;
 }
 
 size_t Read_File(kiv_os::THandle file_handle, char* buffer, size_t buffer_size) {
-	//return Read_Line_From_Console(buffer, buffer_size);
-
-	buffer[0] = 'A';
-	buffer[1] = 'B';
-
-	return 2;
+	return Read_Line_From_Console(buffer, buffer_size);
 }
 
 void Handle_IO(kiv_hal::TRegisters &regs) {
