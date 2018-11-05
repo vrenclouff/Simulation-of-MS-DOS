@@ -8,8 +8,8 @@ size_t __stdcall freq(const kiv_hal::TRegisters &regs) {
 	char* input = reinterpret_cast<char*>(regs.rdi.r);
 
 	std::map<unsigned char, int> frequencies;
-	for (int i = 0; i < strlen(input); ++i) {
-		++frequencies[input[i]];
+	for (int i = 0; i < strlen(input); i++) {
+		frequencies[input[i]]++;
 	}
 
 	size_t counter;

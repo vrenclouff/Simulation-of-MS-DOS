@@ -15,11 +15,14 @@ size_t __stdcall echo(const kiv_hal::TRegisters &regs) {
 	if (first != NULL && !strcmp(first, "on"))
 	{
 		kiv_os_rtl::Write_File(std_out, notImplementedYet, strlen(notImplementedYet), counter);
+		return 1;
 	}
 	
 	else if (first != NULL && !strcmp(first, "off"))
 	{
 		kiv_os_rtl::Write_File(std_out, notImplementedYet, strlen(notImplementedYet), counter);
+		return 1;
+
 	}
 
 	else {
