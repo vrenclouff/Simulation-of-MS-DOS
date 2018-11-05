@@ -56,7 +56,7 @@ bool Open_File(FATFile & fat_file, std::string file_name, const kiv_os::NOpen_Fi
 }
 
 size_t Read_File(kiv_os::THandle file_handle, char* buffer, size_t buffer_size) {
-	//return Read_Line_From_Console(buffer, buffer_size);
+	return Read_Line_From_Console(buffer, buffer_size);
 
 	buffer[0] = 'A';
 	buffer[1] = 'B';
