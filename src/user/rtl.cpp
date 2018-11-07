@@ -5,6 +5,7 @@
 #include <iostream>
 #include <sstream>
 #include <vector>
+#include <filesystem>
 
 std::atomic<kiv_os::NOS_Error> kiv_os_rtl::Last_Error;
 
@@ -39,10 +40,29 @@ bool kiv_os_rtl::Write_File(const kiv_os::THandle file_handle, const char *buffe
 	return result;
 }
 
-bool kiv_os_rtl::Open_File(const char *buffer, const size_t buffer_size, kiv_os::THandle &file_handle) {
-	kiv_hal::TRegisters regs = Prepare_SysCall_Context(kiv_os::NOS_Service_Major::File_System, static_cast<uint8_t>(kiv_os::NOS_File_System::Open_File));
-
+bool kiv_os_rtl::Working_dir(const char *buffer, const size_t buffer_size, size_t &read) {
+	kiv_hal::TRegisters regs = Prepare_SysCall_Context(kiv_os::NOS_Service_Major::File_System, static_cast<uint8_t>(kiv_os::NOS_File_System::Get_Working_Dir));
 	regs.rdx.r = reinterpret_cast<decltype(regs.rdx.r)>(buffer);
+	regs.rcx.r = buffer_size;
+	const bool result = kiv_os::Sys_Call(regs);
+	read = regs.rax.r;
+	return result;
+}
+
+bool kiv_os_rtl::Open_File(const char *buffer, const size_t buffer_size, kiv_os::THandle &file_handle) {
+
+	std::string path;
+	if (std::filesystem::u8path(buffer).is_relative()) {
+		char absolute_path[10];
+		size_t counter;
+		Working_dir(absolute_path, sizeof(absolute_path), counter);
+		path = std::string(absolute_path, counter);
+	}
+
+	path.append(buffer, buffer_size);
+
+	kiv_hal::TRegisters regs = Prepare_SysCall_Context(kiv_os::NOS_Service_Major::File_System, static_cast<uint8_t>(kiv_os::NOS_File_System::Open_File));
+	regs.rdx.r = reinterpret_cast<decltype(regs.rdx.r)>(path.data());
 	//regs.rcx.x = static_cast<decltype(regs.rcx.x )>(buffer_size);
 	regs.rcx.l = static_cast<decltype(regs.rcx.l )>(kiv_os::NOpen_File::fmOpen_Always);
 	regs.rdi.i = static_cast<decltype(regs.rdi.i )>(kiv_os::NFile_Attributes::Read_Only);

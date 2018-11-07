@@ -3,9 +3,15 @@
 #include <algorithm>
 #include <string>
 
-fat_tool::File fat_tool::parse_file_name(std::string file_name) {
+fat_tool::File fat_tool::parse_entire_name(std::string file_name) {
 	std::transform(file_name.begin(), file_name.end(), file_name.begin(), ::toupper);
-	const auto extension = file_name.substr(file_name.find_last_of(".") + 1);
+	const auto pos = file_name.find_last_of(".");
+
+	if (pos == std::string::npos) {
+		return { file_name, "" };
+	}
+
+	const auto extension = file_name.substr(pos + 1);
 	const auto name = file_name.substr(0, file_name.size() - extension.size() - 1);
 	return { name, extension };
 }
@@ -16,6 +22,10 @@ uint16_t fat_tool::to_date(const std::tm tm) {
 
 uint16_t fat_tool::to_time(const std::tm tm) {
 	return tm.tm_hour << 11 | tm.tm_min << 5 | tm.tm_sec / 0x2;
+}
+
+bool fat_tool::is_attr(const uint8_t attributes, kiv_os::NFile_Attributes attribute) {
+	return attributes & static_cast<uint8_t>(attribute);
 }
 
 std::tm fat_tool::makedate(const uint16_t date, const uint16_t time) {

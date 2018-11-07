@@ -18,6 +18,8 @@ namespace kiv_os_rtl {
 	//vraci true, kdyz vse OK
 	bool Write_File(const kiv_os::THandle file_handle, const char *buffer, const size_t buffer_size, size_t &written);
 
+	bool Working_dir(const char *buffer, const size_t buffer_size, size_t &read);
+
 	bool Open_File(const char *buffer, const size_t buffer_size, kiv_os::THandle &file_handle);
 
 	bool Close_Handle(const kiv_os::THandle file_handle);

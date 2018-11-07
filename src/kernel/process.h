@@ -26,7 +26,7 @@ public:
 	std::thread* thread_obj;
 	std::map<size_t, Process*> childs;
 	// std::string name;
-	// TODO workdir
+	kiv_os::THandle working_dir;
 	// TODO syscall struct params, parent id
 	Process(std::string userfunc_name, size_t parent_pid);
 	void start(kiv_hal::TRegisters child_context, kiv_os::TThread_Proc address);

@@ -29,10 +29,6 @@ std::tm FATFile::date() {
 	return fat_tool::makedate(_entire_dir.date, _entire_dir.time);
 }
 
-bool FATFile::is_attr(const kiv_os::NFile_Attributes attribute) const {
-	return _entire_dir.attributes & static_cast<uint8_t>(attribute);
-}
-
 void FATFile::write() {
 
 	auto div = std::div(_entire_dir.size, _boot_block.bytes_per_sector);
@@ -106,7 +102,7 @@ void FATFile::write() {
 	for (auto sector = root_dir_addr; sector < root_dir_size + root_dir_addr; sector++) {
 		_hard_disk(root_dir.data(), sector, kiv_hal::NDisk_IO::Read_Sectors);
 		std::vector<kiv_fs::FATEntire_Directory> dir_entries;
-		kiv_fs::entire_directory(dir_entries, _boot_block, root_dir.data());
+		kiv_fs::entire_directory(dir_entries, _boot_block.bytes_per_sector, root_dir.data());
 		if (dir_entries.size() < max_dir_entries_per_block) {
 			dir_entries.push_back(_entire_dir);
 			dir_entries.resize(max_dir_entries_per_block);
@@ -118,20 +114,21 @@ void FATFile::write() {
 
 std::vector<unsigned char>& FATFile::read() {
 
-	auto sectors = std::vector<uint16_t>();
-	auto fat = std::vector<unsigned char>(_boot_block.bytes_per_sector);
-	std::div_t fat_offset, next_fat_offset;
-	uint16_t fake_sector, next_fake_sector;
-
-	const auto _offset = offset();
-	fake_sector = _entire_dir.first_cluster;
-	next_fake_sector = { 0 }; next_fat_offset = { 0 };
-
 	auto offset_to_fat = [&](const uint32_t& cluster) {
 		auto div = std::div(cluster * MULTIPLY_CONST, _boot_block.bytes_per_sector);
 		div.quot += 1;
 		return div;
 	};
+
+	auto fat = std::vector<unsigned char>(_boot_block.bytes_per_sector);
+	std::div_t fat_offset, next_fat_offset;
+	uint16_t fake_sector, next_fake_sector;
+
+	fake_sector = _entire_dir.first_cluster;
+	next_fake_sector = { 0 }; next_fat_offset = { 0 };
+
+	auto sectors = std::vector<uint16_t>();
+	const auto _offset = offset();
 
 	do {
 		sectors.push_back(fake_sector + _offset);
@@ -166,7 +163,7 @@ std::vector<unsigned char>& FATFile::read() {
 std::string FATFile::to_string() {
 
 	std::stringstream wss;
-	const auto is_dir = is_attr(kiv_os::NFile_Attributes::Directory);
+	const auto is_dir = fat_tool::is_attr(_entire_dir.attributes, kiv_os::NFile_Attributes::Directory);
 	auto file_name = fat_tool::rtrim(std::string(_entire_dir.file_name, 8));
 	auto extension = fat_tool::rtrim(std::string(_entire_dir.extension, 3));
 

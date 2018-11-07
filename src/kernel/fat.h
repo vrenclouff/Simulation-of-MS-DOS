@@ -52,8 +52,9 @@ namespace kiv_fs {
 	bool is_formatted(const void* sector);
 
 	void boot_block(FATBoot_Block& boot_block, const uint16_t bytes_per_sector, const void* sector);
-	void entire_directory(std::vector<FATEntire_Directory>& entire_directories, const FATBoot_Block& boot_block, void* sector);
+	void entire_directory(std::vector<FATEntire_Directory>& entire_directories, const uint16_t bytes_per_sector, void* sector);
 
+	std::vector<size_t> sectors_for_root_dir(const FATBoot_Block& boot_block);
 	uint16_t root_directory_addr(const FATBoot_Block& boot_block);
 	uint8_t root_directory_size(const FATBoot_Block& boot_block);
 }

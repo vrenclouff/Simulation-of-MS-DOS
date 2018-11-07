@@ -159,7 +159,8 @@ size_t __stdcall test_open_file(const kiv_hal::TRegisters & regs) {
 	const kiv_os::THandle std_in = static_cast<kiv_os::THandle>(regs.rax.x);
 	const kiv_os::THandle std_out = static_cast<kiv_os::THandle>(regs.rbx.x);
 
-	std::string file_name("lorem2.txt");
+	//std::string file_name("lorem2.txt");
+	std::string file_name("C://home/test.txt");
 
 	kiv_os::THandle file_handle;
 	kiv_os_rtl::Open_File(file_name.c_str(), file_name.size(), file_handle);

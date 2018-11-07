@@ -5,8 +5,7 @@
 #include "fat_file.h"
 #include "fat_tools.h"
 
-#include <filesystem>
-
+#include <stdlib.h>
 
 size_t Read_Line_From_Console(char *buffer, const size_t buffer_size) {
 	kiv_hal::TRegisters registers;
@@ -51,21 +50,25 @@ size_t Read_Line_From_Console(char *buffer, const size_t buffer_size) {
 }
 
 
-bool Open_File(FATFile & fat_file, std::string absolute_path, const kiv_os::NOpen_File open_flags, const kiv_os::NFile_Attributes attributes) {
+bool Open_File(FATFile & fat_file, std::string file_name, const kiv_os::NOpen_File open_flags, const kiv_os::NFile_Attributes attributes) {
 
-	const std::filesystem::path path = absolute_path;
-	std::vector<std::string> path_components;
-	for (auto& path : path) {
-		path_components.push_back(path.generic_string());
-	}
-	const auto drive_volume = path_components.at(0);
-	path_components.erase(path_components.begin(), path_components.begin() + 1);
+	const auto file = fat_tool::parse_file_name(file_name);
 
-	return IO_Manager.get()->open(drive_volume, path_components);
+	const char* path = "C://home/test.txt";
+
+	return false;
 }
 
 size_t Read_File(kiv_os::THandle file_handle, char* buffer, size_t buffer_size) {
 	return Read_Line_From_Console(buffer, buffer_size);
+<<<<<<< HEAD
+=======
+
+	buffer[0] = 'A';
+	buffer[1] = 'B';
+
+	return 2;
+>>>>>>> f28276be93d29798493b8ac81f0e35f25203d043
 }
 
 void Handle_IO(kiv_hal::TRegisters &regs) {
@@ -76,25 +79,14 @@ void Handle_IO(kiv_hal::TRegisters &regs) {
 			auto file = FATFile();
 			Open_File(file, reinterpret_cast<char*>(regs.rdx.r), static_cast<kiv_os::NOpen_File>(regs.rcx.l), static_cast<kiv_os::NFile_Attributes>(regs.rdi.i));
 			regs.rax.x = Convert_Native_Handle(reinterpret_cast<HANDLE>(&file));	
-		} break;
+		}break;
 		
 		case kiv_os::NOS_File_System::Close_Handle: {	
 			regs.rax.x = Remove_Handle(regs.rdx.x);
-		} break;
+		}break;
 
 		case kiv_os::NOS_File_System::Read_File: {
 			regs.rax.r = Read_File(regs.rdx.x, reinterpret_cast<char*>(regs.rdi.r), regs.rcx.r);
-		} break;
-
-		case kiv_os::NOS_File_System::Get_Working_Dir: {
-			char* path_buffer = reinterpret_cast<char*>(regs.rdx.r);
-
-			// TODO return real working dir (now it's a fake)
-			path_buffer[0] = 'C';
-			path_buffer[1] = ':';
-			path_buffer[2] = '\\';
-
-			regs.rax.r = 3;
 		} break;
 
 		case kiv_os::NOS_File_System::Write_File: {

@@ -1,12 +1,13 @@
 #pragma once
 
 #include "kernel.h"
+#include <Windows.h>
+
 #include "io.h"
 #include "fat.h"
 #include "fat_tools.h"
 #include "fat_file.h"
 #include "process.h"
-#include <Windows.h>
 #include "common.h"
 
 HMODULE User_Programs;
@@ -39,6 +40,7 @@ void __stdcall Bootstrap_Loader(kiv_hal::TRegisters &context) {
 	kiv_hal::Set_Interrupt_Handler(kiv_os::System_Int_Number, Sys_Call);
 
 	//v ramci ukazky jeste vypiseme dostupne disky
+	char drive_name = 67;	// C:
 	kiv_hal::TRegisters regs;
 	for (regs.rdx.l = 0; ; regs.rdx.l++) {
 
@@ -69,7 +71,7 @@ void __stdcall Bootstrap_Loader(kiv_hal::TRegisters &context) {
 				dap.sectors = static_cast<void*>(data);
 				dap.count = 1;
 				dap.lba_index = sector;
-				regs.rax.h = static_cast<uint8_t>(operation);
+				regs.rax.h = static_cast<decltype(regs.rax.h)>(operation);
 				regs.rdi.r = reinterpret_cast<decltype(regs.rdi.r)>(&dap);
 				kiv_hal::Call_Interrupt_Handler(kiv_hal::NInterrupt::Disk_IO, regs);
 			};
@@ -89,14 +91,10 @@ void __stdcall Bootstrap_Loader(kiv_hal::TRegisters &context) {
 			kiv_fs::FATBoot_Block boot_block;
 			kiv_fs::boot_block(boot_block, params.bytes_per_sector, arr.data());
 
-			// nacteni root entire_directory
-			hard_drive(arr.data(), kiv_fs::root_directory_addr(boot_block), kiv_hal::NDisk_IO::Read_Sectors);
-			std::vector<kiv_fs::FATEntire_Directory> dir_entries;
-			kiv_fs::entire_directory(dir_entries, boot_block, arr.data());
-
-			const auto file = dir_entries.at(2);
-
-			break;
+			char volume[2] = { drive_name, ':'};
+			if (IO_Manager.get()->register_drive(volume, regs.rdx.l, boot_block)) {
+				// TODO exception -> can't register disk drive
+			}
 		}
 
 		if (regs.rdx.l == 255) break;
@@ -107,6 +105,7 @@ void __stdcall Bootstrap_Loader(kiv_hal::TRegisters &context) {
 	// spustit pod managerem shell
 
 	//spustime shell - v realnem OS bychom ovsem spousteli login
+	//char* initProgram = "test_open_file";
 	char* initProgram = "shell";
 	char* initProgramArgs = "";
 	regs.rdx.r = reinterpret_cast<uint64_t>(initProgram);

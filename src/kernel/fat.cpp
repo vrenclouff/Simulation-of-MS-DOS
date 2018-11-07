@@ -1,5 +1,6 @@
 #include "fat.h"
 
+#include <numeric>
 
 void format_fat16(unsigned char* boot_block, const kiv_hal::TDrive_Parameters& params) {
 
@@ -100,9 +101,9 @@ void kiv_fs::boot_block(FATBoot_Block& boot_block, const uint16_t bytes_per_sect
 	boot_block.absolute_number_of_sectors = block[0x14] << 8 | block[0x13];
 }
 
-void kiv_fs::entire_directory(std::vector<FATEntire_Directory>& entire_directories, const FATBoot_Block& boot_block, void* sector) {
+void kiv_fs::entire_directory(std::vector<FATEntire_Directory>& entire_directories, const uint16_t bytes_per_sector, void* sector) {
 	const auto block = static_cast<char*>(sector);
-	for (size_t beg = 0; beg < boot_block.bytes_per_sector; beg += sizeof(FATEntire_Directory)) {
+	for (size_t beg = 0; beg < bytes_per_sector; beg += sizeof(FATEntire_Directory)) {
 		if (block[beg] == 0x00) break;
 		entire_directories.push_back(*reinterpret_cast<FATEntire_Directory*>(block + beg));
 	}
@@ -111,6 +112,17 @@ void kiv_fs::entire_directory(std::vector<FATEntire_Directory>& entire_directori
 bool kiv_fs::is_formatted(const void* sector) {
 	const auto block = static_cast<const char*>(sector);
 	return block[0] == '.' && block[1] == '<' && block[2] == '.';
+}
+
+std::vector<size_t> kiv_fs::sectors_for_root_dir(const FATBoot_Block& boot_block) {
+
+	const auto address = root_directory_addr(boot_block);
+	const auto size = root_directory_size(boot_block);
+
+	std::vector<size_t> sectors(size);
+	std::iota(sectors.begin(), sectors.end(), address);
+
+	return sectors;
 }
 
 uint16_t kiv_fs::root_directory_addr(const FATBoot_Block& boot_block) {

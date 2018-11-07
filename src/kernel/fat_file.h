@@ -37,6 +37,5 @@ public:
 
 	uint32_t size();
 	std::tm date();
-	bool is_attr(const kiv_os::NFile_Attributes attribute) const;
 	std::string to_string();
 };

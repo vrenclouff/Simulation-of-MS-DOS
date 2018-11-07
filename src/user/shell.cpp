@@ -16,11 +16,13 @@ size_t __stdcall shell(const kiv_hal::TRegisters &regs) {
 	kiv_os_rtl::Write_File(std_out, intro, strlen(intro), counter);
 
 
-	const char* prompt = "C:\\>";
+	char prompt[100];
 	const char* linebreak = "\n";
 	const char* exit = "exit";
 	do {
-		kiv_os_rtl::Write_File(std_out, prompt, strlen(prompt), counter);
+		kiv_os_rtl::Working_dir(prompt, sizeof(prompt), counter);
+		kiv_os_rtl::Write_File(std_out, prompt,counter, counter);
+		kiv_os_rtl::Write_File(std_out, ">", 1, counter);
 
 		if (kiv_os_rtl::Read_File(std_in, buffer, buffer_size, counter) && (counter > 0)) {
 			if (counter == buffer_size) {

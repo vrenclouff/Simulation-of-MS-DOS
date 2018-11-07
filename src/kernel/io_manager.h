@@ -3,17 +3,21 @@
 #include "fat.h"
 
 #include <functional>
+#include <map>
+
 
 class IOManager {
+
+	struct Drive_Desc {
+		uint8_t id;
+		kiv_fs::FATBoot_Block boot_block;
+	};
+
+private:
+	std::map<std::string, Drive_Desc> registred_drivers;
+
 public:
-	const kiv_fs::FATBoot_Block& _boot_block;
-	std::function<void(unsigned char* data, uint16_t sector, kiv_hal::NDisk_IO operation)> _hard_disk;
 
-	IOManager(
-		const kiv_fs::FATBoot_Block& boot_block,
-		std::function<void(unsigned char* data, uint16_t sector, kiv_hal::NDisk_IO operation)> hard_disk
-	) : _boot_block(boot_block), _hard_disk(hard_disk) {}
-
-	uint8_t open();
-	void close();
+	bool register_drive(const std::string volume, const uint8_t id, const kiv_fs::FATBoot_Block& book_block);
+	bool open(const std::string drive_volume, const std::vector<std::string> path_components);
 };
