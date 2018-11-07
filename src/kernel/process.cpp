@@ -1,5 +1,4 @@
 #include "process.h"
-#include "common.h"
 
 std::condition_variable Process::endCond;
 std::mutex Process::endMtx;
@@ -10,12 +9,11 @@ Process::Process(std::string userfunc_name, size_t parent_pid) :
 	state = ProcessState::prepared;
 }
 
-void Process::start(kiv_hal::TRegisters child_context)
+void Process::start(kiv_hal::TRegisters child_context, kiv_os::TThread_Proc address)
 {
 	context = child_context;
 
-	kiv_os::TThread_Proc program = (kiv_os::TThread_Proc)GetProcAddress(User_Programs, userfunc_name.c_str());
-	thread_obj = new std::thread(program, context);
+	thread_obj = new std::thread(address, context);
 
 	pid = std::hash<std::thread::id>()(thread_obj->get_id());
 	state = ProcessState::running;

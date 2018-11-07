@@ -1,5 +1,6 @@
 #include "shell.h"
 #include "rtl.h"
+#include "parser.h"
 
 size_t __stdcall shell(const kiv_hal::TRegisters &regs) {
 
@@ -22,15 +23,14 @@ size_t __stdcall shell(const kiv_hal::TRegisters &regs) {
 		kiv_os_rtl::Write_File(std_out, prompt, strlen(prompt), counter);
 
 		if (kiv_os_rtl::Read_File(std_in, buffer, buffer_size, counter) && (counter > 0)) {
-			if (counter == buffer_size) counter--;
+			if (counter == buffer_size) {
+				counter--;
+			}
 			buffer[counter] = 0;	//udelame z precteneho vstup null-terminated retezec
 
 			kiv_os_rtl::Write_File(std_out, linebreak, strlen(linebreak), counter);
 
-			kiv_os::THandle handlers[1];
-			handlers[0] = kiv_os_rtl::Clone(buffer);
-			kiv_os_rtl::Wait_For(handlers);
-			kiv_os_rtl::Read_Exit_Code(handlers[0]);
+			parse(buffer);
 		}
 		else {
 			break;	//EOF

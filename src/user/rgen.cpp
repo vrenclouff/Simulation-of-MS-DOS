@@ -26,8 +26,8 @@ size_t __stdcall rgen(const kiv_hal::TRegisters &regs) {
 
 	float rndflt = std::generate_canonical<float, std::numeric_limits<float>::digits>(generator);
 
-	char fltout[sizeof(rndflt)];
-	snprintf(fltout, sizeof(rndflt), "%f\n", rndflt);
+	char fltout[64];
+	sprintf_s(fltout, "%f\n", rndflt);
 	kiv_os_rtl::Write_File(std_out, fltout, strlen(fltout), counter);
 
 	kiv_os_rtl::Exit(0);

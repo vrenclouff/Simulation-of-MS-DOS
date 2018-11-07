@@ -29,7 +29,7 @@ public:
 	// TODO workdir
 	// TODO syscall struct params, parent id
 	Process(std::string userfunc_name, size_t parent_pid);
-	void start(kiv_hal::TRegisters child_context);
+	void start(kiv_hal::TRegisters child_context, kiv_os::TThread_Proc address);
 	void stop(uint16_t exitCode);
 	static std::condition_variable endCond; // condition for process end
 	static std::mutex endMtx; // endCond mutex
