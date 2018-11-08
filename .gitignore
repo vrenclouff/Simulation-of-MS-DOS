@@ -1,2 +1,8 @@
 **/.vs/
 **/x64/
+**/compiled/*
+!**compiled/boot.ini
+!**compiled/checker.exe
+!**compiled/checker.ini
+!**compiled/libarchive.dll
+!**compiled/test.exe
