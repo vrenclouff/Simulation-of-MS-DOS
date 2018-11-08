@@ -78,23 +78,23 @@ bool kiv_os_rtl::Close_Handle(const kiv_os::THandle file_handle) {
 	return kiv_os::Sys_Call(regs);
 }
 
-bool kiv_os_rtl::Create_Pipe() {
+kiv_os::THandle* kiv_os_rtl::Create_Pipe() {
 	kiv_hal::TRegisters regs = Prepare_SysCall_Context(kiv_os::NOS_Service_Major::File_System, static_cast<uint8_t>(kiv_os::NOS_File_System::Create_Pipe));
 
 	const bool result = kiv_os::Sys_Call(regs);
-	return result;
+
+	kiv_os::THandle* handles = reinterpret_cast<kiv_os::THandle*>(regs.rdx.l);
+	return handles;
 }
 
 // PROCESS
 
-kiv_os::THandle kiv_os_rtl::Clone(char* function, char* arguments) {
+kiv_os::THandle kiv_os_rtl::Clone(char* function, char* arguments, kiv_os::THandle stdin_handle, kiv_os::THandle stdout_handle) {
 
 	kiv_hal::TRegisters regs = Prepare_SysCall_Context(kiv_os::NOS_Service_Major::Process, static_cast<uint8_t>(kiv_os::NOS_Process::Clone));
 	regs.rdx.r = reinterpret_cast<decltype(regs.rdx.r)>(function);
 	regs.rdi.r = reinterpret_cast<decltype(regs.rdi.r)>(arguments);
-	// set standard stdin / stdout (TODO different values on pipe)
-	uint16_t stdin_handle = 0;
-	uint16_t stdout_handle = 1;
+
 	regs.rbx.e = (stdin_handle << 16) | stdout_handle;
 	regs.rcx.r = static_cast<uint64_t>(kiv_os::NClone::Create_Process);
 
