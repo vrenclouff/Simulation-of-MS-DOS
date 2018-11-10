@@ -3,10 +3,21 @@
 
 size_t __stdcall rd(const kiv_hal::TRegisters &regs) {
 
-	const char* notImplementedYet = "Not implemented yet.\n";
+	char* input = reinterpret_cast<char*>(regs.rdi.r);
+
+	kiv_os_rtl::Delete_File(input);
+
 	size_t counter;
 	const kiv_os::THandle std_out = static_cast<kiv_os::THandle>(regs.rbx.x);
-	kiv_os_rtl::Write_File(std_out, notImplementedYet, strlen(notImplementedYet), counter);
+	char* message = "";
+	if (regs.flags.carry == 1)
+	{
+		message = "Could not find specified directory.\n";
+	}
+	else {
+		message = "Removed.\n";
+	}
+	kiv_os_rtl::Write_File(std_out, message, strlen(message), counter);
 
 	kiv_os_rtl::Exit(0);
 	return 0;

@@ -22,6 +22,8 @@ namespace kiv_os_rtl {
 
 	bool Open_File(const char *buffer, const size_t buffer_size, kiv_os::THandle &file_handle);
 
+	bool Delete_File(const char* filename);
+
 	bool Close_Handle(const kiv_os::THandle file_handle);
 
 	kiv_os::THandle* Create_Pipe();

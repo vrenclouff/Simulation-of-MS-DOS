@@ -72,6 +72,13 @@ bool kiv_os_rtl::Open_File(const char *buffer, const size_t buffer_size, kiv_os:
 	return result;	
 }
 
+bool kiv_os_rtl::Delete_File(const char* filename) {
+	kiv_hal::TRegisters regs = Prepare_SysCall_Context(kiv_os::NOS_Service_Major::File_System, static_cast<uint8_t>(kiv_os::NOS_File_System::Delete_File));
+	regs.rdx.r = reinterpret_cast<decltype(regs.rdx.r)>(filename);
+	const bool result = kiv_os::Sys_Call(regs);
+	return result;
+}
+
 bool kiv_os_rtl::Close_Handle(const kiv_os::THandle file_handle) {
 	kiv_hal::TRegisters regs = Prepare_SysCall_Context(kiv_os::NOS_Service_Major::File_System, static_cast<uint8_t>(kiv_os::NOS_File_System::Close_Handle));
 	regs.rdx.x = file_handle;
