@@ -10,7 +10,7 @@ size_t __stdcall type(const kiv_hal::TRegisters &regs) {
 	std::string input = "A:/procls";
 
 	kiv_os::THandle file_handle;
-	kiv_os_rtl::Open_File(input.c_str(), input.size(), file_handle, kiv_os::NOpen_File::fmOpen_Always, std::iostream::ios_base::in);
+	kiv_os_rtl::Open_File(input.c_str(), input.size(), file_handle, true, std::iostream::ios_base::in);
 	
 
 	const kiv_os::THandle console_out = static_cast<kiv_os::THandle>(regs.rbx.x);

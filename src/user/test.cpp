@@ -163,7 +163,7 @@ size_t __stdcall test_open_file(const kiv_hal::TRegisters & regs) {
 	std::string file_name("C://home/test.txt");
 
 	kiv_os::THandle file_handle;
-	kiv_os_rtl::Open_File(file_name.c_str(), file_name.size(), file_handle, kiv_os::NOpen_File::fmOpen_Always, std::iostream::ios_base::in);
+	kiv_os_rtl::Open_File(file_name.c_str(), file_name.size(), file_handle, true, std::iostream::ios_base::in);
 
 	char buffer[5];
 	size_t counter;
