@@ -112,15 +112,62 @@ void FATFile::write() {
 	}
 }
 
+std::vector<uint16_t> load_sectors(const kiv_fs::FATEntire_Directory& entire_dir, const uint16_t bytes_per_sector, const uint16_t offset) {
+
+	std::vector<unsigned char> fat(bytes_per_sector);
+	std::div_t fat_offset, next_fat_offset;
+	uint16_t fake_sector, next_fake_sector;
+
+	fake_sector = entire_dir.first_cluster;
+	next_fake_sector = { 0 }; next_fat_offset = { 0 };
+
+	auto sectors = std::vector<uint16_t>();
+
+	do {
+		sectors.push_back(fake_sector + offset);
+
+		fat_offset = std::div(fake_sector * MULTIPLY_CONST, bytes_per_sector);
+		fat_offset.quot += 1;
+
+		if (fat_offset.quot != next_fat_offset.quot) {
+
+			kiv_hal::TDisk_Address_Packet dap;
+			dap.sectors = static_cast<void*>(fat.data());
+			dap.count = 1;
+			dap.lba_index = fat_offset.quot;
+
+			kiv_hal::TRegisters regs;
+			regs.rdx.l = 129;
+			regs.rax.h = static_cast<decltype(regs.rax.h)>(kiv_hal::NDisk_IO::Read_Sectors);
+			regs.rdi.r = reinterpret_cast<decltype(regs.rdi.r)>(&dap);
+
+			kiv_hal::Call_Interrupt_Handler(kiv_hal::NInterrupt::Disk_IO, regs);
+
+			next_fat_offset = fat_offset;
+		}
+
+		next_fake_sector = fat[fat_offset.rem] | fat[fat_offset.rem + 1] << 8;
+		fake_sector = next_fake_sector;
+
+	} while (next_fake_sector != kiv_fs::FAT_Attributes::End);
+
+	return sectors;
+}
+
+void load_data(char* const buffer, const size_t buffer_size, const std::vector<uint16_t> sectors, size_t& read) {
+
+
+	
+}
+
+
 std::vector<unsigned char>& FATFile::read() {
 
-	auto offset_to_fat = [&](const uint32_t& cluster) {
-		auto div = std::div(cluster * MULTIPLY_CONST, _boot_block.bytes_per_sector);
-		div.quot += 1;
-		return div;
-	};
-
-	auto fat = std::vector<unsigned char>(_boot_block.bytes_per_sector);
+	const auto bytes_per_sector = _boot_block.bytes_per_sector;
+	const auto _offset = offset();
+	const auto sectors = load_sectors(_entire_dir, bytes_per_sector, _offset);
+	/*
+	std::vector<unsigned char> fat(bytes_per_sector);
 	std::div_t fat_offset, next_fat_offset;
 	uint16_t fake_sector, next_fake_sector;
 
@@ -132,25 +179,41 @@ std::vector<unsigned char>& FATFile::read() {
 
 	do {
 		sectors.push_back(fake_sector + _offset);
-		fat_offset = offset_to_fat(fake_sector);
+
+		fat_offset = std::div(fake_sector * MULTIPLY_CONST, bytes_per_sector);
+		fat_offset.quot += 1;
 
 		if (fat_offset.quot != next_fat_offset.quot) {
-			_hard_disk(fat.data(), fat_offset.quot, kiv_hal::NDisk_IO::Read_Sectors);
+
+			kiv_hal::TDisk_Address_Packet dap;
+			dap.sectors = static_cast<void*>(fat.data());
+			dap.count = 1;
+			dap.lba_index = fat_offset.quot;
+
+			kiv_hal::TRegisters regs;
+			regs.rdx.l = 129;
+			regs.rax.h = static_cast<decltype(regs.rax.h)>(kiv_hal::NDisk_IO::Read_Sectors);
+			regs.rdi.r = reinterpret_cast<decltype(regs.rdi.r)>(&dap);
+
+			kiv_hal::Call_Interrupt_Handler(kiv_hal::NInterrupt::Disk_IO, regs);
+
 			next_fat_offset = fat_offset;
 		}
 
-		next_fake_sector = fat.at(fat_offset.rem) | uint16_t(fat.at(fat_offset.rem + 1)) << 8;
+		next_fake_sector = fat[fat_offset.rem] | fat[fat_offset.rem + 1] << 8;
 		fake_sector = next_fake_sector;
-	} while (next_fake_sector != kiv_fs::FAT_Attributes::End);
 
-	const auto div = std::div(_entire_dir.size, _boot_block.bytes_per_sector);
-	const auto full_size = (div.rem ? div.quot + 1 : div.quot) * _boot_block.bytes_per_sector;
+	} while (next_fake_sector != kiv_fs::FAT_Attributes::End);
+	*/
+
+	const auto div = std::div(_entire_dir.size, bytes_per_sector);
+	const auto full_size = (div.rem ? div.quot + 1 : div.quot) * bytes_per_sector;
 	_data.resize(full_size + 1);
 
 	uint16_t offset = 0;
 	for (auto& sector : sectors) {
 		_hard_disk(_data.data() + offset, sector, kiv_hal::NDisk_IO::Read_Sectors);
-		offset += _boot_block.bytes_per_sector;
+		offset += bytes_per_sector;
 	}
 	_data.at(_entire_dir.size) = 0x00;
 	_data.resize(_entire_dir.size + 1);
@@ -167,9 +230,10 @@ std::string FATFile::to_string() {
 	auto file_name = fat_tool::rtrim(std::string(_entire_dir.file_name, 8));
 	auto extension = fat_tool::rtrim(std::string(_entire_dir.extension, 3));
 
-	wss 
+	wss
 		<< std::put_time(&date(), "%d. %m. %Y %H:%M:%S") << " "
-		<< (is_dir ? "<DIR>" : "     " + std::to_string(_entire_dir.size)) << " "
+		<< (is_dir ? std::to_string(0) : std::to_string(_entire_dir.size)) << " "
+		//<< (is_dir ? "<DIR>" : "     " + std::to_string(_entire_dir.size)) << " "
 		<< file_name << "." << extension 
 		<< std::endl;
 

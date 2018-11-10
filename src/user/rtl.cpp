@@ -11,7 +11,7 @@ std::atomic<kiv_os::NOS_Error> kiv_os_rtl::Last_Error;
 
 kiv_hal::TRegisters Prepare_SysCall_Context(kiv_os::NOS_Service_Major major, uint8_t minor) {
 	kiv_hal::TRegisters regs;
-	regs.rax.h = static_cast<uint8_t>(major);
+	regs.rax.h = static_cast<decltype(regs.rax.h )>(major);
 	regs.rax.l = minor;
 	return regs;
 }
@@ -49,7 +49,7 @@ bool kiv_os_rtl::Get_Working_Dir(const char *buffer, const size_t buffer_size, s
 	return result;
 }
 
-bool kiv_os_rtl::Open_File(const char *buffer, const size_t buffer_size, kiv_os::THandle &file_handle, bool createnew) {
+bool kiv_os_rtl::Open_File(const char *buffer, const size_t buffer_size, kiv_os::THandle &file_handle, const kiv_os::NOpen_File fm, const std::iostream::ios_base::openmode openmode) {
 
 	std::string path;
 	if (std::filesystem::u8path(buffer).is_relative()) {
@@ -64,12 +64,9 @@ bool kiv_os_rtl::Open_File(const char *buffer, const size_t buffer_size, kiv_os:
 	kiv_hal::TRegisters regs = Prepare_SysCall_Context(kiv_os::NOS_Service_Major::File_System, static_cast<uint8_t>(kiv_os::NOS_File_System::Open_File));
 	regs.rdx.r = reinterpret_cast<decltype(regs.rdx.r)>(path.data());
 	//regs.rcx.x = static_cast<decltype(regs.rcx.x )>(buffer_size);
-
-	if (!createnew) {
-		regs.rcx.l = static_cast<decltype(regs.rcx.l )>(kiv_os::NOpen_File::fmOpen_Always);
-	}
-	
-	regs.rdi.i = static_cast<decltype(regs.rdi.i )>(kiv_os::NFile_Attributes::Read_Only);
+	regs.rcx.l = static_cast<decltype(regs.rcx.l)>(fm);
+	const auto read_only = static_cast<uint8_t>(kiv_os::NFile_Attributes::Read_Only);
+	regs.rdi.i = openmode <= read_only ? read_only : 0;
 
 	const bool result = kiv_os::Sys_Call(regs);
 	file_handle = regs.rax.x;

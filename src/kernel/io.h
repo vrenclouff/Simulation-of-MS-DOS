@@ -6,10 +6,11 @@
 
 #include <memory>
 
+kiv_os::THandle Register_STDIN();
+kiv_os::THandle Register_STDOUT();
 
-inline std::unique_ptr<IOManager> IO_Manager = std::make_unique<IOManager>(IOManager());
+using THandle_Proc = size_t(*)(char* buffer, size_t buffer_size);
 
-bool Open_File(FATFile & fat_file, std::string absolute_path, const kiv_os::NOpen_File open_flags, const kiv_os::NFile_Attributes attributes);
-size_t Read_File(kiv_os::THandle file_handle, char* buffer, size_t buffer_size);
+bool Open_File(FATFile & fat_file, std::string absolute_path, const kiv_os::NOpen_File fm, const kiv_os::NFile_Attributes attributes);
 
 void Handle_IO(kiv_hal::TRegisters &regs);

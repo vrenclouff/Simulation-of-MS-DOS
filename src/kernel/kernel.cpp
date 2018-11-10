@@ -40,7 +40,7 @@ void __stdcall Bootstrap_Loader(kiv_hal::TRegisters &context) {
 	kiv_hal::Set_Interrupt_Handler(kiv_os::System_Int_Number, Sys_Call);
 
 	//v ramci ukazky jeste vypiseme dostupne disky
-	char drive_name = 67;	// C:
+	char drive_name = 67;	// C
 	kiv_hal::TRegisters regs;
 	for (regs.rdx.l = 0; ; regs.rdx.l++) {
 
@@ -91,9 +91,19 @@ void __stdcall Bootstrap_Loader(kiv_hal::TRegisters &context) {
 			kiv_fs::FATBoot_Block boot_block;
 			kiv_fs::boot_block(boot_block, params.bytes_per_sector, arr.data());
 
-			char volume[2] = { drive_name, ':'};
-			if (IO_Manager.get()->register_drive(volume, regs.rdx.l, boot_block)) {
+			char volume[2] = { drive_name++, ':'};
+			std::string drive_volume = std::string(volume, sizeof(volume));
+			if (io::register_drive(drive_volume, regs.rdx.l, boot_block)) {
 				// TODO exception -> can't register disk drive
+			}
+
+			{
+				drive_volume.append("\\");
+				kiv_hal::TRegisters regs;
+				regs.rax.l = static_cast<uint8_t>(kiv_os::NOS_File_System::Set_Working_Dir);
+				regs.rdx.r = reinterpret_cast<decltype(regs.rdi.r)>(drive_volume.c_str());
+				regs.rcx.r = drive_volume.size();
+				Handle_IO(regs);
 			}
 		}
 
@@ -108,18 +118,18 @@ void __stdcall Bootstrap_Loader(kiv_hal::TRegisters &context) {
 	//char* initProgram = "test_open_file";
 	char* initProgram = "shell";
 	char* initProgramArgs = "";
-	regs.rdx.r = reinterpret_cast<uint64_t>(initProgram);
-	regs.rdi.r = reinterpret_cast<uint64_t>(initProgramArgs);
-	uint16_t stdin_handle = 0;
-	uint16_t stdout_handle = 1;
+	regs.rdx.r = reinterpret_cast<decltype(regs.rdx.r)>(initProgram);
+	regs.rdi.r = reinterpret_cast<decltype(regs.rdi.r)>(initProgramArgs);
+	uint16_t stdin_handle = Register_STDIN();
+	uint16_t stdout_handle = Register_STDOUT();
 	regs.rbx.e = (stdin_handle << 16) | stdout_handle;
 
 	process_manager->createProcess(regs, true);
 	kiv_os::THandle shell_handle = static_cast<kiv_os::THandle>(regs.rax.x);
 	// wait for shell to exit (syscall Wait_For)
-	regs.rax.h = static_cast<uint8_t>(kiv_os::NOS_Service_Major::Process);
-	regs.rax.l = static_cast<uint8_t>(kiv_os::NOS_Process::Wait_For);
-	regs.rdx.r = reinterpret_cast<uint64_t>(&shell_handle);
+	regs.rax.h = static_cast<decltype(regs.rax.h)>(kiv_os::NOS_Service_Major::Process);
+	regs.rax.l = static_cast<decltype(regs.rax.l)>(kiv_os::NOS_Process::Wait_For);
+	regs.rdx.r = reinterpret_cast<decltype(regs.rdx.r)>(&shell_handle);
 	regs.rcx.r = 1;
 	process_manager->handleWaitFor(regs);
 	Shutdown_Kernel();

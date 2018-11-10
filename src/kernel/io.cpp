@@ -7,6 +7,8 @@
 
 #include <filesystem>
 
+//kiv_os::THandle working_dir;
+std::string working_dir;
 
 size_t Read_Line_From_Console(char *buffer, const size_t buffer_size) {
 	kiv_hal::TRegisters registers;
@@ -35,7 +37,6 @@ size_t Read_Line_From_Console(char *buffer, const size_t buffer_size) {
 			case kiv_hal::NControl_Codes::NUL:			//chyba cteni?
 			case kiv_hal::NControl_Codes::CR:  return pos;	//docetli jsme az po Enter
 
-
 			default: buffer[pos] = ch;
 					 pos++;	
 					 registers.rax.h = static_cast<decltype(registers.rax.l)>(kiv_hal::NVGA_BIOS::Write_String);
@@ -47,25 +48,70 @@ size_t Read_Line_From_Console(char *buffer, const size_t buffer_size) {
 	}
 
 	return pos;
-
 }
 
+size_t Write_Line_To_Console(const char* buffer, const size_t buffer_size) {
+	kiv_hal::TRegisters regs;
+	regs.rax.h = static_cast<decltype(regs.rax.h)>(kiv_hal::NVGA_BIOS::Write_String);
+	regs.rdx.r = reinterpret_cast<decltype(regs.rdx.r)>(buffer);
+	regs.rcx.r = buffer_size;
+	kiv_hal::Call_Interrupt_Handler(kiv_hal::NInterrupt::VGA_BIOS, regs);
+	return regs.rcx.r;
+}
 
-bool Open_File(FATFile & fat_file, std::string absolute_path, const kiv_os::NOpen_File open_flags, const kiv_os::NFile_Attributes attributes) {
+kiv_os::THandle Register_STDIN() {
+	return Convert_Native_Handle(reinterpret_cast<HANDLE>(&Read_Line_From_Console));
+}
 
-	const std::filesystem::path path = absolute_path;
+kiv_os::THandle Register_STDOUT() {
+	return Convert_Native_Handle(reinterpret_cast<HANDLE>(&Write_Line_To_Console));
+}
+
+bool Open_File(FATFile & fat_file, std::string absolute_path, const kiv_os::NOpen_File fm, const kiv_os::NFile_Attributes attributes) {
+
+	// TODO 
+	/*
+		tady urcit co chceme otevrit
+
+		fat_file		-> soubor ktery by mel pracovat s otevrenym souborem read & write
+		absolute_path	-> obsahuje cestu k souboru/slozce nebo SYS
+		fm				-> urcuje pokud soubor existuje a bude se jen otevirat (hledat na disku) nebo ho mame vytvorit
+		attributes		-> pokud soubor existuje zajima nas jen read_only, pokud neexistuje vytvor soubor se vsema atributama
+						   kontrola, zda oteviram stejny typ souboru -> attribute urcuji slozku, tak mam otevrit slozku -> pripadne error
+	
+		disky A: a B: rezerovany pro system
+
+	*/
+
 	std::vector<std::string> path_components;
-	for (auto& path : path) {
+	for (auto& path : std::filesystem::path(absolute_path)) {
 		path_components.push_back(path.generic_string());
 	}
-	const auto drive_volume = path_components.at(0);
-	path_components.erase(path_components.begin(), path_components.begin() + 1);
+	const auto drive_volume = path_components.front();
+	path_components.erase(path_components.begin());
 
-	return IO_Manager.get()->open(drive_volume, path_components);
-}
 
-size_t Read_File(kiv_os::THandle file_handle, char* buffer, size_t buffer_size) {
-	return Read_Line_From_Console(buffer, buffer_size);
+	if (fm == kiv_os::NOpen_File::fmOpen_Always) {
+		// existuje -> file / dir / SYS
+
+		// disk A = system (SYS)
+		// disk C + = disky
+
+		if (drive_volume.compare("A:") == 0) {
+			// SYS
+		}
+		else {
+			// file / dir
+		}
+
+	}
+	else {
+		// neexistuje -> vytvorit ve FAT s velikosti sektoru a prirazenim 1 sektorem
+
+		// file / dir
+	}
+
+	return io::open(drive_volume, path_components);
 }
 
 void Handle_IO(kiv_hal::TRegisters &regs) {
@@ -77,42 +123,37 @@ void Handle_IO(kiv_hal::TRegisters &regs) {
 			Open_File(file, reinterpret_cast<char*>(regs.rdx.r), static_cast<kiv_os::NOpen_File>(regs.rcx.l), static_cast<kiv_os::NFile_Attributes>(regs.rdi.i));
 			regs.rax.x = Convert_Native_Handle(reinterpret_cast<HANDLE>(&file));	
 		} break;
-		
-		case kiv_os::NOS_File_System::Close_Handle: {	
-			regs.rax.x = Remove_Handle(regs.rdx.x);
-		} break;
 
 		case kiv_os::NOS_File_System::Read_File: {
-			regs.rax.r = Read_File(regs.rdx.x, reinterpret_cast<char*>(regs.rdi.r), regs.rcx.r);
-		} break;
-
-		case kiv_os::NOS_File_System::Get_Working_Dir: {
-			char* path_buffer = reinterpret_cast<char*>(regs.rdx.r);
-
-			// TODO return real working dir (now it's a fake)
-			path_buffer[0] = 'C';
-			path_buffer[1] = ':';
-			path_buffer[2] = '\\';
-
-			regs.rax.r = 3;
+			auto read = (THandle_Proc)Resolve_kiv_os_Handle(regs.rdx.x);
+			regs.rax.r = read(reinterpret_cast<char*>(regs.rdi.r), regs.rcx.r);
 		} break;
 
 		case kiv_os::NOS_File_System::Write_File: {
-					//Spravne bychom nyni meli pouzit interni struktury kernelu a zadany handle resolvovat na konkretni objekt, ktery pise na konkretni zarizeni/souboru/roury.
-					//Ale protoze je tohle jenom kostra, tak to rovnou biosem posleme na konzoli.
-					kiv_hal::TRegisters registers;
-					registers.rax.h = static_cast<decltype(registers.rax.h)>(kiv_hal::NVGA_BIOS::Write_String);
-					registers.rdx.r = regs.rdi.r;
-					registers.rcx = regs.rcx;
-		
-					//preklad parametru dokoncen, zavolame sluzbu
-					kiv_hal::Call_Interrupt_Handler(kiv_hal::NInterrupt::VGA_BIOS, registers);
+			auto write = (THandle_Proc)Resolve_kiv_os_Handle(regs.rdx.x);
+			regs.rax.r = write(reinterpret_cast<char*>(regs.rdi.r), regs.rcx.r);
+			regs.flags.carry |= (regs.rax.r == 0 ? 1 : 0);	//jestli jsme nezapsali zadny znak, tak jiste doslo k nejake chybe
+		} break;
 
-					regs.flags.carry |= (registers.rax.r == 0 ? 1 : 0);	//jestli jsme nezapsali zadny znak, tak jiste doslo k nejake chybe
-					regs.rax = registers.rcx;	//VGA BIOS nevraci pocet zapsanych znaku, tak predpokladame, ze zapsal vsechny
-				}
-				break; //Write_File
+		case kiv_os::NOS_File_System::Close_Handle: {
+			regs.rax.x = Remove_Handle(regs.rdx.x);
+		} break;
 
+		case kiv_os::NOS_File_System::Get_Working_Dir: {
+			auto path_buffer = reinterpret_cast<char*>(regs.rdx.r);
+			const auto buffer_size = regs.rcx.r;
+			// TODO predelat na THandle
+			size_t size = buffer_size <= working_dir.size() ? buffer_size : working_dir.size();
+			std::copy(&working_dir[0], &working_dir[0] + size, path_buffer);
+			regs.rax.r = size;
+		} break;
+
+		case kiv_os::NOS_File_System::Set_Working_Dir: {
+			const auto path_buffer = reinterpret_cast<char*>(regs.rdx.r);
+			const auto buffer_size = regs.rcx.r;
+			// TODO predelat na THandle
+			working_dir = std::string(path_buffer, buffer_size);
+		} break;
 
 	/* Nasledujici dve vetve jsou ukazka, ze starsiho zadani, ktere ukazuji, jak mate mapovat Windows HANDLE na kiv_os handle a zpet, vcetne jejich alokace a uvolneni
 

@@ -3,6 +3,10 @@
 #include "fat_tools.h"
 #include "fat_file.h"
 
+
+std::map<std::string, io::Drive_Desc> registred_drivers;
+std::map<std::string, kiv_os::THandle> registred_descriptors;
+
 bool find_entire_dir(kiv_fs::FATEntire_Directory& entire_file, const uint8_t drive_id, const std::vector<std::string> components, const std::vector<size_t> init_sectors, const uint16_t bytes_per_sector) {
 	size_t deep = 0;
 	bool founded;
@@ -60,7 +64,7 @@ bool find_entire_dir(kiv_fs::FATEntire_Directory& entire_file, const uint8_t dri
 	return founded;
 }
 
-bool IOManager::open(const std::string drive_volume, const std::vector<std::string> path_components) {
+bool io::open(const std::string drive_volume, const std::vector<std::string> path_components) {
 
 	const auto drive = registred_drivers[drive_volume];
 	const auto sectors = kiv_fs::sectors_for_root_dir(drive.boot_block);
@@ -75,10 +79,8 @@ bool IOManager::open(const std::string drive_volume, const std::vector<std::stri
 	return false;
 }
 
-bool IOManager::register_drive(const std::string volume, const uint8_t id, const kiv_fs::FATBoot_Block& book_block) {
-	if (registred_drivers.find(volume) != registred_drivers.end()) {
-		return false;
-	}
+bool io::register_drive(const std::string volume, const uint8_t id, const kiv_fs::FATBoot_Block& book_block) {
+	if (registred_drivers.find(volume) != registred_drivers.end()) { return false; }
 	registred_drivers[volume] = { id, book_block };
 	return true;
 }

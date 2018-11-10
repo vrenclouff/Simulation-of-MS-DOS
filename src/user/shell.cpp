@@ -30,6 +30,8 @@ size_t __stdcall shell(const kiv_hal::TRegisters &regs) {
 			}
 			buffer[counter] = 0;	//udelame z precteneho vstup null-terminated retezec
 
+			if (strcmp(buffer, exit) == 0) break;
+
 			kiv_os_rtl::Write_File(std_out, linebreak, strlen(linebreak), counter);
 
 			parse(buffer, std_out, counter);
