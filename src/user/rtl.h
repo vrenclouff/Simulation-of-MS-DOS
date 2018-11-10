@@ -20,7 +20,7 @@ namespace kiv_os_rtl {
 
 	bool Get_Working_Dir(const char *buffer, const size_t buffer_size, size_t &read);
 
-	bool Open_File(const char *buffer, const size_t buffer_size, kiv_os::THandle &file_handle);
+	bool Open_File(const char *buffer, const size_t buffer_size, kiv_os::THandle &file_handle, bool createnew);
 
 	bool Delete_File(const char* filename);
 

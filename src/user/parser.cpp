@@ -92,7 +92,7 @@ void parse(char* args, kiv_os::THandle shellout, size_t shellcounter) {
 				}
 
 				kiv_os::THandle filehandle;
-				kiv_os_rtl::Open_File(filename, sizeof(filename), filehandle);
+				kiv_os_rtl::Open_File(filename, sizeof(filename), filehandle, true);
 
 				parsePart(command, stdin_handle, filehandle);
 				kiv_os_rtl::Close_Handle(filehandle);
