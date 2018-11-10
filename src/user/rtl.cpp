@@ -40,7 +40,7 @@ bool kiv_os_rtl::Write_File(const kiv_os::THandle file_handle, const char *buffe
 	return result;
 }
 
-bool kiv_os_rtl::Working_dir(const char *buffer, const size_t buffer_size, size_t &read) {
+bool kiv_os_rtl::Get_Working_Dir(const char *buffer, const size_t buffer_size, size_t &read) {
 	kiv_hal::TRegisters regs = Prepare_SysCall_Context(kiv_os::NOS_Service_Major::File_System, static_cast<uint8_t>(kiv_os::NOS_File_System::Get_Working_Dir));
 	regs.rdx.r = reinterpret_cast<decltype(regs.rdx.r)>(buffer);
 	regs.rcx.r = buffer_size;
@@ -55,7 +55,7 @@ bool kiv_os_rtl::Open_File(const char *buffer, const size_t buffer_size, kiv_os:
 	if (std::filesystem::u8path(buffer).is_relative()) {
 		char absolute_path[10];
 		size_t counter;
-		Working_dir(absolute_path, sizeof(absolute_path), counter);
+		Get_Working_Dir(absolute_path, sizeof(absolute_path), counter);
 		path = std::string(absolute_path, counter);
 	}
 

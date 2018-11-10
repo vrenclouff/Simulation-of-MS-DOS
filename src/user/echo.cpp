@@ -1,6 +1,5 @@
 #include "echo.h"
 #include "rtl.h"
-#include <stdlib.h>
 
 size_t __stdcall echo(const kiv_hal::TRegisters &regs) {
 
