@@ -6,7 +6,7 @@ size_t __stdcall md(const kiv_hal::TRegisters &regs) {
 	char* input = reinterpret_cast<char*>(regs.rdi.r);
 
 	kiv_os::THandle filehandle;
-	kiv_os_rtl::Open_File(input, sizeof(input), filehandle, true, std::iostream::ios_base::out);
+	kiv_os_rtl::Open_File(input, sizeof(input), filehandle, false, std::iostream::ios_base::out);
 
 	size_t counter;
 	const kiv_os::THandle std_out = static_cast<kiv_os::THandle>(regs.rbx.x);
