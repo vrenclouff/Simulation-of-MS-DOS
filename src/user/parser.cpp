@@ -36,11 +36,19 @@ bool parsePart(char* args, kiv_os::THandle stdin_handle, kiv_os::THandle stdout_
 	return 0;
 }
 
-void parse(char* args) {
+void wrongRedirection(kiv_os::THandle shellout, size_t shellcounter, kiv_os::THandle stdin_handle, kiv_os::THandle stdout_handle) {
+	kiv_os_rtl::Close_Handle(stdin_handle);
+	kiv_os_rtl::Close_Handle(stdout_handle);
+	const char* error = "Redirections are not allowed at these places.\n";
+	kiv_os_rtl::Write_File(shellout, error, strlen(error), shellcounter);
+}
+
+void parse(char* args, kiv_os::THandle shellout, size_t shellcounter) {
 
 	std::vector<char*> parts;
 
 	const char* pipesymbol = "|";
+	const char* redirectionsymbol = ">";
 	char* rest;
 	char* part = strtok_s(args, pipesymbol, &rest);
 
@@ -64,9 +72,37 @@ void parse(char* args) {
 		if (hasnext) {
 			handles = kiv_os_rtl::Create_Pipe();
 			stdout_handle = *handles;
-		}
 
-		parsePart(*it, stdin_handle, stdout_handle);
+			if (strstr(*it, redirectionsymbol) != NULL) {
+				wrongRedirection(shellout, shellcounter, stdin_handle, stdout_handle);
+				return;
+			}
+
+			parsePart(*it, stdin_handle, stdout_handle);
+		}
+		else {
+
+			if (strstr(*it, redirectionsymbol) != NULL) {
+				char* command = strtok_s(*it, redirectionsymbol, &rest);
+				char* filename = strtok_s(NULL, redirectionsymbol, &rest);
+
+				if (strtok_s(NULL, redirectionsymbol, &rest) != NULL) {
+					wrongRedirection(shellout, shellcounter, stdin_handle, stdout_handle);
+					return;
+				}
+
+				kiv_os::THandle filehandle;
+				kiv_os_rtl::Open_File(filename, sizeof(filename), filehandle);
+
+				parsePart(command, stdin_handle, filehandle);
+				kiv_os_rtl::Close_Handle(filehandle);
+			}
+			else {
+				parsePart(*it, stdin_handle, stdout_handle);
+			}
+			
+
+		}
 
 		kiv_os_rtl::Close_Handle(stdin_handle);
 		kiv_os_rtl::Close_Handle(stdout_handle);
