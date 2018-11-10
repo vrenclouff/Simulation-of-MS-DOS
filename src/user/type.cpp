@@ -5,20 +5,27 @@
 
 size_t __stdcall type(const kiv_hal::TRegisters &regs) {
 	   
-	//std::string input = std::string(reinterpret_cast<char*>(regs.rdi.r));
-	//std::string input = "lorem2.txt";
-	std::string input = "A:/procls";
+	char* input = reinterpret_cast<char*>(regs.rdi.r);
 
-	kiv_os::THandle file_handle;
-	kiv_os_rtl::Open_File(input.c_str(), input.size(), file_handle, true, std::iostream::ios_base::in);
-	
+	kiv_os::THandle filehandle;
+	kiv_os_rtl::Open_File(input, sizeof(input), filehandle, true, std::iostream::ios_base::in);
 
-	const kiv_os::THandle console_out = static_cast<kiv_os::THandle>(regs.rbx.x);
 	size_t counter;
-	kiv_os_rtl::Write_File(console_out, input.c_str(), input.size(), counter);
+	const kiv_os::THandle std_out = static_cast<kiv_os::THandle>(regs.rbx.x);
 	const char* linebreak = "\n";
-	kiv_os_rtl::Write_File(console_out, linebreak, strlen(linebreak), counter);
-	
+
+	char* message = "";
+	if (regs.flags.carry == 1 || filehandle == NULL)
+	{
+		kiv_os_rtl::Write_File(std_out, input, strlen(input), counter);
+	}
+	else {
+		char content[256];
+		size_t read;
+		kiv_os_rtl::Read_File(filehandle, content, sizeof(content), read);
+		kiv_os_rtl::Write_File(std_out, content, strlen(content), counter);
+	}
+	kiv_os_rtl::Write_File(std_out, linebreak, strlen(linebreak), counter);
 
 	kiv_os_rtl::Exit(0);
 	return 0;

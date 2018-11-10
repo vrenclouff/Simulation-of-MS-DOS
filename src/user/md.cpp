@@ -11,7 +11,7 @@ size_t __stdcall md(const kiv_hal::TRegisters &regs) {
 	size_t counter;
 	const kiv_os::THandle std_out = static_cast<kiv_os::THandle>(regs.rbx.x);
 	char* message = "";
-	if (regs.flags.carry == 1)
+	if (regs.flags.carry == 1 || filehandle == NULL)
 	{
 		message = "Something went wrong.\n";
 	}
