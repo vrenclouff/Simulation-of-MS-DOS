@@ -34,7 +34,7 @@ size_t __stdcall shell(const kiv_hal::TRegisters &regs) {
 
 			kiv_os_rtl::Write_File(std_out, linebreak, strlen(linebreak), counter);
 
-			parse(buffer, std_out, counter);
+			parse(buffer, std_in, std_out, counter);
 		}
 		else {
 			break;	//EOF

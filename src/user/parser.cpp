@@ -43,7 +43,7 @@ void wrongRedirection(kiv_os::THandle shellout, size_t shellcounter, kiv_os::THa
 	kiv_os_rtl::Write_File(shellout, error, strlen(error), shellcounter);
 }
 
-void parse(char* args, kiv_os::THandle shellout, size_t shellcounter) {
+void parse(char* args, kiv_os::THandle shellin, kiv_os::THandle shellout, size_t shellcounter) {
 
 	std::vector<char*> parts;
 
@@ -57,14 +57,14 @@ void parse(char* args, kiv_os::THandle shellout, size_t shellcounter) {
 		part = strtok_s(NULL, pipesymbol, &rest);
 	}
 
-	kiv_os::THandle stdin_handle = 0;
+	kiv_os::THandle stdin_handle = shellin;
 
 	kiv_os::THandle* handles = NULL;
 
 	std::vector<char*>::iterator it;
 	for (it = parts.begin(); it != parts.end(); it++) {
 
-		kiv_os::THandle stdout_handle = 1;
+		kiv_os::THandle stdout_handle = shellout;
 
 		// bool hasnext = (it != (parts.end() - 1));
 		bool hasnext = false;
@@ -104,8 +104,8 @@ void parse(char* args, kiv_os::THandle shellout, size_t shellcounter) {
 
 		}
 
-		kiv_os_rtl::Close_Handle(stdin_handle);
-		kiv_os_rtl::Close_Handle(stdout_handle);
+		//kiv_os_rtl::Close_Handle(stdin_handle);
+		//kiv_os_rtl::Close_Handle(stdout_handle);
 
 		if (hasnext) {
 			stdin_handle = *(handles + 1);
