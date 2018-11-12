@@ -6,11 +6,15 @@
 
 #include <memory>
 
-kiv_os::THandle Register_STDIN();
-kiv_os::THandle Register_STDOUT();
+struct STDHandle {
+	kiv_os::THandle in;
+	kiv_os::THandle out;
+};
+
+STDHandle Register_STD();
 
 using THandle_Proc = size_t(*)(char* buffer, size_t buffer_size);
 
-bool Open_File(FATFile & fat_file, std::string absolute_path, const kiv_os::NOpen_File fm, const kiv_os::NFile_Attributes attributes);
+kiv_os::THandle Open_File(std::string absolute_path, const kiv_os::NOpen_File fm, const kiv_os::NFile_Attributes attributes);
 
 void Handle_IO(kiv_hal::TRegisters &regs);

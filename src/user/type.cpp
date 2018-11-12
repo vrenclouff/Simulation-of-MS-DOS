@@ -5,10 +5,10 @@
 
 size_t __stdcall type(const kiv_hal::TRegisters &regs) {
 	   
-	char* input = reinterpret_cast<char*>(regs.rdi.r);
+	const auto input = std::string(reinterpret_cast<char*>(regs.rdi.r));
 
 	kiv_os::THandle filehandle;
-	kiv_os_rtl::Open_File(input, sizeof(input), filehandle, true, std::iostream::ios_base::in);
+	kiv_os_rtl::Open_File(input.c_str(), input.size(), filehandle, true, std::iostream::ios_base::in);
 
 	size_t counter;
 	const kiv_os::THandle std_out = static_cast<kiv_os::THandle>(regs.rbx.x);
@@ -17,7 +17,7 @@ size_t __stdcall type(const kiv_hal::TRegisters &regs) {
 	char* message = "";
 	if (regs.flags.carry == 1 || filehandle == NULL)
 	{
-		kiv_os_rtl::Write_File(std_out, input, strlen(input), counter);
+		kiv_os_rtl::Write_File(std_out, input.c_str(), input.size(), counter);
 	}
 	else {
 		char content[256];

@@ -4,70 +4,22 @@
 
 #include "fat_file.h"
 #include "fat_tools.h"
+#include "iohandle.h"
 
 #include <filesystem>
+#include <functional>
 
 //kiv_os::THandle working_dir;
 std::string working_dir;
 
-size_t Read_Line_From_Console(char *buffer, const size_t buffer_size) {
-	kiv_hal::TRegisters registers;
-	
-	size_t pos = 0;
-	while (pos < buffer_size) {
-		//read char
-		registers.rax.h = static_cast<decltype(registers.rax.l)>(kiv_hal::NKeyboard::Read_Char);
-		kiv_hal::Call_Interrupt_Handler(kiv_hal::NInterrupt::Keyboard, registers);
-		
-		char ch = registers.rax.l;
-
-		//osetrime zname kody
-		switch (static_cast<kiv_hal::NControl_Codes>(ch)) {
-			case kiv_hal::NControl_Codes::BS: {
-					//mazeme znak z bufferu
-					if (pos > 0) pos--;
-
-					registers.rax.h = static_cast<decltype(registers.rax.l)>(kiv_hal::NVGA_BIOS::Write_Control_Char);
-					registers.rdx.l = ch;
-					kiv_hal::Call_Interrupt_Handler(kiv_hal::NInterrupt::VGA_BIOS, registers);
-				}
-				break;
-
-			case kiv_hal::NControl_Codes::LF:  break;	//jenom pohltime, ale necteme
-			case kiv_hal::NControl_Codes::NUL:			//chyba cteni?
-			case kiv_hal::NControl_Codes::CR:  return pos;	//docetli jsme az po Enter
-
-			default: buffer[pos] = ch;
-					 pos++;	
-					 registers.rax.h = static_cast<decltype(registers.rax.l)>(kiv_hal::NVGA_BIOS::Write_String);
-					 registers.rdx.r = reinterpret_cast<decltype(registers.rdx.r)>(&ch);
-					 registers.rcx.r = 1;
-					 kiv_hal::Call_Interrupt_Handler(kiv_hal::NInterrupt::VGA_BIOS, registers);
-					 break;
-		}
-	}
-
-	return pos;
+STDHandle Register_STD() {
+	IOHandle* console = IOHandle::console();
+	const auto  in = Convert_Native_Handle(static_cast<HANDLE>(console));
+	const auto out = Convert_Native_Handle(static_cast<HANDLE>(console));
+	return { in, out };
 }
 
-size_t Write_Line_To_Console(const char* buffer, const size_t buffer_size) {
-	kiv_hal::TRegisters regs;
-	regs.rax.h = static_cast<decltype(regs.rax.h)>(kiv_hal::NVGA_BIOS::Write_String);
-	regs.rdx.r = reinterpret_cast<decltype(regs.rdx.r)>(buffer);
-	regs.rcx.r = buffer_size;
-	kiv_hal::Call_Interrupt_Handler(kiv_hal::NInterrupt::VGA_BIOS, regs);
-	return regs.rcx.r;
-}
-
-kiv_os::THandle Register_STDIN() {
-	return Convert_Native_Handle(reinterpret_cast<HANDLE>(&Read_Line_From_Console));
-}
-
-kiv_os::THandle Register_STDOUT() {
-	return Convert_Native_Handle(reinterpret_cast<HANDLE>(&Write_Line_To_Console));
-}
-
-bool Open_File(FATFile & fat_file, std::string absolute_path, const kiv_os::NOpen_File fm, const kiv_os::NFile_Attributes attributes) {
+kiv_os::THandle Open_File(std::string absolute_path, const kiv_os::NOpen_File fm, const kiv_os::NFile_Attributes attributes) {
 
 	// TODO 
 	/*
@@ -83,35 +35,39 @@ bool Open_File(FATFile & fat_file, std::string absolute_path, const kiv_os::NOpe
 
 	*/
 
-	std::vector<std::string> path_components;
-	for (auto& path : std::filesystem::path(absolute_path)) {
-		path_components.push_back(path.generic_string());
+	std::vector<std::string> components;
+	for (const auto& path : std::filesystem::path(absolute_path)) {
+		components.push_back(path.generic_string());
 	}
-	const auto drive_volume = path_components.front();
-	path_components.erase(path_components.begin());
+	const auto drive_volume = components.front();
+	components.erase(components.begin());
 
 
 	if (fm == kiv_os::NOpen_File::fmOpen_Always) {
-		// existuje -> file / dir / SYS
-
-		// disk A = system (SYS)
-		// disk C + = disky
-
 		if (drive_volume.compare("A:") == 0) {
-			// SYS
+			std::string sys;
+			for (const auto& cmp : components) {
+				sys += cmp;
+			}
+			return Convert_Native_Handle(static_cast<HANDLE>(SYS_HANDLERS.at(sys)));
 		}
 		else {
-			// file / dir
-		}
+			// existuje file / dir -> najit
 
+
+		}
 	}
 	else {
 		// neexistuje -> vytvorit ve FAT s velikosti sektoru a prirazenim 1 sektorem
 
+		// najit entire_dir pro novy soubor
+
+
 		// file / dir
 	}
 
-	return io::open(drive_volume, path_components);
+	//return io::open(drive_volume, path_components);
+	return Convert_Native_Handle(NULL);
 }
 
 void Handle_IO(kiv_hal::TRegisters &regs) {
@@ -119,19 +75,17 @@ void Handle_IO(kiv_hal::TRegisters &regs) {
 	switch (static_cast<kiv_os::NOS_File_System>(regs.rax.l)) {
 
 		case kiv_os::NOS_File_System::Open_File: {
-			auto file = FATFile();
-			Open_File(file, reinterpret_cast<char*>(regs.rdx.r), static_cast<kiv_os::NOpen_File>(regs.rcx.l), static_cast<kiv_os::NFile_Attributes>(regs.rdi.i));
-			regs.rax.x = Convert_Native_Handle(reinterpret_cast<HANDLE>(&file));	
+			regs.rax.x = Open_File(reinterpret_cast<char*>(regs.rdx.r), static_cast<kiv_os::NOpen_File>(regs.rcx.l), static_cast<kiv_os::NFile_Attributes>(regs.rdi.i));
 		} break;
 
 		case kiv_os::NOS_File_System::Read_File: {
-			auto read = (THandle_Proc)Resolve_kiv_os_Handle(regs.rdx.x);
-			regs.rax.r = read(reinterpret_cast<char*>(regs.rdi.r), regs.rcx.r);
+			IOHandle* source = static_cast<IOHandle*>(Resolve_kiv_os_Handle(regs.rdx.x));
+			regs.rax.r = source->read(reinterpret_cast<char*>(regs.rdi.r), regs.rcx.r);
 		} break;
 
 		case kiv_os::NOS_File_System::Write_File: {
-			auto write = (THandle_Proc)Resolve_kiv_os_Handle(regs.rdx.x);
-			regs.rax.r = write(reinterpret_cast<char*>(regs.rdi.r), regs.rcx.r);
+			IOHandle* source = static_cast<IOHandle*>(Resolve_kiv_os_Handle(regs.rdx.x));
+			regs.rax.r = source->write(reinterpret_cast<char*>(regs.rdi.r), regs.rcx.r);
 			regs.flags.carry |= (regs.rax.r == 0 ? 1 : 0);	//jestli jsme nezapsali zadny znak, tak jiste doslo k nejake chybe
 		} break;
 
@@ -143,7 +97,7 @@ void Handle_IO(kiv_hal::TRegisters &regs) {
 			auto path_buffer = reinterpret_cast<char*>(regs.rdx.r);
 			const auto buffer_size = regs.rcx.r;
 			// TODO predelat na THandle
-			size_t size = buffer_size <= working_dir.size() ? buffer_size : working_dir.size();
+			const size_t size = buffer_size <= working_dir.size() ? buffer_size : working_dir.size();
 			std::copy(&working_dir[0], &working_dir[0] + size, path_buffer);
 			regs.rax.r = size;
 		} break;

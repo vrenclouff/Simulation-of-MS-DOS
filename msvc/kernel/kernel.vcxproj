@@ -25,6 +25,7 @@
     <ClCompile Include="..\..\src\kernel\fat_tools.cpp" />
     <ClCompile Include="..\..\src\kernel\handles.cpp" />
     <ClCompile Include="..\..\src\kernel\io.cpp" />
+    <ClCompile Include="..\..\src\kernel\iohandle.cpp" />
     <ClCompile Include="..\..\src\kernel\io_manager.cpp" />
     <ClCompile Include="..\..\src\kernel\kernel.cpp" />
     <ClCompile Include="..\..\src\kernel\process.cpp" />
@@ -39,6 +40,7 @@
     <ClInclude Include="..\..\src\kernel\fat_tools.h" />
     <ClInclude Include="..\..\src\kernel\handles.h" />
     <ClInclude Include="..\..\src\kernel\io.h" />
+    <ClInclude Include="..\..\src\kernel\iohandle.h" />
     <ClInclude Include="..\..\src\kernel\io_manager.h" />
     <ClInclude Include="..\..\src\kernel\kernel.h" />
     <ClInclude Include="..\..\src\kernel\process.h" />
