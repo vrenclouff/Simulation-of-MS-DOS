@@ -11,7 +11,7 @@ std::atomic<kiv_os::NOS_Error> kiv_os_rtl::Last_Error;
 
 kiv_hal::TRegisters Prepare_SysCall_Context(kiv_os::NOS_Service_Major major, uint8_t minor) {
 	kiv_hal::TRegisters regs;
-	regs.rax.h = static_cast<decltype(regs.rax.h )>(major);
+	regs.rax.h = static_cast<decltype(regs.rax.h)>(major);
 	regs.rax.l = minor;
 	return regs;
 }
@@ -107,8 +107,8 @@ kiv_os::THandle kiv_os_rtl::Clone(char* function, char* arguments, kiv_os::THand
 	regs.rcx.r = static_cast<uint64_t>(kiv_os::NClone::Create_Process);
 
 	const bool result = kiv_os::Sys_Call(regs);
-	kiv_os::THandle handler = static_cast<kiv_os::THandle>(regs.rax.r);
-	return handler;
+	kiv_os::THandle newhandle = static_cast<kiv_os::THandle>(regs.rax.r);
+	return (regs.flags.carry == 1 ? NULL : newhandle);
 }
 
 bool kiv_os_rtl::Wait_For(kiv_os::THandle handlers[]) {
@@ -128,12 +128,12 @@ bool kiv_os_rtl::Exit(bool exitcode) {
 	return result;
 }
 
-bool kiv_os_rtl::Read_Exit_Code(kiv_os::THandle handle) {
+std::uint8_t kiv_os_rtl::Read_Exit_Code(kiv_os::THandle handle) {
 	kiv_hal::TRegisters regs = Prepare_SysCall_Context(kiv_os::NOS_Service_Major::Process, static_cast<uint8_t>(kiv_os::NOS_Process::Read_Exit_Code));
 	regs.rdx.r = static_cast<decltype(regs.rdx.r)>(handle);
 
 	const bool result = kiv_os::Sys_Call(regs);
-	return result;
+	return regs.flags.carry;
 }
 
 bool kiv_os_rtl::Shutdown() {

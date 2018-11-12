@@ -31,6 +31,15 @@ bool parsePart(char* args, kiv_os::THandle stdin_handle, kiv_os::THandle stdout_
 
 	kiv_os::THandle handlers[1];
 	handlers[0] = kiv_os_rtl::Clone(function, arguments, stdin_handle, stdout_handle);
+
+	if (handlers[0] == NULL)
+	{
+		size_t counter;
+		const char* error = "Invalid command.\n";
+		kiv_os_rtl::Write_File(stdout_handle, error, strlen(error), counter);
+		return 1;
+	}
+
 	kiv_os_rtl::Wait_For(handlers);
 	kiv_os_rtl::Read_Exit_Code(handlers[0]);
 	return 0;

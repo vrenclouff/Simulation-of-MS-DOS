@@ -34,7 +34,8 @@ namespace kiv_os_rtl {
 
 	bool Exit(bool exitcode);
 
-	bool Read_Exit_Code(kiv_os::THandle handle);
+	std::uint8_t Read_Exit_Code(kiv_os::THandle handle);
+
 	bool Shutdown();
 
 	bool Register_Signal_Handler();
