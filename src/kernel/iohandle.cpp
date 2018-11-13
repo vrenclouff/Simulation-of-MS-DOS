@@ -27,11 +27,12 @@ size_t iohandle::console::read(char * buffer, const size_t buffer_size) {
 		switch (static_cast<kiv_hal::NControl_Codes>(ch)) {
 		case kiv_hal::NControl_Codes::BS: {
 			//mazeme znak z bufferu
-			if (pos > 0) pos--;
-
-			registers.rax.h = static_cast<decltype(registers.rax.l)>(kiv_hal::NVGA_BIOS::Write_Control_Char);
-			registers.rdx.l = ch;
-			kiv_hal::Call_Interrupt_Handler(kiv_hal::NInterrupt::VGA_BIOS, registers);
+			if (pos > 0) {
+				pos--;
+				registers.rax.h = static_cast<decltype(registers.rax.l)>(kiv_hal::NVGA_BIOS::Write_Control_Char);
+				registers.rdx.l = ch;
+				kiv_hal::Call_Interrupt_Handler(kiv_hal::NInterrupt::VGA_BIOS, registers);
+			}
 		} break;
 
 		case kiv_hal::NControl_Codes::LF:  break;	//jenom pohltime, ale necteme
@@ -67,7 +68,8 @@ size_t iohandle::file::write(char * buffer, size_t buffer_size) {
 
 size_t iohandle::file::read(const kiv_fs::Drive_Desc& drive, const kiv_fs::FATEntire_Directory& entire_dir, char* buffer, const size_t buffer_size) {
 
-	std::vector<size_t> sectors;	if (entire_dir.first_cluster != kiv_fs::root_directory_addr(drive.boot_block)) {
+	std::vector<size_t> sectors;	
+	if (entire_dir.first_cluster != kiv_fs::root_directory_addr(drive.boot_block)) {
 		sectors = kiv_fs::sectors_for_entire_dir(entire_dir, drive.boot_block.bytes_per_sector, kiv_fs::offset(drive.boot_block));
 	}
 	else {
