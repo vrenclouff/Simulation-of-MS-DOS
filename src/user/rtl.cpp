@@ -50,7 +50,7 @@ bool kiv_os_rtl::Get_Working_Dir(const char *buffer, const size_t buffer_size, s
 }
 
 bool kiv_os_rtl::Open_File(const char *buffer, const size_t buffer_size, kiv_os::THandle &file_handle, const bool exist, const std::iostream::ios_base::openmode openmode) {
-
+	// TODO predelat openmode
 	std::string path;
 	if (std::filesystem::u8path(buffer).is_relative()) {
 		char absolute_path[10];

@@ -2,9 +2,8 @@
 #include "kernel.h"
 #include "handles.h"
 
-#include "fat_file.h"
 #include "fat_tools.h"
-#include "iohandle.h"
+#include "io_manager.h"
 
 #include <filesystem>
 #include <functional>
@@ -19,7 +18,7 @@ STDHandle Register_STD() {
 	return { in, out };
 }
 
-kiv_os::THandle Open_File(std::string absolute_path, const kiv_os::NOpen_File fm, const kiv_os::NFile_Attributes attributes) {
+IOHandle* Open_File(std::string absolute_path, const kiv_os::NOpen_File fm, const kiv_os::NFile_Attributes attributes) {
 
 	// TODO 
 	/*
@@ -42,32 +41,28 @@ kiv_os::THandle Open_File(std::string absolute_path, const kiv_os::NOpen_File fm
 	const auto drive_volume = components.front();
 	components.erase(components.begin());
 
-
 	if (fm == kiv_os::NOpen_File::fmOpen_Always) {
 		if (drive_volume.compare("A:") == 0) {
 			std::string sys;
 			for (const auto& cmp : components) {
 				sys += cmp;
 			}
-			return Convert_Native_Handle(static_cast<HANDLE>(SYS_HANDLERS.at(sys)));
+			return SYS_HANDLERS.at(sys);
 		}
 		else {
-			// existuje file / dir -> najit
-
-
+			kiv_fs::Drive_Desc drive;
+			kiv_fs::FATEntire_Directory entire_dir;
+			io::open(drive, entire_dir, drive_volume, components);
+			return IOHandle::file(drive, entire_dir);
 		}
 	}
 	else {
-		// neexistuje -> vytvorit ve FAT s velikosti sektoru a prirazenim 1 sektorem
+		// TODO neexistuje -> file / dir
 
+		// vytvorit ve FAT s velikosti sektoru a prirazenim 1 sektorem
 		// najit entire_dir pro novy soubor
-
-
-		// file / dir
+		return NULL;
 	}
-
-	//return io::open(drive_volume, path_components);
-	return Convert_Native_Handle(NULL);
 }
 
 void Handle_IO(kiv_hal::TRegisters &regs) {
@@ -75,7 +70,8 @@ void Handle_IO(kiv_hal::TRegisters &regs) {
 	switch (static_cast<kiv_os::NOS_File_System>(regs.rax.l)) {
 
 		case kiv_os::NOS_File_System::Open_File: {
-			regs.rax.x = Open_File(reinterpret_cast<char*>(regs.rdx.r), static_cast<kiv_os::NOpen_File>(regs.rcx.l), static_cast<kiv_os::NFile_Attributes>(regs.rdi.i));
+			IOHandle* source = Open_File(reinterpret_cast<char*>(regs.rdx.r), static_cast<kiv_os::NOpen_File>(regs.rcx.l), static_cast<kiv_os::NFile_Attributes>(regs.rdi.i));
+			regs.rax.x = Convert_Native_Handle(static_cast<HANDLE>(source));
 		} break;
 
 		case kiv_os::NOS_File_System::Read_File: {
@@ -108,27 +104,29 @@ void Handle_IO(kiv_hal::TRegisters &regs) {
 			// TODO predelat na THandle
 			working_dir = std::string(path_buffer, buffer_size);
 		} break;
-
-	/* Nasledujici dve vetve jsou ukazka, ze starsiho zadani, ktere ukazuji, jak mate mapovat Windows HANDLE na kiv_os handle a zpet, vcetne jejich alokace a uvolneni
-
-		case kiv_os::scCreate_File: {
-			HANDLE result = CreateFileA((char*)regs.rdx.r, GENERIC_READ | GENERIC_WRITE, (DWORD)regs.rcx.r, 0, OPEN_EXISTING, 0, 0);
-			//zde je treba podle Rxc doresit shared_read, shared_write, OPEN_EXISING, etc. podle potreby
-			regs.flags.carry = result == INVALID_HANDLE_VALUE;
-			if (!regs.flags.carry) regs.rax.x = Convert_Native_Handle(result);
-			else regs.rax.r = GetLastError();
-		}
-									break;	//scCreateFile
-
-		case kiv_os::scClose_Handle: {
-				HANDLE hnd = Resolve_kiv_os_Handle(regs.rdx.x);
-				regs.flags.carry = !CloseHandle(hnd);
-				if (!regs.flags.carry) Remove_Handle(regs.rdx.x);				
-					else regs.rax.r = GetLastError();
-			}
-
-			break;	//CloseFile
-
-	*/
 	}
 }
+
+
+
+/* Nasledujici dve vetve jsou ukazka, ze starsiho zadani, ktere ukazuji, jak mate mapovat Windows HANDLE na kiv_os handle a zpet, vcetne jejich alokace a uvolneni
+
+	case kiv_os::scCreate_File: {
+		HANDLE result = CreateFileA((char*)regs.rdx.r, GENERIC_READ | GENERIC_WRITE, (DWORD)regs.rcx.r, 0, OPEN_EXISTING, 0, 0);
+		//zde je treba podle Rxc doresit shared_read, shared_write, OPEN_EXISING, etc. podle potreby
+		regs.flags.carry = result == INVALID_HANDLE_VALUE;
+		if (!regs.flags.carry) regs.rax.x = Convert_Native_Handle(result);
+		else regs.rax.r = GetLastError();
+	}
+								break;	//scCreateFile
+
+	case kiv_os::scClose_Handle: {
+			HANDLE hnd = Resolve_kiv_os_Handle(regs.rdx.x);
+			regs.flags.carry = !CloseHandle(hnd);
+			if (!regs.flags.carry) Remove_Handle(regs.rdx.x);
+				else regs.rax.r = GetLastError();
+		}
+
+		break;	//CloseFile
+
+*/

@@ -1,6 +1,7 @@
 #include "iohandle.h"
 
 #include "../api/hal.h"
+#include "fat_tools.h"
 
 size_t iohandle::console::write(char * buffer, size_t buffer_size) {
 	kiv_hal::TRegisters regs;
@@ -11,7 +12,7 @@ size_t iohandle::console::write(char * buffer, size_t buffer_size) {
 	return regs.rcx.r;
 }
 
-size_t  iohandle::console::read(char * buffer, size_t buffer_size) {
+size_t iohandle::console::read(char * buffer, const size_t buffer_size) {
 	kiv_hal::TRegisters registers;
 
 	size_t pos = 0;
@@ -31,8 +32,7 @@ size_t  iohandle::console::read(char * buffer, size_t buffer_size) {
 			registers.rax.h = static_cast<decltype(registers.rax.l)>(kiv_hal::NVGA_BIOS::Write_Control_Char);
 			registers.rdx.l = ch;
 			kiv_hal::Call_Interrupt_Handler(kiv_hal::NInterrupt::VGA_BIOS, registers);
-		}
-										  break;
+		} break;
 
 		case kiv_hal::NControl_Codes::LF:  break;	//jenom pohltime, ale necteme
 		case kiv_hal::NControl_Codes::NUL:			//chyba cteni?
@@ -51,18 +51,64 @@ size_t  iohandle::console::read(char * buffer, size_t buffer_size) {
 	return pos;
 }
 
+size_t iohandle::sys::procfs(char * buffer, const size_t buffer_size) {
+
+	const auto head = "PID \t PPID \t STIME \t COMMAND \n";
+
+	const auto size = strlen(head) > buffer_size ? buffer_size : strlen(head);
+	std::copy(head, head + size, buffer);
+
+	return strlen(head);
+}
+
 size_t iohandle::file::write(char * buffer, size_t buffer_size) {
 	return size_t();
 }
 
-size_t iohandle::file::read(char * buffer, size_t buffer_size) {
-	return size_t();
-}
+size_t iohandle::file::read(const kiv_fs::Drive_Desc& drive, const kiv_fs::FATEntire_Directory& entire_dir, char* buffer, const size_t buffer_size) {
 
-size_t iohandle::sys::procfs(char * buffer, size_t buffer_size) {
+	std::vector<size_t> sectors;	if (entire_dir.first_cluster != kiv_fs::root_directory_addr(drive.boot_block)) {
+		sectors = kiv_fs::sectors_for_entire_dir(entire_dir, drive.boot_block.bytes_per_sector, kiv_fs::offset(drive.boot_block));
+	}
+	else {
+		sectors = kiv_fs::sectors_for_root_dir(drive.boot_block);
+	}
 
-	const auto head = "PID \t PPID \t STIME \t COMMAND \n";
-	std::copy(head, head + strlen(head), buffer);
+	std::vector<unsigned char> arr(drive.boot_block.bytes_per_sector);
+	kiv_hal::TDisk_Address_Packet dap;
+	dap.sectors = static_cast<void*>(arr.data());
+	dap.count = 1;
+	dap.lba_index = sectors.front();
 
-	return strlen(head);
+	kiv_hal::TRegisters regs;
+	regs.rdx.l = drive.id;
+	regs.rax.h = static_cast<decltype(regs.rax.h)>(kiv_hal::NDisk_IO::Read_Sectors);
+	regs.rdi.r = reinterpret_cast<decltype(regs.rdi.r)>(&dap);
+
+	kiv_hal::Call_Interrupt_Handler(kiv_hal::NInterrupt::Disk_IO, regs);
+
+	if (fat_tool::is_attr(entire_dir.attributes, kiv_os::NFile_Attributes::Directory)) {
+		std::vector<kiv_fs::FATEntire_Directory> entire_dirs;
+		kiv_fs::entire_directory(entire_dirs, drive.boot_block.bytes_per_sector, arr.data());
+		size_t offset = 0;
+		for (const auto& dir : entire_dirs) {
+			memcpy(buffer + offset, &dir.attributes, sizeof kiv_os::TDir_Entry::file_attributes);
+			offset += sizeof kiv_os::TDir_Entry::file_attributes;
+
+			auto file_name = std::string(dir.file_name, 8);
+			if (!fat_tool::is_attr(dir.attributes, kiv_os::NFile_Attributes::Directory)) {
+				file_name.append(".").append(std::string(dir.extension, 3));
+			}
+			std::transform(file_name.begin(), file_name.end(), file_name.begin(), ::tolower);
+
+			memcpy(buffer + offset, &file_name[0], file_name.size());
+			offset += file_name.size();
+		}
+		return offset;
+	}
+	else {
+		const auto size = arr.size() < buffer_size ? arr.size() : buffer_size;
+		memcpy(buffer, arr.data(), size);
+		return size;
+	}
 }

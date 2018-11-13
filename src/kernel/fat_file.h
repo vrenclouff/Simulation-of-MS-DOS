@@ -15,7 +15,6 @@ private:
 
 	uint16_t offset() const;
 
-
 public:
 	FATFile(
 		kiv_fs::FATEntire_Directory &entire_dir, 

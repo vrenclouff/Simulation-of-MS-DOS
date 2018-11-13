@@ -92,13 +92,13 @@ void kiv_fs::format_disk(const FAT_Version version, void* boot_block, const kiv_
 
 void kiv_fs::boot_block(FATBoot_Block& boot_block, const uint16_t bytes_per_sector, const void* sector) {
 	const auto block = static_cast<const char*>(sector);
-	boot_block.description = std::string(&block[0x03], 8);
-	boot_block.number_of_fat = block[0x10];
+	//boot_block.description = std::string(&block[0x03], 8);
 	boot_block.bytes_per_sector = block[0x0c] << 8 | block[0x0b];
+	boot_block.number_of_fat = block[0x10];
 	boot_block.blocks_for_fat = block[0x17] << 8 | block[0x16];
 	boot_block.number_of_root_directory_entries = block[0x12] << 8 | block[0x11];
-	boot_block.reserved_sectors = block[0x0e];
-	boot_block.absolute_number_of_sectors = block[0x14] << 8 | block[0x13];
+	// boot_block.reserved_sectors = block[0x0e];
+	// boot_block.absolute_number_of_sectors = block[0x14] << 8 | block[0x13];
 }
 
 void kiv_fs::entire_directory(std::vector<FATEntire_Directory>& entire_directories, const uint16_t bytes_per_sector, void* sector) {
@@ -114,6 +114,12 @@ bool kiv_fs::is_formatted(const void* sector) {
 	return block[0] == '.' && block[1] == '<' && block[2] == '.';
 }
 
+uint16_t kiv_fs::offset(const FATBoot_Block & boot_block) {
+	const auto root_dir_addr = kiv_fs::root_directory_addr(boot_block);
+	const auto number_of_blocks = kiv_fs::root_directory_size(boot_block);
+	return root_dir_addr + number_of_blocks - 0x2;
+}
+
 std::vector<size_t> kiv_fs::sectors_for_root_dir(const FATBoot_Block& boot_block) {
 
 	const auto address = root_directory_addr(boot_block);
@@ -121,6 +127,47 @@ std::vector<size_t> kiv_fs::sectors_for_root_dir(const FATBoot_Block& boot_block
 
 	std::vector<size_t> sectors(size);
 	std::iota(sectors.begin(), sectors.end(), address);
+
+	return sectors;
+}
+
+std::vector<size_t> kiv_fs::sectors_for_entire_dir(const kiv_fs::FATEntire_Directory & entire_dir, const uint16_t bytes_per_sector, const uint16_t offset) {
+	std::vector<unsigned char> fat(bytes_per_sector);
+	std::div_t fat_offset, next_fat_offset;
+	uint16_t fake_sector, next_fake_sector;
+
+	fake_sector = entire_dir.first_cluster;
+	next_fake_sector = { 0 }; next_fat_offset = { 0 };
+
+	auto sectors = std::vector<size_t>();
+
+	do {
+		sectors.push_back(fake_sector + offset);
+
+		fat_offset = std::div(fake_sector * MULTIPLY_CONST, bytes_per_sector);
+		fat_offset.quot += 1;
+
+		if (fat_offset.quot != next_fat_offset.quot) {
+
+			kiv_hal::TDisk_Address_Packet dap;
+			dap.sectors = static_cast<void*>(fat.data());
+			dap.count = 1;
+			dap.lba_index = fat_offset.quot;
+
+			kiv_hal::TRegisters regs;
+			regs.rdx.l = 129;
+			regs.rax.h = static_cast<decltype(regs.rax.h)>(kiv_hal::NDisk_IO::Read_Sectors);
+			regs.rdi.r = reinterpret_cast<decltype(regs.rdi.r)>(&dap);
+
+			kiv_hal::Call_Interrupt_Handler(kiv_hal::NInterrupt::Disk_IO, regs);
+
+			next_fat_offset = fat_offset;
+		}
+
+		next_fake_sector = fat[fat_offset.rem] | fat[fat_offset.rem + 1] << 8;
+		fake_sector = next_fake_sector;
+
+	} while (next_fake_sector != kiv_fs::FAT_Attributes::End);
 
 	return sectors;
 }

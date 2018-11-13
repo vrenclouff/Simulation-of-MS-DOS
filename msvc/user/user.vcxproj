@@ -21,6 +21,7 @@
   <ItemGroup>
     <ClInclude Include="..\..\src\api\api.h" />
     <ClInclude Include="..\..\src\api\hal.h" />
+    <ClInclude Include="..\..\src\user\dir.h" />
     <ClInclude Include="..\..\src\user\echo.h" />
     <ClInclude Include="..\..\src\user\parser.h" />
     <ClInclude Include="..\..\src\user\test.h" />
@@ -38,6 +39,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\api\api.cpp" />
+    <ClCompile Include="..\..\src\user\dir.cpp" />
     <ClCompile Include="..\..\src\user\echo.cpp" />
     <ClCompile Include="..\..\src\user\parser.cpp" />
     <ClCompile Include="..\..\src\user\test.cpp" />

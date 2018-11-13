@@ -1,18 +1,30 @@
 #include "io_manager.h"
 
 #include "fat_tools.h"
-#include "fat_file.h"
 
 
-std::map<std::string, io::Drive_Desc> registred_drivers;
+std::map<std::string, kiv_fs::Drive_Desc> registred_drivers;
 std::map<std::string, kiv_os::THandle> registred_descriptors;
 
-bool find_entire_dir(kiv_fs::FATEntire_Directory& entire_file, const uint8_t drive_id, const std::vector<std::string> components, const std::vector<size_t> init_sectors, const uint16_t bytes_per_sector) {
-	size_t deep = 0;
+bool find_entire_dir(kiv_fs::FATEntire_Directory& entire_file, std::vector<std::string> components, const kiv_fs::Drive_Desc drive) {
+	
+	const auto el = components.front();
+	components.erase(components.begin());
+
+	if (components.empty()) {
+		entire_file.first_cluster = kiv_fs::root_directory_addr(drive.boot_block);
+		entire_file.attributes = static_cast<decltype(entire_file.attributes)>(kiv_os::NFile_Attributes::Directory);
+		return true;
+	}
+
+	const auto bytes_per_sector = drive.boot_block.bytes_per_sector;
+	const auto fat_offset = kiv_fs::offset(drive.boot_block);
+
 	bool founded;
 	std::vector<unsigned char> arr(bytes_per_sector);
+	auto sectors = kiv_fs::sectors_for_root_dir(drive.boot_block);
 	do {
-		for (auto& sector : init_sectors) {
+		for (auto& sector : sectors) {
 
 			kiv_hal::TDisk_Address_Packet dap;
 			dap.sectors = static_cast<void*>(arr.data());
@@ -20,7 +32,7 @@ bool find_entire_dir(kiv_fs::FATEntire_Directory& entire_file, const uint8_t dri
 			dap.lba_index = sector;
 
 			kiv_hal::TRegisters regs;
-			regs.rdx.l = drive_id;
+			regs.rdx.l = drive.id;
 			regs.rax.h = static_cast<decltype(regs.rax.h)>(kiv_hal::NDisk_IO::Read_Sectors);
 			regs.rdi.r = reinterpret_cast<decltype(regs.rdi.r)>(&dap);
 
@@ -29,7 +41,11 @@ bool find_entire_dir(kiv_fs::FATEntire_Directory& entire_file, const uint8_t dri
 			std::vector<kiv_fs::FATEntire_Directory> entries;
 			kiv_fs::entire_directory(entries, bytes_per_sector, arr.data());
 
-			const auto finded_element = fat_tool::parse_entire_name(components.at(++deep));
+			const auto elm = components.front();
+			components.erase(components.begin());
+			const auto finded_element = fat_tool::parse_entire_name(elm);
+
+			// const auto finded_element = fat_tool::parse_entire_name(components.at(++deep));
 			const auto is_dir = finded_element.extension.empty();
 			founded = false;
 			for (auto& entire : entries) {
@@ -59,24 +75,26 @@ bool find_entire_dir(kiv_fs::FATEntire_Directory& entire_file, const uint8_t dri
 			}
 			if (founded) break;
 		}
-	} while (deep < components.size() - 1);
+
+		if (!components.empty()) {
+			if (founded) {
+				sectors = kiv_fs::sectors_for_entire_dir(entire_file, bytes_per_sector, fat_offset);
+			} 
+			else {
+				// TODO error -> entire_file nenalezen, ale stale je co zpracovavat
+				return false;
+			}
+		}
+
+	} while (!components.empty());
 
 	return founded;
 }
 
-bool io::open(const std::string drive_volume, const std::vector<std::string> path_components) {
 
-	const auto drive = registred_drivers[drive_volume];
-	const auto sectors = kiv_fs::sectors_for_root_dir(drive.boot_block);
-
-	kiv_fs::FATEntire_Directory entire_file;
-	if (find_entire_dir(entire_file, drive.id, path_components, sectors, drive.boot_block.bytes_per_sector)) {
-		// TODO entire file wasn't found
-	}
- 
-	// TODO load all sectors for entire file
-
-	return false;
+bool io::open(kiv_fs::Drive_Desc& drive, kiv_fs::FATEntire_Directory& entire_dir, const std::string drive_volume, const std::vector<std::string> path_components) {
+	drive = registred_drivers[drive_volume];
+	return find_entire_dir(entire_dir, path_components, drive);
 }
 
 bool io::register_drive(const std::string volume, const uint8_t id, const kiv_fs::FATBoot_Block& book_block) {
