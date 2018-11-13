@@ -95,14 +95,18 @@ size_t iohandle::file::read(const kiv_fs::Drive_Desc& drive, const kiv_fs::FATEn
 			memcpy(buffer + offset, &dir.attributes, sizeof kiv_os::TDir_Entry::file_attributes);
 			offset += sizeof kiv_os::TDir_Entry::file_attributes;
 
-			auto file_name = std::string(dir.file_name, 8);
+			auto file_name = fat_tool::rtrim(std::string(dir.file_name, sizeof kiv_fs::FATEntire_Directory::file_name));
 			if (!fat_tool::is_attr(dir.attributes, kiv_os::NFile_Attributes::Directory)) {
-				file_name.append(".").append(std::string(dir.extension, 3));
+				file_name.append(".").append(fat_tool::rtrim(std::string(dir.extension, sizeof kiv_fs::FATEntire_Directory::extension)));
 			}
 			std::transform(file_name.begin(), file_name.end(), file_name.begin(), ::tolower);
-
 			memcpy(buffer + offset, &file_name[0], file_name.size());
 			offset += file_name.size();
+
+			const auto miss = sizeof(kiv_os::TDir_Entry::file_name) - file_name.size();
+			for (size_t i = 0; i < miss; i++, offset++) {
+				memcpy(buffer + offset, "\0", 1);
+			}
 		}
 		return offset;
 	}
