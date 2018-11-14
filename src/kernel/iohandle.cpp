@@ -68,19 +68,20 @@ size_t iohandle::file::write(char * buffer, size_t buffer_size) {
 
 size_t iohandle::file::read(const kiv_fs::Drive_Desc& drive, const kiv_fs::FATEntire_Directory& entire_dir, char* buffer, const size_t buffer_size, size_t& seek) {
 
+	const auto bytes_per_sector = drive.boot_block.bytes_per_sector;
+
 	std::vector<size_t> sectors;	
 	if (entire_dir.first_cluster != kiv_fs::root_directory_addr(drive.boot_block)) {
-		sectors = kiv_fs::sectors_for_entire_dir(entire_dir, drive.boot_block.bytes_per_sector, kiv_fs::offset(drive.boot_block));
+		sectors = kiv_fs::sectors_for_entire_dir(entire_dir, bytes_per_sector, kiv_fs::offset(drive.boot_block));
 	}
 	else {
 		sectors = kiv_fs::sectors_for_root_dir(drive.boot_block);
 	}
 
-	std::vector<unsigned char> arr(drive.boot_block.bytes_per_sector);
+	std::vector<unsigned char> arr(bytes_per_sector);
 	kiv_hal::TDisk_Address_Packet dap;
 	dap.sectors = static_cast<void*>(arr.data());
 	dap.count = 1;
-	dap.lba_index = sectors.front();
 
 	kiv_hal::TRegisters regs;
 	regs.rdx.l = drive.id;
@@ -91,7 +92,7 @@ size_t iohandle::file::read(const kiv_fs::Drive_Desc& drive, const kiv_fs::FATEn
 
 		auto& read_entries = seek;
 
-		const auto entries_per_sector = drive.boot_block.bytes_per_sector / sizeof(kiv_fs::FATEntire_Directory);
+		const auto entries_per_sector = bytes_per_sector / sizeof(kiv_fs::FATEntire_Directory);
 		const auto entries_for_buffer = buffer_size / sizeof(kiv_os::TDir_Entry);
 
 		const auto start_sector = read_entries <= 0 ? 0 : read_entries / entries_per_sector;
@@ -104,7 +105,11 @@ size_t iohandle::file::read(const kiv_fs::Drive_Desc& drive, const kiv_fs::FATEn
 			kiv_hal::Call_Interrupt_Handler(kiv_hal::NInterrupt::Disk_IO, regs);
 			
 			std::vector<kiv_fs::FATEntire_Directory> entire_dirs;
-			kiv_fs::entire_directory(entire_dirs, drive.boot_block.bytes_per_sector, arr.data());
+			kiv_fs::entire_directory(entire_dirs, bytes_per_sector, arr.data());
+
+			if (start_entry >= entire_dirs.size()) {
+				return offset;
+			}
 
 			for (auto dir = entire_dirs.begin() + start_entry; dir != entire_dirs.end(); dir++) {
 				read_entries++;
@@ -137,9 +142,36 @@ size_t iohandle::file::read(const kiv_fs::Drive_Desc& drive, const kiv_fs::FATEn
 		return offset;
 	}
 	else {
-		kiv_hal::Call_Interrupt_Handler(kiv_hal::NInterrupt::Disk_IO, regs);
-		const auto size = arr.size() < buffer_size ? arr.size() : buffer_size;
-		memcpy(buffer, arr.data(), size);
-		return size;
+
+		auto& read_bytes = seek;
+
+		if (read_bytes >= entire_dir.size) {
+			return 0;
+		}
+
+		auto read = std::div(static_cast<int>(read_bytes), static_cast<int>(bytes_per_sector));
+
+		size_t offset = 0;
+		for (auto sector = sectors.begin() + read.quot; sector != sectors.end(); sector++) {
+			dap.lba_index = *sector;
+
+			const auto free_space = buffer_size - offset;
+			if (free_space <= 0) break;
+
+			kiv_hal::Call_Interrupt_Handler(kiv_hal::NInterrupt::Disk_IO, regs);
+
+			const auto miss_to_copy = entire_dir.size - read_bytes;
+
+			const auto miss_in_sector = bytes_per_sector - read.rem;
+			const auto can_to_copy = miss_to_copy > miss_in_sector ? miss_in_sector : miss_to_copy;
+			const auto to_copy = free_space > can_to_copy ? can_to_copy : free_space;
+
+			memcpy(buffer + offset, arr.data() + read.rem, to_copy);
+			offset += to_copy;
+			read_bytes += to_copy;
+			read.rem = 0;
+		}
+
+		return offset;
 	}
 }
