@@ -54,6 +54,11 @@ namespace kiv_fs {
 		kiv_fs::FATBoot_Block boot_block;
 	};
 
+	struct File_Desc {
+		uint16_t seek;
+		kiv_fs::FATEntire_Directory entire_dir;
+	};
+
 	void format_disk(const FAT_Version version, void* boot_block, const kiv_hal::TDrive_Parameters &params);
 	bool is_formatted(const void* sector);
 

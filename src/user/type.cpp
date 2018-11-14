@@ -21,9 +21,9 @@ size_t __stdcall type(const kiv_hal::TRegisters &regs) {
 	}
 	else {
 		char content[1024];
-		size_t read;
-		kiv_os_rtl::Read_File(filehandle, content, sizeof(content), read);
-		content[read] = '\0';
+		kiv_os_rtl::Read_File(filehandle, content, sizeof(content), counter);
+		kiv_os_rtl::Read_File(filehandle, content, sizeof(content), counter);
+		content[counter] = '\0';
 		kiv_os_rtl::Write_File(std_out, content, strlen(content), counter);
 	}
 	kiv_os_rtl::Write_File(std_out, linebreak, strlen(linebreak), counter);

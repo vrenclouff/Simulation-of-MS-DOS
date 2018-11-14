@@ -5,6 +5,8 @@
 
 #include "fat.h"
 
+namespace param = std::placeholders;
+
 enum class SYS_Type : uint8_t {
 	PROCFS = 1,
 };
@@ -16,7 +18,7 @@ namespace iohandle {
 	}
 
 	namespace file {
-		size_t read(const kiv_fs::Drive_Desc& drive, const kiv_fs::FATEntire_Directory& entire_dir, char* buffer, const size_t buffer_size);
+		size_t read(const kiv_fs::Drive_Desc& drive, const kiv_fs::FATEntire_Directory& entire_dir, char* buffer, const size_t buffer_size, size_t& seek);
 		size_t write(char* buffer, size_t buffer_size);
 	}
 
@@ -30,18 +32,21 @@ private:
 	std::function<size_t(char*, size_t)> _write;
 	std::function<size_t(char*, const size_t)> _read;
 
+	size_t seek = 0;
+
 public:
 	static IOHandle* console() { 
 		auto instance = new IOHandle(); 
-		instance->_write = std::bind(&iohandle::console::write, std::placeholders::_1, std::placeholders::_2);
-		instance->_read = std::bind(&iohandle::console::read, std::placeholders::_1, std::placeholders::_2);
+		instance->_write = std::bind(&iohandle::console::write, param::_1, param::_2);
+		instance->_read  = std::bind(&iohandle::console::read,  param::_1, param::_2);
 		return instance;
 	}
 	static IOHandle* file(const kiv_fs::Drive_Desc& drive, const kiv_fs::FATEntire_Directory& entire_dir) {
 		auto instance = new IOHandle();
-		instance->_write = std::bind(iohandle::file::write, std::placeholders::_1, std::placeholders::_2);
+		size_t* seek = &instance->seek;
+		instance->_write = std::bind(iohandle::file::write,param::_1, param::_2);
 		instance->_read = [=](char* buffer, const size_t buffer_size) {
-			return iohandle::file::read(drive, entire_dir, buffer, buffer_size);
+			return iohandle::file::read(drive, entire_dir, buffer, buffer_size, *seek);
 		};
 		return instance;
 	}
