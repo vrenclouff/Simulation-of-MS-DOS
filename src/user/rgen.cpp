@@ -45,7 +45,7 @@ size_t __stdcall rgen(const kiv_hal::TRegisters &regs) {
 	bool generating = true;
 	kiv_os_rtl::Create_Thread(&waitForCtrlz, &generating, std_in, std_out);
 
-	std::mt19937 generator(time(0));
+	std::mt19937 generator((unsigned int) time(0));
 
 	while (generating) {
 

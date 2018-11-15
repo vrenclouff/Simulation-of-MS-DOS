@@ -1,6 +1,6 @@
 #include "md.h"
 #include "rtl.h"
-#include "parser.h";
+#include "parser.h"
 
 size_t __stdcall md(const kiv_hal::TRegisters &regs) {
 
