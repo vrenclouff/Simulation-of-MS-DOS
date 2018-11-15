@@ -89,8 +89,7 @@ void parse(char* args, kiv_os::THandle shellin, kiv_os::THandle shellout, size_t
 
 		kiv_os::THandle stdout_handle = shellout;
 
-		// bool hasnext = (it != (parts.end() - 1));
-		bool hasnext = false;
+		bool hasnext = (it != (parts.end() - 1));
 
 		if (hasnext) {
 			handles = kiv_os_rtl::Create_Pipe();
