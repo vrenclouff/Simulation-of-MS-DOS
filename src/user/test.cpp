@@ -9,30 +9,30 @@
 
 // ----- HELPER FUNCTIONS -----
 template<typename T>
-void assertEqual(T first, T second)
+void assertEqual(T first, T second, uint16_t std_out)
 {
 	if (first == second)
 	{
-		print("PASS\n", 0);
+		print("PASS\n", std_out);
 		return;
 	}
-	print("FAIL\n", 0);
+	print("FAIL\n", std_out);
 }
 
 template<typename T>
-void assertNotEqual(T first, T second)
+void assertNotEqual(T first, T second, uint16_t std_out)
 {
 	if (first != second)
 	{
-		print("PASS\n", 0);
+		print("PASS\n", std_out);
 		return;
 	}
-	print("FAIL\n", 0);
+	print("FAIL\n", std_out);
 }
 
 // ----- SYSCALLS -----
 
-kiv_os::THandle createProcess(char* name, char* args, kiv_os::NOS_Error &error, kiv_hal::TFlags &flags)
+kiv_os::THandle createProcess(char* name, char* args, uint16_t stdin_handle, uint16_t stdout_handle, kiv_os::NOS_Error &error, kiv_hal::TFlags &flags)
 {
 	kiv_hal::TRegisters contx;
 	contx.rax.h = static_cast<uint8_t>(kiv_os::NOS_Service_Major::Process);
@@ -40,8 +40,6 @@ kiv_os::THandle createProcess(char* name, char* args, kiv_os::NOS_Error &error, 
 	contx.rcx.r = static_cast<uint64_t>(kiv_os::NClone::Create_Process);
 	contx.rdx.r = reinterpret_cast<decltype(contx.rdx.r)>(name);
 	contx.rdi.r = reinterpret_cast<decltype(contx.rdi.r)>(args);
-	uint16_t stdin_handle = 0;
-	uint16_t stdout_handle = 1;
 	contx.rbx.e = (stdin_handle << 16) | stdout_handle;
 	kiv_os::Sys_Call(contx);
 	error = static_cast<kiv_os::NOS_Error>(contx.rax.x);
@@ -190,6 +188,7 @@ void stdOut(const kiv_hal::TRegisters &regs)
 void serialProcesses(const kiv_hal::TRegisters &regs)
 {
 	const kiv_os::THandle std_out = static_cast<kiv_os::THandle>(regs.rbx.x);
+	const kiv_os::THandle std_in = static_cast<kiv_os::THandle>(regs.rax.x);
 	print("\n --------TESTING SERIAL CREATEPROCESS AND WAITFOR-------- \n\n", std_out);
 
 	for (int i = 0; i < 10; i++)
@@ -197,7 +196,7 @@ void serialProcesses(const kiv_hal::TRegisters &regs)
 		kiv_os::NOS_Error error;
 		kiv_hal::TFlags flags;
 		// Create process syscall
-		kiv_os::THandle child_handle = createProcess("test_delay", "", error, flags);
+		kiv_os::THandle child_handle = createProcess("test_delay", "", std_in, std_out, error, flags);
 
 		// Call waitfor
 		waitFor(&child_handle, 1, error, flags);
@@ -207,6 +206,7 @@ void serialProcesses(const kiv_hal::TRegisters &regs)
 void paralelProcessesMultiWaitFor(const kiv_hal::TRegisters &regs)
 {
 	const kiv_os::THandle std_out = static_cast<kiv_os::THandle>(regs.rbx.x);
+	const kiv_os::THandle std_in = static_cast<kiv_os::THandle>(regs.rax.x);
 	print("\n --------TESTING PARALEL CREATEPROCESS AND MULTIPLE WAITFOR-------- \n\n", std_out);
 
 	std::vector<kiv_os::THandle> handles;
@@ -215,7 +215,7 @@ void paralelProcessesMultiWaitFor(const kiv_hal::TRegisters &regs)
 		// Create process syscall
 		kiv_os::NOS_Error error;
 		kiv_hal::TFlags flags;
-		handles.push_back(createProcess("test_delay", "", error, flags));
+		handles.push_back(createProcess("test_delay", "", std_in, std_out, error, flags));
 	}
 
 	// Call waitfor
@@ -230,6 +230,7 @@ void paralelProcessesMultiWaitFor(const kiv_hal::TRegisters &regs)
 void paralelProcessesSerialWaitFor(const kiv_hal::TRegisters &regs)
 {
 	const kiv_os::THandle std_out = static_cast<kiv_os::THandle>(regs.rbx.x);
+	const kiv_os::THandle std_in = static_cast<kiv_os::THandle>(regs.rax.x);
 	print("\n --------TESTING PARALEL CREATEPROCESS AND SERIAL WAITFOR-------- \n\n", std_out);
 
 	std::vector<kiv_os::THandle> handles;
@@ -238,7 +239,7 @@ void paralelProcessesSerialWaitFor(const kiv_hal::TRegisters &regs)
 		// Create process syscall
 		kiv_os::NOS_Error error;
 		kiv_hal::TFlags flags;
-		handles.push_back(createProcess("test_delay", "", error, flags));
+		handles.push_back(createProcess("test_delay", "", std_in, std_out, error, flags));
 	}
 
 	for (int i = 0; i < 10; i++)
@@ -257,40 +258,42 @@ void paralelProcessesSerialWaitFor(const kiv_hal::TRegisters &regs)
 void readExitCodeTest(const kiv_hal::TRegisters &regs)
 {
 	const kiv_os::THandle std_out = static_cast<kiv_os::THandle>(regs.rbx.x);
+	const kiv_os::THandle std_in = static_cast<kiv_os::THandle>(regs.rax.x);
 	print("\n --------TESTING READ EXIT CODE-------- \n\n", std_out);
 
 	// EXIT CODE 0
 	kiv_os::NOS_Error error;
 	kiv_hal::TFlags flags;
 	print("Testing exit code 0\n", std_out);
-	kiv_os::THandle handle = createProcess("test_exit0", "", error, flags);
+	kiv_os::THandle handle = createProcess("test_exit0", "", std_in, std_out, error, flags);
 	waitFor(&handle, 1, error, flags);
 	uint16_t exitCode = readExitCode(handle, error, flags);
-	assertEqual<uint16_t>(exitCode, 0);
-	assertEqual<kiv_os::NOS_Error>(error, kiv_os::NOS_Error::Success);
-	assertEqual<std::uint8_t>(flags.carry, 0);
+	assertEqual<uint16_t>(exitCode, 0, std_out);
+	assertEqual<kiv_os::NOS_Error>(error, kiv_os::NOS_Error::Success, std_out);
+	assertEqual<std::uint8_t>(flags.carry, 0, std_out);
 
 	// EXIT CODE 1
 	print("Testing exit code 1\n", std_out);
-	handle = createProcess("test_exit1", "", error, flags);
+	handle = createProcess("test_exit1", "", std_in, std_out, error, flags);
 	waitFor(&handle, 1, error, flags);
 	exitCode = readExitCode(handle, error, flags);
-	assertEqual<uint16_t>(exitCode, 1);
-	assertEqual<kiv_os::NOS_Error>(error, kiv_os::NOS_Error::Success);
-	assertEqual<std::uint8_t>(flags.carry, 0);
+	assertEqual<uint16_t>(exitCode, 1, std_out);
+	assertEqual<kiv_os::NOS_Error>(error, kiv_os::NOS_Error::Success, std_out);
+	assertEqual<std::uint8_t>(flags.carry, 0, std_out);
 
 	// READ EXIT CODE BEFORE END
 	print("Testing exit call before process end\n", std_out);
-	handle = createProcess("test_long_delay", "", error, flags);
+	handle = createProcess("test_long_delay", "", std_in, std_out, error, flags);
 	exitCode = readExitCode(handle, error, flags);
-	assertNotEqual<kiv_os::NOS_Error>(error, kiv_os::NOS_Error::Success);
-	assertNotEqual<std::uint8_t>(flags.carry, 0);
+	assertNotEqual<kiv_os::NOS_Error>(error, kiv_os::NOS_Error::Success, std_out);
+	assertNotEqual<std::uint8_t>(flags.carry, 0, std_out);
 	waitFor(&handle, 1, error, flags);
 }
 
 void waitForTest(const kiv_hal::TRegisters &regs)
 {
 	const kiv_os::THandle std_out = static_cast<kiv_os::THandle>(regs.rbx.x);
+	const kiv_os::THandle std_in = static_cast<kiv_os::THandle>(regs.rax.x);
 	print("\n --------TESTING WAITFOR-------- \n\n", std_out);
 
 	kiv_os::THandle handle;
@@ -299,17 +302,17 @@ void waitForTest(const kiv_hal::TRegisters &regs)
 
 	// Valid handle
 	print("Testing valid handle\n", std_out);
-	handle = createProcess("test_exit1", "", error, flags);
+	handle = createProcess("test_exit1", "", std_in, std_out, error, flags);
 	waitFor(&handle, 1, error, flags);
-	assertEqual<std::uint8_t>(flags.carry, 0);
+	assertEqual<std::uint8_t>(flags.carry, 0, std_out);
 
 	// Invalid handle
 	print("Testing invalid handle\n", std_out);
-	handle = createProcess("test_exit1", "", error, flags);
+	handle = createProcess("test_exit1", "", std_in, std_out, error, flags);
 	kiv_os::THandle invalid = kiv_os::Invalid_Handle;
 	waitFor(&invalid, 1, error, flags);
-	assertNotEqual<std::uint8_t>(flags.carry, 0);
-	assertNotEqual<kiv_os::NOS_Error>(error, kiv_os::NOS_Error::Success);
+	assertNotEqual<std::uint8_t>(flags.carry, 0, std_out);
+	assertNotEqual<kiv_os::NOS_Error>(error, kiv_os::NOS_Error::Success, std_out);
 
 	waitFor(&handle, 1, error, flags);
 }
@@ -317,6 +320,7 @@ void waitForTest(const kiv_hal::TRegisters &regs)
 void createProcessTest(const kiv_hal::TRegisters &regs)
 {
 	const kiv_os::THandle std_out = static_cast<kiv_os::THandle>(regs.rbx.x);
+	const kiv_os::THandle std_in = static_cast<kiv_os::THandle>(regs.rax.x);
 	print("\n --------TESTING CREATEPROCESS-------- \n\n", std_out);
 
 	kiv_os::THandle handle;
@@ -325,13 +329,13 @@ void createProcessTest(const kiv_hal::TRegisters &regs)
 
 	// Valid function name
 	print("Testing valid function name\n", std_out);
-	handle = createProcess("test_exit1", "", error, flags);
-	assertEqual<std::uint8_t>(flags.carry, 0);
+	handle = createProcess("test_exit1", "", std_in, std_out, error, flags);
+	assertEqual<std::uint8_t>(flags.carry, 0, std_out);
 	waitFor(&handle, 1, error, flags);
 
 	// Invalid function name
 	print("Testing invalid function name\n", std_out);
-	handle = createProcess("nonexistentfunction", "", error, flags);
-	assertNotEqual<std::uint8_t>(flags.carry, 0);
-	assertNotEqual<kiv_os::NOS_Error>(error, kiv_os::NOS_Error::Success);
+	handle = createProcess("nonexistentfunction", "", std_in, std_out, error, flags);
+	assertNotEqual<std::uint8_t>(flags.carry, 0, std_out);
+	assertNotEqual<kiv_os::NOS_Error>(error, kiv_os::NOS_Error::Success, std_out);
 }
