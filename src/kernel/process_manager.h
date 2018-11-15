@@ -7,7 +7,7 @@
 class ProcessManager
 {
 private:
-	std::mutex create_process_mtx; // mutex for creating new process
+	std::mutex process_map_mtx; // mutex for creating new process
 	std::map<size_t, Process*> processes;
 	std::map<kiv_os::THandle, size_t> handles; // processes mapped to THandle
 	kiv_os::THandle last_handle = 0;
@@ -22,4 +22,5 @@ public:
 	void handleWaitFor(kiv_hal::TRegisters &regs);
 	void handleExit(kiv_hal::TRegisters &regs);
 	void handleReadExitCode(kiv_hal::TRegisters &regs);
+	std::string getProcessTable();
 };

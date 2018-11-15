@@ -200,6 +200,7 @@ void serialProcesses(const kiv_hal::TRegisters &regs)
 
 		// Call waitfor
 		waitFor(&child_handle, 1, error, flags);
+		readExitCode(child_handle, error, flags);
 	}
 }
 
@@ -222,9 +223,19 @@ void paralelProcessesMultiWaitFor(const kiv_hal::TRegisters &regs)
 	kiv_os::NOS_Error error;
 	kiv_hal::TFlags flags;
 	kiv_os::THandle first_handle = waitFor(&handles[0], 10, error, flags);
+	readExitCode(first_handle, error, flags);
 	std::string msg = "First finished handle is " + std::to_string(first_handle) + "\n";
 	print(msg.c_str(), std_out);
-	Sleep(1000);
+
+	for (int i = 0; i < 10; i++)
+	{
+		if (handles[i] == first_handle)
+		{
+			continue;
+		}
+		waitFor(&handles[i], 1, error, flags);
+		readExitCode(handles[i], error, flags);
+	}
 }
 
 void paralelProcessesSerialWaitFor(const kiv_hal::TRegisters &regs)
@@ -250,6 +261,7 @@ void paralelProcessesSerialWaitFor(const kiv_hal::TRegisters &regs)
 		std::string msg = "Waiting for handle " + std::to_string(handles[i]) + "\n";
 		print(msg.c_str(), std_out);
 		kiv_os::THandle handle_completed = waitFor(&handles[i], 1, error, flags);
+		readExitCode(handle_completed, error, flags);
 		std::string msg2 = "Handle " + std::to_string(handle_completed) + "ended\n";
 		print(msg2.c_str(), std_out);
 	}
@@ -288,6 +300,7 @@ void readExitCodeTest(const kiv_hal::TRegisters &regs)
 	assertNotEqual<kiv_os::NOS_Error>(error, kiv_os::NOS_Error::Success, std_out);
 	assertNotEqual<std::uint8_t>(flags.carry, 0, std_out);
 	waitFor(&handle, 1, error, flags);
+	readExitCode(handle, error, flags);
 }
 
 void waitForTest(const kiv_hal::TRegisters &regs)
@@ -305,6 +318,7 @@ void waitForTest(const kiv_hal::TRegisters &regs)
 	handle = createProcess("test_exit1", "", std_in, std_out, error, flags);
 	waitFor(&handle, 1, error, flags);
 	assertEqual<std::uint8_t>(flags.carry, 0, std_out);
+	readExitCode(handle, error, flags);
 
 	// Invalid handle
 	print("Testing invalid handle\n", std_out);
@@ -315,6 +329,7 @@ void waitForTest(const kiv_hal::TRegisters &regs)
 	assertNotEqual<kiv_os::NOS_Error>(error, kiv_os::NOS_Error::Success, std_out);
 
 	waitFor(&handle, 1, error, flags);
+	readExitCode(handle, error, flags);
 }
 
 void createProcessTest(const kiv_hal::TRegisters &regs)
@@ -332,6 +347,7 @@ void createProcessTest(const kiv_hal::TRegisters &regs)
 	handle = createProcess("test_exit1", "", std_in, std_out, error, flags);
 	assertEqual<std::uint8_t>(flags.carry, 0, std_out);
 	waitFor(&handle, 1, error, flags);
+	readExitCode(handle, error, flags);
 
 	// Invalid function name
 	print("Testing invalid function name\n", std_out);

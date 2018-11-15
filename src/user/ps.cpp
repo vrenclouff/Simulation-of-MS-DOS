@@ -15,7 +15,7 @@ size_t __stdcall ps(const kiv_hal::TRegisters &regs) {
 
 	kiv_os::NOS_Error error = kiv_os_rtl::Last_Error;
 	if (error != kiv_os::NOS_Error::Success || filehandle) {
-		char content[256];
+		char content[1024];
 		kiv_os_rtl::Read_File(filehandle, content, sizeof(content), counter);
 		kiv_os_rtl::Write_File(std_out, content, counter, counter);
 		kiv_os_rtl::Write_File(std_out, "\n", 1, counter);

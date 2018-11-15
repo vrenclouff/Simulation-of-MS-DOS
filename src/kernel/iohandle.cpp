@@ -2,6 +2,7 @@
 
 #include "../api/hal.h"
 #include "fat_tools.h"
+#include "common.h"
 
 size_t iohandle::console::write(char * buffer, size_t buffer_size) {
 	kiv_hal::TRegisters regs;
@@ -54,12 +55,12 @@ size_t iohandle::console::read(char * buffer, const size_t buffer_size) {
 
 size_t iohandle::sys::procfs(char * buffer, const size_t buffer_size) {
 
-	const auto head = "PID \t PPID \t STIME \t COMMAND \n";
+	const auto result = process_manager->getProcessTable();
+	const auto cresult = result.c_str();
+	const auto size = strlen(cresult) > buffer_size ? buffer_size : strlen(cresult);
+	std::copy(cresult, cresult + size, buffer);
 
-	const auto size = strlen(head) > buffer_size ? buffer_size : strlen(head);
-	std::copy(head, head + size, buffer);
-
-	return strlen(head);
+	return strlen(cresult);
 }
 
 size_t iohandle::file::write(char * buffer, size_t buffer_size) {

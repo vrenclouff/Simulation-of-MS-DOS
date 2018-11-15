@@ -19,6 +19,8 @@ class Process
 public:
 	size_t pid;
 	size_t parent_pid;
+	kiv_os::THandle handle;
+	kiv_os::THandle parent_handle;
 	ProcessState state;
 	uint16_t exitCode;
 	std::string userfunc_name;

@@ -2,6 +2,9 @@
 #include <iostream>
 #include <vector>
 #include "common.h"
+#include <sstream>
+#include <string>
+#include <iostream>
 
 Process* ProcessManager::getRunningProcess()
 {
@@ -55,6 +58,7 @@ void ProcessManager::createProcess(kiv_hal::TRegisters &regs, bool first_process
 	}
 
 	size_t parent_pid = 0;
+	kiv_os::THandle parent_handle = 0;
 	kiv_os::THandle stdin_handle = regs.rbx.e >> 16;
 	kiv_os::THandle stdout_handle = regs.rbx.e & 0x00ff;
 
@@ -62,6 +66,7 @@ void ProcessManager::createProcess(kiv_hal::TRegisters &regs, bool first_process
 	{
 		Process* currentProcess = getRunningProcess();
 		parent_pid = currentProcess->pid;
+		parent_handle = currentProcess->handle;
 	}
 
 	Process* newProcess = new Process(funcName, parent_pid);
@@ -70,11 +75,13 @@ void ProcessManager::createProcess(kiv_hal::TRegisters &regs, bool first_process
 	child_context.rax.x = stdin_handle; // stdin
 	child_context.rbx.x = stdout_handle; // stdout
 
-	create_process_mtx.lock();
+	process_map_mtx.lock();
 	newProcess->start(child_context, programAddress);
 	processes[newProcess->pid] = newProcess;
 	handles[++last_handle] = newProcess->pid;
-	create_process_mtx.unlock();
+	newProcess->handle = last_handle;
+	newProcess->parent_handle = parent_handle;
+	process_map_mtx.unlock();
 
 	// Save child pid to parent ax
 	regs.rax.x = static_cast<kiv_os::THandle>(last_handle);
@@ -129,9 +136,9 @@ void ProcessManager::handleExit(kiv_hal::TRegisters &regs)
 {
 	// CX = exit code
 	uint16_t exitCode = static_cast<uint16_t>(regs.rcx.x);
-	create_process_mtx.lock();
+	process_map_mtx.lock();
 	Process* thisProcess = getRunningProcess();
-	create_process_mtx.unlock();
+	process_map_mtx.unlock();
 	thisProcess->stop(exitCode);
 }
 
@@ -162,9 +169,41 @@ void ProcessManager::handleReadExitCode(kiv_hal::TRegisters &regs)
 
 void ProcessManager::removeProcess(kiv_os::THandle handle)
 {
+	process_map_mtx.lock();
 	size_t pid = handles[handle];
 	Process* process_to_remove = processes[pid];
 	handles.erase(handle);
 	processes.erase(pid);
 	delete process_to_remove;
+	process_map_mtx.unlock();
+}
+
+std::string ProcessManager::getProcessTable()
+{
+	process_map_mtx.lock();
+	std::ostringstream result;
+	result << "PID\tPPID\tSTATUS\tCOMMAND" << std::endl;
+	for (auto const& process_entry : processes)
+	{
+		Process* process = process_entry.second;
+		std::string process_state;
+		switch (process->state)
+		{
+		case ProcessState::prepared:
+			process_state = "prepared";
+			break;
+		case ProcessState::running:
+			process_state = "running";
+			break;
+		case ProcessState::stopped:
+			process_state = "stopped";
+			break;
+		default:
+			process_state = "unknown";
+			break;
+		}
+		result << process->handle << "\t" << process->parent_handle << "\t" << process_state << "\t" << process->userfunc_name << std::endl;
+	}
+	process_map_mtx.unlock();
+	return result.str();
 }
