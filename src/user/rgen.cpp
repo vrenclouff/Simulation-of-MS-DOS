@@ -11,13 +11,13 @@ void waitForCtrlz(const kiv_hal::TRegisters &regs) {
 	const kiv_os::THandle std_in = static_cast<kiv_os::THandle>(regs.rax.x);
 	bool* generating = reinterpret_cast<bool*>(regs.rdi.r);
 
-	char* read = "";
+	char read;
 	size_t count;
 	while (true)
 	{
-		kiv_os_rtl::Read_File(std_in, read, sizeof(read), count);
+		kiv_os_rtl::Read_File(std_in, &read, sizeof(read), count);
 
-		if (!strcmp(read, "\0"))
+		if (read == '\0')
 		{
 			*generating = false;
 			kiv_os_rtl::Exit(0);
