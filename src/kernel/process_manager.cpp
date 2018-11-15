@@ -69,7 +69,7 @@ void ProcessManager::createProcess(kiv_hal::TRegisters &regs, bool first_process
 		parent_handle = currentProcess->handle;
 	}
 
-	Process* newProcess = new Process(funcName, parent_pid);
+	Process* newProcess = new Process(funcName, parent_pid, false);
 	kiv_hal::TRegisters child_context{ 0 };
 	child_context.rdi.r = regs.rdi.r; // function args
 	child_context.rax.x = stdin_handle; // stdin
@@ -89,7 +89,39 @@ void ProcessManager::createProcess(kiv_hal::TRegisters &regs, bool first_process
 
 void ProcessManager::createThread(kiv_hal::TRegisters &regs)
 {
+	regs.flags.carry = 0;
+	kiv_os::TThread_Proc programAddress = (kiv_os::TThread_Proc) regs.rdx.r;
 
+	if (!programAddress)
+	{
+		regs.flags.carry = 1;
+		regs.rax.x = static_cast<uint16_t>(kiv_os::NOS_Error::Invalid_Argument);
+		return;
+	}
+
+	kiv_os::THandle stdin_handle = regs.rbx.e >> 16;
+	kiv_os::THandle stdout_handle = regs.rbx.e & 0x00ff;
+
+	Process* currentProcess = getRunningProcess();
+	size_t parent_pid = currentProcess->pid;
+	kiv_os::THandle parent_handle = currentProcess->handle;
+
+	Process* newProcess = new Process(processes[parent_pid]->userfunc_name, parent_pid, true);
+	kiv_hal::TRegisters child_context{ 0 };
+	child_context.rdi.r = regs.rdi.r; // pointer to shared data
+	child_context.rax.x = stdin_handle; // stdin
+	child_context.rbx.x = stdout_handle; // stdout
+
+	process_map_mtx.lock();
+	newProcess->start(child_context, programAddress);
+	processes[newProcess->pid] = newProcess;
+	handles[++last_handle] = newProcess->pid;
+	newProcess->handle = last_handle;
+	newProcess->parent_handle = parent_handle;
+	process_map_mtx.unlock();
+
+	// Save child pid to parent ax
+	regs.rax.x = static_cast<kiv_os::THandle>(last_handle);
 }
 
 void ProcessManager::handleWaitFor(kiv_hal::TRegisters &regs)
@@ -182,7 +214,7 @@ std::string ProcessManager::getProcessTable()
 {
 	process_map_mtx.lock();
 	std::ostringstream result;
-	result << "PID\tPPID\tSTATUS\tCOMMAND" << std::endl;
+	result << "PID\tPPID\tSTATUS\tTYPE\tCOMMAND" << std::endl;
 	for (auto const& process_entry : processes)
 	{
 		Process* process = process_entry.second;
@@ -202,7 +234,8 @@ std::string ProcessManager::getProcessTable()
 			process_state = "unknown";
 			break;
 		}
-		result << process->handle << "\t" << process->parent_handle << "\t" << process_state << "\t" << process->userfunc_name << std::endl;
+		std::string type = process->is_thread ? "THREAD" : "PROCESS";
+		result << process->handle << "\t" << process->parent_handle << "\t" << process_state << "\t" << type << "\t" << process->userfunc_name << std::endl;
 	}
 	process_map_mtx.unlock();
 	return result.str();

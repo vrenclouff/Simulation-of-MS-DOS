@@ -47,6 +47,21 @@ kiv_os::THandle createProcess(char* name, char* args, uint16_t stdin_handle, uin
 	return static_cast<kiv_os::THandle>(contx.rax.x);
 }
 
+kiv_os::THandle createThread(void* func, void* data, uint16_t stdin_handle, uint16_t stdout_handle, kiv_os::NOS_Error &error, kiv_hal::TFlags &flags)
+{
+	kiv_hal::TRegisters contx;
+	contx.rax.h = static_cast<uint8_t>(kiv_os::NOS_Service_Major::Process);
+	contx.rax.l = static_cast<uint8_t>(kiv_os::NOS_Process::Clone);
+	contx.rcx.r = static_cast<uint64_t>(kiv_os::NClone::Create_Thread);
+	contx.rdx.r = reinterpret_cast<decltype(contx.rdx.r)>(func);
+	contx.rdi.r = reinterpret_cast<decltype(contx.rdi.r)>(data);
+	contx.rbx.e = (stdin_handle << 16) | stdout_handle;
+	kiv_os::Sys_Call(contx);
+	error = kiv_os_rtl::Last_Error;
+	flags = contx.flags;
+	return static_cast<kiv_os::THandle>(contx.rax.x);
+}
+
 kiv_os::THandle waitFor(kiv_os::THandle* handles, int size, kiv_os::NOS_Error &error, kiv_hal::TFlags &flags)
 {
 	kiv_hal::TRegisters contx;
@@ -106,6 +121,8 @@ size_t __stdcall test(const kiv_hal::TRegisters &regs)
 
 	createProcessTest(regs);
 
+	createThreadTest(regs);
+
 	// call exit
 	exitCall(0);
 	return 0;
@@ -150,6 +167,17 @@ size_t __stdcall test_long_delay(const kiv_hal::TRegisters &regs)
 	// call exit
 	exitCall(0);
 	return 0;
+}
+
+void test_thread(const kiv_hal::TRegisters &regs)
+{
+	const kiv_os::THandle std_out = static_cast<kiv_os::THandle>(regs.rbx.x);
+	bool* data = reinterpret_cast<bool*>(regs.rdi.r);
+	*data = true;
+	print("PRINT MESSAGE FROM THREAD\n", std_out);
+	// call exit
+	exitCall(0);
+	return;
 }
 
 size_t __stdcall test_open_file(const kiv_hal::TRegisters & regs) {
@@ -354,4 +382,24 @@ void createProcessTest(const kiv_hal::TRegisters &regs)
 	handle = createProcess("nonexistentfunction", "", std_in, std_out, error, flags);
 	assertNotEqual<std::uint8_t>(flags.carry, 0, std_out);
 	assertNotEqual<kiv_os::NOS_Error>(error, kiv_os::NOS_Error::Success, std_out);
+}
+
+void createThreadTest(const kiv_hal::TRegisters &regs)
+{
+	const kiv_os::THandle std_out = static_cast<kiv_os::THandle>(regs.rbx.x);
+	const kiv_os::THandle std_in = static_cast<kiv_os::THandle>(regs.rax.x);
+	print("\n --------TESTING CREATETHREAD-------- \n\n", std_out);
+
+	kiv_os::THandle handle;
+	kiv_os::NOS_Error error;
+	kiv_hal::TFlags flags;
+
+	// Valid function pointer
+	print("Testing shared memory change\n", std_out);
+	bool data = false;
+	handle = createThread(&test_thread, &data, std_in, std_out, error, flags);
+	assertEqual<std::uint8_t>(flags.carry, 0, std_out);
+	waitFor(&handle, 1, error, flags);
+	assertEqual<bool>(data, true, std_out);
+	readExitCode(handle, error, flags);
 }

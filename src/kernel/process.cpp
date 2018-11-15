@@ -3,8 +3,8 @@
 std::condition_variable Process::endCond;
 std::mutex Process::endMtx;
 
-Process::Process(std::string userfunc_name, size_t parent_pid) : 
-	userfunc_name(userfunc_name), parent_pid(parent_pid)
+Process::Process(std::string userfunc_name, size_t parent_pid, bool is_thread) :
+	userfunc_name(userfunc_name), parent_pid(parent_pid), is_thread(is_thread)
 {
 	state = ProcessState::prepared;
 }

@@ -27,10 +27,11 @@ public:
 	kiv_hal::TRegisters context;
 	std::thread* thread_obj;
 	std::map<size_t, Process*> childs;
+	bool is_thread;
 	// std::string name;
 	//kiv_os::THandle working_dir;
 	// TODO syscall struct params, parent id
-	Process(std::string userfunc_name, size_t parent_pid);
+	Process(std::string userfunc_name, size_t parent_pid, bool is_thread);
 	void start(kiv_hal::TRegisters child_context, kiv_os::TThread_Proc address);
 	void stop(uint16_t exitCode);
 	static std::condition_variable endCond; // condition for process end
