@@ -42,7 +42,7 @@ kiv_os::THandle createProcess(char* name, char* args, uint16_t stdin_handle, uin
 	contx.rdi.r = reinterpret_cast<decltype(contx.rdi.r)>(args);
 	contx.rbx.e = (stdin_handle << 16) | stdout_handle;
 	kiv_os::Sys_Call(contx);
-	error = static_cast<kiv_os::NOS_Error>(contx.rax.x);
+	error = kiv_os_rtl::Last_Error;
 	flags = contx.flags;
 	return static_cast<kiv_os::THandle>(contx.rax.x);
 }
@@ -55,7 +55,7 @@ kiv_os::THandle waitFor(kiv_os::THandle* handles, int size, kiv_os::NOS_Error &e
 	contx.rdx.r = reinterpret_cast<uint64_t>(handles);
 	contx.rcx.r = size;
 	kiv_os::Sys_Call(contx);
-	error = static_cast<kiv_os::NOS_Error>(contx.rax.x);
+	error = kiv_os_rtl::Last_Error;
 	flags = contx.flags;
 	return static_cast<kiv_os::THandle>(contx.rax.x);
 }
@@ -77,7 +77,7 @@ uint16_t readExitCode(kiv_os::THandle handle, kiv_os::NOS_Error &error, kiv_hal:
 	contx.rdx.x = handle;
 	kiv_os::Sys_Call(contx);
 	uint16_t exit_code = contx.rcx.x;
-	error = static_cast<kiv_os::NOS_Error>(contx.rax.x);
+	error = kiv_os_rtl::Last_Error;
 	flags = contx.flags;
 	return exit_code;
 }

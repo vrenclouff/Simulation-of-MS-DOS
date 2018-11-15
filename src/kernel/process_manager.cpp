@@ -141,7 +141,6 @@ void ProcessManager::handleReadExitCode(kiv_hal::TRegisters &regs)
 	// OUT: cx = exitcode
 	kiv_os::THandle process_handle = static_cast<uint16_t>(regs.rdx.x);
 	regs.flags.carry = 0;
-	regs.rax.x = static_cast<uint16_t>(kiv_os::NOS_Error::Success);
 
 	if (handles.count(process_handle) == 0)
 	{
