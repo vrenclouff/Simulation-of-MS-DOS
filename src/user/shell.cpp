@@ -42,12 +42,8 @@ size_t __stdcall shell(const kiv_hal::TRegisters &regs) {
 		}
 	} while (strcmp(buffer, exit) != 0);
 
-	// call exit
-	kiv_hal::TRegisters contx;
-	contx.rax.h = static_cast<uint8_t>(kiv_os::NOS_Service_Major::Process);
-	contx.rax.l = static_cast<uint8_t>(kiv_os::NOS_Process::Exit);
-	contx.rcx.x = 0;
-	kiv_os::Sys_Call(contx);
+	bool exitcode = 0;
+	kiv_os_rtl::Exit(exitcode);
 	
-	return 0;	
+	return exitcode;	
 }

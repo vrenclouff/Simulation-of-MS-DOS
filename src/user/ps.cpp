@@ -18,7 +18,6 @@ size_t __stdcall ps(const kiv_hal::TRegisters &regs) {
 		char content[1024];
 		kiv_os_rtl::Read_File(filehandle, content, sizeof(content), counter);
 		kiv_os_rtl::Write_File(std_out, content, counter, counter);
-		kiv_os_rtl::Write_File(std_out, "\n", 1, counter);
 	}
 	else {
 		char* message = "";
