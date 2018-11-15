@@ -148,3 +148,15 @@ bool kiv_os_rtl::Register_Signal_Handler() {
 	const bool result = kiv_os::Sys_Call(regs);
 	return result;
 }
+
+bool kiv_os_rtl::Create_Thread(void* function, void* data, kiv_os::THandle stdin_handle, kiv_os::THandle stdout_handle) {
+	kiv_hal::TRegisters regs = Prepare_SysCall_Context(kiv_os::NOS_Service_Major::Process, static_cast<uint8_t>(kiv_os::NOS_Process::Clone));
+
+	regs.rcx.r = static_cast<uint64_t>(kiv_os::NClone::Create_Thread);
+	regs.rdx.r = reinterpret_cast<decltype(regs.rdx.r)>(function);
+	regs.rdi.r = reinterpret_cast<decltype(regs.rdi.r)>(data);
+	regs.rbx.e = (stdin_handle << 16) | stdout_handle;
+
+	const bool result = kiv_os::Sys_Call(regs);
+	return result;
+}

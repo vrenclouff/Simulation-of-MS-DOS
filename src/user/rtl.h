@@ -40,4 +40,6 @@ namespace kiv_os_rtl {
 
 	bool Register_Signal_Handler();
 
+	bool Create_Thread(void* function, void* data, kiv_os::THandle stdin_handle, kiv_os::THandle stdout_handle);
+
 }
