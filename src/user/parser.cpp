@@ -54,6 +54,20 @@ void wrongRedirection(kiv_os::THandle shellout, size_t shellcounter, kiv_os::THa
 
 void parse(char* args, kiv_os::THandle shellin, kiv_os::THandle shellout, size_t shellcounter) {
 
+	char* first = "";
+	char* dirname;
+	size_t inputsize = strlen(args) + 1;
+	char* tokenize = new char[inputsize];
+
+	strcpy_s(tokenize, strlen(tokenize), args);
+	first = strtok_s(tokenize, " ", &dirname);
+
+	if (!strcmp(first, "cd"))
+	{
+		kiv_os_rtl::Set_Working_Dir(dirname);
+		return;
+	}
+
 	std::vector<char*> parts;
 
 	const char* pipesymbol = "|";

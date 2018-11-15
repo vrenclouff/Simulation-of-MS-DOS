@@ -100,9 +100,8 @@ void Handle_IO(kiv_hal::TRegisters &regs) {
 
 		case kiv_os::NOS_File_System::Set_Working_Dir: {
 			const auto path_buffer = reinterpret_cast<char*>(regs.rdx.r);
-			const auto buffer_size = regs.rcx.r;
 			// TODO predelat na THandle
-			working_dir = std::string(path_buffer, buffer_size);
+			working_dir = std::string(path_buffer, strlen(path_buffer));
 		} break;
 	}
 }

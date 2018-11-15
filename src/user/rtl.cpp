@@ -49,6 +49,14 @@ bool kiv_os_rtl::Get_Working_Dir(const char *buffer, const size_t buffer_size, s
 	return result;
 }
 
+bool kiv_os_rtl::Set_Working_Dir(const char *dir) {
+	kiv_hal::TRegisters regs = Prepare_SysCall_Context(kiv_os::NOS_Service_Major::File_System, static_cast<uint8_t>(kiv_os::NOS_File_System::Set_Working_Dir));
+	regs.rdx.r = reinterpret_cast<decltype(regs.rdx.r)>(dir);
+
+	const bool result = kiv_os::Sys_Call(regs);
+	return result;
+}
+
 bool kiv_os_rtl::Open_File(const char *buffer, const size_t buffer_size, kiv_os::THandle &file_handle, const bool exist, const std::iostream::ios_base::openmode openmode) {
 	// TODO predelat openmode
 	std::string path;
