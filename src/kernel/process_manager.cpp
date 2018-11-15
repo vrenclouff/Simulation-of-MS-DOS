@@ -62,6 +62,7 @@ void ProcessManager::createProcess(kiv_hal::TRegisters &regs, bool first_process
 	kiv_os::THandle stdin_handle = regs.rbx.e >> 16;
 	kiv_os::THandle stdout_handle = regs.rbx.e & 0x00ff;
 
+	process_map_mtx.lock();
 	if (!first_process)
 	{
 		Process* currentProcess = getRunningProcess();
@@ -75,7 +76,6 @@ void ProcessManager::createProcess(kiv_hal::TRegisters &regs, bool first_process
 	child_context.rax.x = stdin_handle; // stdin
 	child_context.rbx.x = stdout_handle; // stdout
 
-	process_map_mtx.lock();
 	newProcess->start(child_context, programAddress);
 	processes[newProcess->pid] = newProcess;
 	handles[++last_handle] = newProcess->pid;
@@ -102,6 +102,7 @@ void ProcessManager::createThread(kiv_hal::TRegisters &regs)
 	kiv_os::THandle stdin_handle = regs.rbx.e >> 16;
 	kiv_os::THandle stdout_handle = regs.rbx.e & 0x00ff;
 
+	process_map_mtx.lock();
 	Process* currentProcess = getRunningProcess();
 	size_t parent_pid = currentProcess->pid;
 	kiv_os::THandle parent_handle = currentProcess->handle;
@@ -112,7 +113,6 @@ void ProcessManager::createThread(kiv_hal::TRegisters &regs)
 	child_context.rax.x = stdin_handle; // stdin
 	child_context.rbx.x = stdout_handle; // stdout
 
-	process_map_mtx.lock();
 	newProcess->start(child_context, programAddress);
 	processes[newProcess->pid] = newProcess;
 	handles[++last_handle] = newProcess->pid;
