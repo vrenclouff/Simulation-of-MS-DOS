@@ -1,5 +1,6 @@
 #include "md.h"
 #include "rtl.h"
+#include "parser.h";
 
 size_t __stdcall md(const kiv_hal::TRegisters &regs) {
 
@@ -11,9 +12,11 @@ size_t __stdcall md(const kiv_hal::TRegisters &regs) {
 	size_t counter;
 	const kiv_os::THandle std_out = static_cast<kiv_os::THandle>(regs.rbx.x);
 	char* message = "";
-	if (regs.flags.carry == 1 || filehandle == NULL)
+
+	kiv_os::NOS_Error error = kiv_os_rtl::Last_Error;
+	if (error != kiv_os::NOS_Error::Success || filehandle == NULL)
 	{
-		message = "Something went wrong.\n";
+		getErrorMessage(error, message);
 	}
 	else {
 		message = "Created.\n";

@@ -35,8 +35,6 @@ size_t __stdcall shell(const kiv_hal::TRegisters &regs) {
 
 			if (strcmp(buffer, exit) == 0) break;
 
-			
-
 			parse(buffer, std_in, std_out, read_counter);
 		}
 		else {

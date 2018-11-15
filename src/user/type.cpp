@@ -12,10 +12,8 @@ size_t __stdcall type(const kiv_hal::TRegisters &regs) {
 
 	size_t read_counter, write_counter;
 	const kiv_os::THandle std_out = static_cast<kiv_os::THandle>(regs.rbx.x);
-	const char* linebreak = "\n";
 
-	char* message = "";
-	if (regs.flags.carry == 1 || filehandle == NULL) {
+	if (kiv_os_rtl::Last_Error != kiv_os::NOS_Error::Success || filehandle == NULL) {
 		kiv_os_rtl::Write_File(std_out, input.c_str(), input.size(), write_counter);
 	}
 	else {

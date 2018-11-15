@@ -1,5 +1,6 @@
 #include "rd.h"
 #include "rtl.h"
+#include "parser.h"
 
 size_t __stdcall rd(const kiv_hal::TRegisters &regs) {
 
@@ -9,10 +10,12 @@ size_t __stdcall rd(const kiv_hal::TRegisters &regs) {
 
 	size_t counter;
 	const kiv_os::THandle std_out = static_cast<kiv_os::THandle>(regs.rbx.x);
+	
+	kiv_os::NOS_Error error = kiv_os_rtl::Last_Error;
 	char* message = "";
-	if (regs.flags.carry == 1)
+	if (error != kiv_os::NOS_Error::Success)
 	{
-		message = "Could not find specified directory.\n";
+		getErrorMessage(error, message);
 	}
 	else {
 		message = "Removed.\n";

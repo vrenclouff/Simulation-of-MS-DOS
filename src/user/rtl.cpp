@@ -108,7 +108,7 @@ kiv_os::THandle kiv_os_rtl::Clone(char* function, char* arguments, kiv_os::THand
 
 	const bool result = kiv_os::Sys_Call(regs);
 	kiv_os::THandle newhandle = static_cast<kiv_os::THandle>(regs.rax.r);
-	return (regs.flags.carry == 1 ? NULL : newhandle);
+	return ((kiv_os_rtl::Last_Error != kiv_os::NOS_Error::Success) ? NULL : newhandle);
 }
 
 bool kiv_os_rtl::Wait_For(kiv_os::THandle handlers[]) {
@@ -133,7 +133,7 @@ std::uint8_t kiv_os_rtl::Read_Exit_Code(kiv_os::THandle handle) {
 	regs.rdx.r = static_cast<decltype(regs.rdx.r)>(handle);
 
 	const bool result = kiv_os::Sys_Call(regs);
-	return regs.flags.carry;
+	return result;
 }
 
 bool kiv_os_rtl::Shutdown() {

@@ -1,5 +1,6 @@
 #include "ps.h"
 #include "rtl.h"
+#include "parser.h"
 
 size_t __stdcall ps(const kiv_hal::TRegisters &regs) {
 
@@ -12,16 +13,19 @@ size_t __stdcall ps(const kiv_hal::TRegisters &regs) {
 	size_t counter;
 	const kiv_os::THandle std_out = static_cast<kiv_os::THandle>(regs.rbx.x);
 
-	if (!regs.flags.carry || filehandle) {
+	kiv_os::NOS_Error error = kiv_os_rtl::Last_Error;
+	if (error != kiv_os::NOS_Error::Success || filehandle) {
 		char content[256];
 		kiv_os_rtl::Read_File(filehandle, content, sizeof(content), counter);
 		kiv_os_rtl::Write_File(std_out, content, counter, counter);
+		kiv_os_rtl::Write_File(std_out, "\n", 1, counter);
 	}
 	else {
-		// TODO error
+		char* message = "";
+		getErrorMessage(error, message);
+		kiv_os_rtl::Write_File(std_out, message, strlen(message), counter);
 	}
 
-	kiv_os_rtl::Write_File(std_out, "\n", 1, counter);
 
 	kiv_os_rtl::Exit(0);
 	return 0;

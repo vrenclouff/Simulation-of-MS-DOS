@@ -123,3 +123,35 @@ void parse(char* args, kiv_os::THandle shellin, kiv_os::THandle shellout, size_t
 	}
 
 }
+
+void getErrorMessage(kiv_os::NOS_Error error, char* message) {
+
+	switch (error) {
+
+	case (kiv_os::NOS_Error::Directory_Not_Empty):
+		message = "Directory is not empty.\n";
+		break;
+	case (kiv_os::NOS_Error::File_Not_Found):
+		message = "File not found.\n";
+		break;
+	case (kiv_os::NOS_Error::Invalid_Argument):
+		message = "Invalid argument.\n";
+		break;
+	case (kiv_os::NOS_Error::IO_Error):
+		message = "I/O error occured.\n";
+		break;
+	case (kiv_os::NOS_Error::Not_Enough_Disk_Space):
+		message = "Not enough disk space.\n";
+		break;
+	case (kiv_os::NOS_Error::Out_Of_Memory):
+		message = "Out of memmory.\n";
+		break;
+	case (kiv_os::NOS_Error::Permission_Denied):
+		message = "Permission denied.\n";
+		break;
+	default:
+		message = "Something went wrong.\n";
+		break;
+	}
+
+}
