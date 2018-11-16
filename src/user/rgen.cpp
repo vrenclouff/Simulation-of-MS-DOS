@@ -17,7 +17,7 @@ void waitForCtrlz(const kiv_hal::TRegisters &regs) {
 	{
 		kiv_os_rtl::Read_File(std_in, &read, sizeof(read), count);
 
-		if (read == '\0')
+		if (count == 0)
 		{
 			*generating = false;
 			kiv_os_rtl::Exit(0);
