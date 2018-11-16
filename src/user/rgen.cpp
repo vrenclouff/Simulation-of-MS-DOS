@@ -43,7 +43,8 @@ size_t __stdcall rgen(const kiv_hal::TRegisters &regs) {
 	}
 
 	bool generating = true;
-	kiv_os_rtl::Create_Thread(&waitForCtrlz, &generating, std_in, std_out);
+
+	kiv_os::THandle handler = kiv_os_rtl::Create_Thread(&waitForCtrlz, &generating, std_in, std_out);
 
 	std::mt19937 generator((unsigned int) time(0));
 
@@ -55,6 +56,9 @@ size_t __stdcall rgen(const kiv_hal::TRegisters &regs) {
 		sprintf_s(fltout, "%f\n", rndflt);
 		kiv_os_rtl::Write_File(std_out, fltout, strlen(fltout), counter);
 	}
+
+	kiv_os_rtl::Wait_For(&handler);
+	kiv_os_rtl::Read_Exit_Code(handler);
 
 	kiv_os_rtl::Exit(0);
 	return 0;
