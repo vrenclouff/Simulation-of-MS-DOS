@@ -6,7 +6,7 @@
 #include <map>
 #include <mutex>
 #include <condition_variable>
-// TODO enum of process states
+#include "thread.h"
 enum class ProcessState
 {
 	prepared = 1,
@@ -22,18 +22,11 @@ public:
 	kiv_os::THandle handle;
 	kiv_os::THandle parent_handle;
 	ProcessState state;
-	uint16_t exitCode;
 	std::string userfunc_name;
-	kiv_hal::TRegisters context;
-	std::thread* thread_obj;
-	std::map<size_t, Process*> childs;
-	bool is_thread;
-	// std::string name;
-	//kiv_os::THandle working_dir;
-	// TODO syscall struct params, parent id
-	Process(std::string userfunc_name, size_t parent_pid, bool is_thread);
-	void start(kiv_hal::TRegisters child_context, kiv_os::TThread_Proc address);
-	void stop(uint16_t exitCode);
-	static std::condition_variable endCond; // condition for process end
-	static std::mutex endMtx; // endCond mutex
+	std::map<size_t, Thread*> threads;
+
+	Process(std::string userfunc_name, size_t parent_pid);
+	size_t startThread(kiv_hal::TRegisters thread_context, kiv_os::TThread_Proc address);
+	void stopThread(uint16_t exitCode, size_t tid);
+	void cleanThread(size_t tid);
 };

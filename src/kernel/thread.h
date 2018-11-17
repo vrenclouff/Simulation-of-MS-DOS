@@ -1,0 +1,31 @@
+#pragma once
+#include <string>
+#include "../api/hal.h"
+#include "../api/api.h"
+#include <thread>
+#include <map>
+#include <mutex>
+#include <condition_variable>
+enum class ThreadState
+{
+	prepared = 1,
+	running,
+	stopped
+};
+
+class Thread
+{
+public:
+	size_t tid;
+	ThreadState state;
+	uint16_t exitCode;
+	std::thread* thread_obj;
+	kiv_os::TThread_Proc func_addr;
+	kiv_hal::TRegisters context;
+
+	Thread(kiv_os::TThread_Proc func_addr, kiv_hal::TRegisters thread_context);
+	void start();
+	void stop(uint16_t exitCode);
+	static std::condition_variable endCond; // condition for process end
+	static std::mutex endMtx; // endCond mutex
+};
