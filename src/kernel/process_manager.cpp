@@ -8,8 +8,11 @@
 
 Process* ProcessManager::getRunningProcess()
 {
+	process_map_mtx.lock();
 	size_t thread_id = std::hash<std::thread::id>()(std::this_thread::get_id());
-	return processes[thread_id];
+	Process* ret = processes[thread_id];
+	process_map_mtx.unlock();
+	return ret;
 }
 
 void ProcessManager::SysCall(kiv_hal::TRegisters &regs)
