@@ -5,8 +5,6 @@
 
 void defaultTerminateHandle(const kiv_hal::TRegisters &context)
 {
-	Thread* this_thread = process_manager->getRunningThread();
-	TerminateThread(this_thread->thread_obj->native_handle(), 0);
 }
 
 Process::Process(std::string userfunc_name, size_t parent_pid) :

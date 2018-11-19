@@ -26,5 +26,4 @@ void Thread::stop(uint16_t code)
 	Thread::endCond.notify_all();
 	lk.unlock();
 	TerminateThread(thread_obj->native_handle(), 0);
-	// TODO how to kill current thread?
 }

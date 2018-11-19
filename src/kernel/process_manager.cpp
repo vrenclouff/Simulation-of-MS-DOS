@@ -110,6 +110,9 @@ void ProcessManager::SysCall(kiv_hal::TRegisters &regs)
 		case kiv_os::NOS_Process::Register_Signal_Handler:
 			registerSignalHandler(regs);
 			break;
+		case kiv_os::NOS_Process::Shutdown:
+			shutdown(regs);
+			break;
 	}
 }
 
@@ -325,6 +328,43 @@ void ProcessManager::registerSignalHandler(kiv_hal::TRegisters &regs)
 
 	Thread* this_thread = _getRunningThread();
 	this_thread->handlers[signal] = handle;
+}
+
+void ProcessManager::shutdown(kiv_hal::TRegisters &regs)
+{
+	// rcx NSignal_Id
+	// rdx: pointer na TThread_Proc, kde pri jeho volani context.rcx bude id signalu (0 = default handler)
+	mtx.lock();
+
+	// send sigterm
+	kiv_hal::TRegisters sigterm_regs{ 0 };
+	sigterm_regs.rcx.r = static_cast<uint64_t>(kiv_os::NSignal_Id::Terminate);
+	for (auto const& process_entry : processes)
+	{
+		for (auto const& thread_entry : process_entry.second->threads)
+		{
+			thread_entry.second->handlers[kiv_os::NSignal_Id::Terminate](sigterm_regs);
+		}
+	}
+	mtx.unlock();
+
+	// wait for threads to terminate
+	Sleep(5000);
+	mtx.lock();
+	Thread* this_thread = _getRunningThread();
+
+	// terminate running threads
+	for (auto const& process_entry : processes)
+	{
+		for (auto const& thread_entry : process_entry.second->threads)
+		{
+			if (thread_entry.second->state == ThreadState::running && thread_entry.first != this_thread->tid)
+			{
+				thread_entry.second->stop(0);
+			}
+		}
+	}
+	this_thread->stop(0);
 }
 
 std::string ProcessManager::getProcessTable()

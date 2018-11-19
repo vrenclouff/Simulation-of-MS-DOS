@@ -30,5 +30,6 @@ public:
 	void handleExit(kiv_hal::TRegisters &regs);
 	void handleReadExitCode(kiv_hal::TRegisters &regs);
 	void registerSignalHandler(kiv_hal::TRegisters &regs);
+	void shutdown(kiv_hal::TRegisters &regs);
 	std::string getProcessTable();
 };
