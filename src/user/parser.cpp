@@ -3,13 +3,20 @@
 #include "rtl.h"
 
 #include <vector>
+#include <iostream>
+#include <sstream>
 
-bool parsePart(char* args, kiv_os::THandle stdin_handle, kiv_os::THandle stdout_handle) {
+bool parsePart(std::string args, kiv_os::THandle stdin_handle, kiv_os::THandle stdout_handle) {
 
-	char* arguments;
-	char* tofunc = strtok_s(args, " ", &arguments);
+	std::istringstream is(args);
+	std::string tofunc;
+	std::string arguments;
+	std::string rest;
 
-	if (tofunc == NULL) {
+	std::getline(is, tofunc, ' ');
+	std::getline(is, arguments, ' ');
+
+	if (tofunc.empty()) {
 		return NULL;
 	}
 
@@ -27,7 +34,7 @@ bool parsePart(char* args, kiv_os::THandle stdin_handle, kiv_os::THandle stdout_
 	}
 
 	kiv_os::THandle handlers[1];
-	handlers[0] = kiv_os_rtl::Clone(function.c_str(), arguments, stdin_handle, stdout_handle);
+	handlers[0] = kiv_os_rtl::Clone(function.c_str(), arguments.c_str(), stdin_handle, stdout_handle);
 
 	if (handlers[0] == NULL)
 	{
@@ -65,59 +72,65 @@ void parse(char* args, kiv_os::THandle shellin, kiv_os::THandle shellout, size_t
 		return;
 	}
 
-	std::vector<char*> parts;
+	std::vector<std::string> parts;
 
-	const char* pipesymbol = "|";
-	const char* redirectionsymbol = ">";
-	char* rest;
-	char* part = strtok_s(args, pipesymbol, &rest);
+	const char pipesymbol = '|';
+	const char redirectionsymbol = '>';
 
-	while (part != NULL) {
+	std::istringstream is(args);
+	std::string part;
+	while (std::getline(is, part, pipesymbol)) {
 		parts.push_back(part);
-		part = strtok_s(NULL, pipesymbol, &rest);
 	}
 
 	kiv_os::THandle stdin_handle = shellin;
 
 	kiv_os::THandle* handles = NULL;
 
-	std::vector<char*>::iterator it;
-	for (it = parts.begin(); it != parts.end(); it++) {
+	for (int i = 0; i < parts.size(); i++) {
+
+		std::string curr = parts.at(i);
 
 		kiv_os::THandle stdout_handle = shellout;
 
-		bool hasnext = (it != (parts.end() - 1));
+		bool hasnext = (i != (parts.size() - 1));
 
 		if (hasnext) {
 			handles = kiv_os_rtl::Create_Pipe();
 			stdout_handle = *handles;
 
-			if (strstr(*it, redirectionsymbol) != NULL) {
+			if (curr.find(redirectionsymbol) != std::string::npos) {
 				wrongRedirection(shellout, shellcounter, stdin_handle, stdout_handle);
 				return;
 			}
 
-			parsePart(*it, stdin_handle, stdout_handle);
+			parsePart(curr, stdin_handle, stdout_handle);
 		}
 		else {
 
-			if (strstr(*it, redirectionsymbol) != NULL) {
-				char* command = strtok_s(*it, redirectionsymbol, &rest);
-				char* filename = strtok_s(NULL, redirectionsymbol, &rest);
+			if (curr.find(redirectionsymbol) != std::string::npos) {
 
-				if (strtok_s(NULL, redirectionsymbol, &rest) != NULL) {
+				std::istringstream is(curr);
+				std::string command;
+				std::string filename;
+				std::string rest;
+
+				std::getline(is, command, redirectionsymbol);
+				std::getline(is, filename, redirectionsymbol);
+				
+				if (std::getline(is, rest, redirectionsymbol)) {
 					wrongRedirection(shellout, shellcounter, stdin_handle, stdout_handle);
 					return;
 				}
 
 				kiv_os::THandle filehandle;
-				kiv_os_rtl::Open_File(filename, sizeof(filename), filehandle, false, std::iostream::ios_base::in);
+				kiv_os_rtl::Open_File(filename.c_str(), sizeof(filename), filehandle, false, std::iostream::ios_base::in);
 
 				parsePart(command, stdin_handle, filehandle);
 				kiv_os_rtl::Close_Handle(filehandle);
 			}
 			else {
-				parsePart(*it, stdin_handle, stdout_handle);
+				parsePart(curr, stdin_handle, stdout_handle);
 			}
 			
 

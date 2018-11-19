@@ -105,7 +105,7 @@ kiv_os::THandle* kiv_os_rtl::Create_Pipe() {
 
 // PROCESS
 
-kiv_os::THandle kiv_os_rtl::Clone(const char* function, char* arguments, kiv_os::THandle stdin_handle, kiv_os::THandle stdout_handle) {
+kiv_os::THandle kiv_os_rtl::Clone(const char* function, const char* arguments, kiv_os::THandle stdin_handle, kiv_os::THandle stdout_handle) {
 
 	kiv_hal::TRegisters regs = Prepare_SysCall_Context(kiv_os::NOS_Service_Major::Process, static_cast<uint8_t>(kiv_os::NOS_Process::Clone));
 	regs.rdx.r = reinterpret_cast<decltype(regs.rdx.r)>(function);
