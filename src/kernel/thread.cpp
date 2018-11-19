@@ -1,4 +1,5 @@
 #include "thread.h"
+#include <Windows.h>
 
 std::condition_variable Thread::endCond;
 std::mutex Thread::endMtx;
@@ -24,5 +25,6 @@ void Thread::stop(uint16_t code)
 	std::unique_lock<std::mutex> lk(Thread::endMtx);
 	Thread::endCond.notify_all();
 	lk.unlock();
+	TerminateThread(thread_obj->native_handle(), 0);
 	// TODO how to kill current thread?
 }

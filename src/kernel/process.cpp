@@ -1,4 +1,5 @@
 #include "process.h"
+#include <Windows.h>
 
 
 Process::Process(std::string userfunc_name, size_t parent_pid) :
@@ -29,6 +30,7 @@ void Process::cleanThread(size_t tid)
 {
 	Thread* thread_to_clean = threads[tid];
 	threads.erase(tid);
+	WaitForSingleObject(thread_to_clean->thread_obj->native_handle(), INFINITE);
 	delete thread_to_clean;
 	if (threads.size() == 0)
 	{
