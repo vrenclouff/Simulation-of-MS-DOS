@@ -3,30 +3,33 @@
 
 #include <filesystem>
 #include <iostream>
+#include <sstream>
 
 size_t __stdcall type(const kiv_hal::TRegisters &regs) {
 
 	size_t written;
+	size_t read;
 	const kiv_os::THandle std_out = static_cast<kiv_os::THandle>(regs.rbx.x);
 	const kiv_os::THandle std_in = static_cast<kiv_os::THandle>(regs.rax.x);
 	const char* linebreak = "\n";
 	   
 	auto input = std::string(reinterpret_cast<char*>(regs.rdi.r));
 
-	char* rest;
-	char* filename = "";
-	strtok_s(filename, " ", &rest);
+	std::istringstream is(input);
+	std::string filename;
+	std::getline(is, filename, ' ');
 
-	if (filename != NULL && filename != "") {
+	if (!filename.empty()) {
 		kiv_os::THandle filehandle;
 		kiv_os_rtl::Open_File(input.c_str(), input.size(), filehandle, true, std::iostream::ios_base::in);
 
 		const kiv_os::THandle std_out = static_cast<kiv_os::THandle>(regs.rbx.x);
 
-		if (kiv_os_rtl::Last_Error != kiv_os::NOS_Error::Success || filehandle == NULL) {
-			kiv_os_rtl::Write_File(std_out, input.c_str(), input.size(), written);
-		}
-		kiv_os_rtl::Write_File(std_out, linebreak, strlen(linebreak), written);
+		char content[1124];
+		do {
+			kiv_os_rtl::Read_File(filehandle, content, sizeof(content), read);
+			kiv_os_rtl::Write_File(std_out, content, read, written);
+		} while (read);
 	}
 	else {
 		const size_t buffer_size = 256;
