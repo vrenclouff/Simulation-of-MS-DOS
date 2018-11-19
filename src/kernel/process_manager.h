@@ -11,7 +11,7 @@ private:
 	std::map<size_t, Process*> processes;
 	std::map<kiv_os::THandle, size_t> handles; // tid mapped to THandle
 	kiv_os::THandle last_handle = 0;
-	Process* getRunningProcess();
+	Process* _getRunningProcess();
 	Thread* getRunningThread();
 	Thread* getThreadByTid(size_t tid);
 	Process* getProcessByTid(size_t tid);
@@ -19,6 +19,7 @@ private:
 	void removeProcess(kiv_os::THandle handle);
 
 public:
+	Process* getRunningProcess();
 	void SysCall(kiv_hal::TRegisters &regs);
 	// Syscall handlers
 	void handleClone(kiv_hal::TRegisters &regs);

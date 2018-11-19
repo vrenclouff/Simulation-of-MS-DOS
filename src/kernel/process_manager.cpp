@@ -8,7 +8,7 @@
 
 // ---PRIVATE METHODS---
 
-Process* ProcessManager::getRunningProcess()
+Process* ProcessManager::_getRunningProcess()
 {
 	size_t thread_id = std::hash<std::thread::id>()(std::this_thread::get_id());
 	// check if thread is main thread
@@ -76,6 +76,12 @@ void ProcessManager::removeProcess(kiv_os::THandle handle)
 
 // ---PUBLIC METHODS---
 
+Process* ProcessManager::getRunningProcess()
+{
+	std::lock_guard<std::mutex> lock(mtx);
+	return _getRunningProcess();
+}
+
 void ProcessManager::SysCall(kiv_hal::TRegisters &regs)
 {
 	switch (static_cast<kiv_os::NOS_Process>(regs.rax.l))
@@ -130,7 +136,7 @@ void ProcessManager::createProcess(kiv_hal::TRegisters &regs, bool first_process
 
 	if (!first_process)
 	{
-		Process* currentProcess = getRunningProcess();
+		Process* currentProcess = _getRunningProcess();
 		parent_pid = currentProcess->pid;
 		parent_handle = currentProcess->handle;
 	}
@@ -167,7 +173,7 @@ void ProcessManager::createThread(kiv_hal::TRegisters &regs)
 	kiv_os::THandle stdin_handle = regs.rbx.e >> 16;
 	kiv_os::THandle stdout_handle = regs.rbx.e & 0x00ff;
 
-	Process* currentProcess = getRunningProcess();
+	Process* currentProcess = _getRunningProcess();
 
 	kiv_hal::TRegisters child_context{ 0 };
 	child_context.rdi.r = regs.rdi.r; // pointer to shared data
@@ -232,7 +238,7 @@ void ProcessManager::handleExit(kiv_hal::TRegisters &regs)
 	// CX = exit code
 	mtx.lock();
 	uint16_t exitCode = static_cast<uint16_t>(regs.rcx.x);
-	Process* thisProcess = getRunningProcess();
+	Process* thisProcess = _getRunningProcess();
 	size_t thread_id = std::hash<std::thread::id>()(std::this_thread::get_id());
 	mtx.unlock();
 	thisProcess->stopThread(exitCode, thread_id);
