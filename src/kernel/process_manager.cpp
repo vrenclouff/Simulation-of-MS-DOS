@@ -6,6 +6,8 @@
 #include <string>
 #include <iostream>
 
+#include "io_manager.h"
+
 // ---PRIVATE METHODS---
 
 Process* ProcessManager::_getRunningProcess()
@@ -133,15 +135,21 @@ void ProcessManager::createProcess(kiv_hal::TRegisters &regs, bool first_process
 	kiv_os::THandle parent_handle = 0;
 	kiv_os::THandle stdin_handle = regs.rbx.e >> 16;
 	kiv_os::THandle stdout_handle = regs.rbx.e & 0x00ff;
+	std::string dir;
 
 	if (!first_process)
 	{
 		Process* currentProcess = _getRunningProcess();
 		parent_pid = currentProcess->pid;
 		parent_handle = currentProcess->handle;
+		dir = currentProcess->working_dir;
+	}
+	else {
+		dir = io::main_drive().append("\\");
 	}
 
 	Process* newProcess = new Process(funcNameStr, parent_pid);
+	newProcess->working_dir = dir;
 	kiv_hal::TRegisters child_context{ 0 };
 	child_context.rdi.r = regs.rdi.r; // function args
 	child_context.rax.x = stdin_handle; // stdin

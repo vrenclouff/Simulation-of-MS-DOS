@@ -87,15 +87,6 @@ void __stdcall Bootstrap_Loader(kiv_hal::TRegisters &context) {
 			if (io::register_drive(drive_volume, regs.rdx.l, boot_block)) {
 				// TODO exception -> can't register disk drive
 			}
-
-			{
-				drive_volume.append("\\");
-				kiv_hal::TRegisters regs;
-				regs.rax.l = static_cast<uint8_t>(kiv_os::NOS_File_System::Set_Working_Dir);
-				regs.rdx.r = reinterpret_cast<decltype(regs.rdi.r)>(drive_volume.c_str());
-				regs.rcx.r = drive_volume.size();
-				Handle_IO(regs);
-			}
 		}
 
 		if (regs.rdx.l == 255) break;

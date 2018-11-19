@@ -23,6 +23,7 @@ public:
 	kiv_os::THandle parent_handle;
 	ProcessState state;
 	std::string userfunc_name;
+	std::string working_dir;
 	std::map<size_t, Thread*> threads;
 
 	Process(std::string userfunc_name, size_t parent_pid);

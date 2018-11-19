@@ -4,12 +4,11 @@
 
 #include "fat_tools.h"
 #include "io_manager.h"
+#include "common.h"
 
 #include <filesystem>
 #include <functional>
 
-//kiv_os::THandle working_dir;
-std::string working_dir;
 
 STDHandle Register_STD() {
 	IOHandle* console = IOHandle::console();
@@ -92,7 +91,8 @@ void Handle_IO(kiv_hal::TRegisters &regs) {
 		case kiv_os::NOS_File_System::Get_Working_Dir: {
 			auto path_buffer = reinterpret_cast<char*>(regs.rdx.r);
 			const auto buffer_size = regs.rcx.r;
-			// TODO predelat na THandle
+			const auto process = process_manager->getRunningProcess();
+			const auto working_dir = std::string_view(process->working_dir);
 			const size_t size = buffer_size <= working_dir.size() ? buffer_size : working_dir.size();
 			std::copy(&working_dir[0], &working_dir[0] + size, path_buffer);
 			regs.rax.r = size;
@@ -100,8 +100,8 @@ void Handle_IO(kiv_hal::TRegisters &regs) {
 
 		case kiv_os::NOS_File_System::Set_Working_Dir: {
 			const auto path_buffer = reinterpret_cast<char*>(regs.rdx.r);
-			// TODO predelat na THandle
-			working_dir = std::string(path_buffer, strlen(path_buffer));
+			const auto process = process_manager->getRunningProcess();
+			process->working_dir = std::string(path_buffer, strlen(path_buffer));
 		} break;
 	}
 }

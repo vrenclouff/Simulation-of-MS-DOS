@@ -97,6 +97,10 @@ bool io::open(kiv_fs::Drive_Desc& drive, kiv_fs::FATEntire_Directory& entire_dir
 	return find_entire_dir(entire_dir, path_components, drive);
 }
 
+std::string io::main_drive() {
+	return registred_drivers.begin()->first;
+}
+
 bool io::register_drive(const std::string volume, const uint8_t id, const kiv_fs::FATBoot_Block& book_block) {
 	if (registred_drivers.find(volume) != registred_drivers.end()) { return false; }
 	registred_drivers[volume] = { id, book_block };
