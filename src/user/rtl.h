@@ -30,7 +30,7 @@ namespace kiv_os_rtl {
 
 	kiv_os::THandle* Create_Pipe();
 
-	kiv_os::THandle Clone(char* function, char* arguments, kiv_os::THandle stdin_handle, kiv_os::THandle stdout_handle);
+	kiv_os::THandle Clone(const char* function, char* arguments, kiv_os::THandle stdin_handle, kiv_os::THandle stdout_handle);
 
 	bool Wait_For(kiv_os::THandle handlers[]);
 

@@ -13,24 +13,21 @@ bool parsePart(char* args, kiv_os::THandle stdin_handle, kiv_os::THandle stdout_
 		return NULL;
 	}
 
-	size_t origsize = strlen(tofunc);
-	size_t size = origsize + sizeof(char);
-	char* function = (char*)malloc(size);
-	strncpy_s(function, size, tofunc, size);
+	std::string function(tofunc);
 
 	// TODO protoze api/user.def - asi vyresit lip
-	if (!strcmp(function, "find")) {
+	if (!function.compare("find")) {
 		function = "wc";
 	}
-	else if (!strcmp(function, "tasklist")) {
+	else if (!function.compare("tasklist")) {
 		function = "ps";
 	}
-	else if (!strcmp(function, "wc") || !strcmp(function, "ps")) {
+	else if (!function.compare("wc") || !function.compare("ps")) {
 		function = "";
 	}
 
 	kiv_os::THandle handlers[1];
-	handlers[0] = kiv_os_rtl::Clone(function, arguments, stdin_handle, stdout_handle);
+	handlers[0] = kiv_os_rtl::Clone(function.c_str(), arguments, stdin_handle, stdout_handle);
 
 	if (handlers[0] == NULL)
 	{
