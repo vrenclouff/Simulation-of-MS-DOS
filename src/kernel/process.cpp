@@ -1,6 +1,13 @@
 #include "process.h"
 #include <Windows.h>
+#include "common.h"
 
+
+void defaultTerminateHandle(const kiv_hal::TRegisters &context)
+{
+	Thread* this_thread = process_manager->getRunningThread();
+	TerminateThread(this_thread->thread_obj->native_handle(), 0);
+}
 
 Process::Process(std::string userfunc_name, size_t parent_pid) :
 	userfunc_name(userfunc_name), parent_pid(parent_pid)
@@ -11,6 +18,7 @@ Process::Process(std::string userfunc_name, size_t parent_pid) :
 size_t Process::startThread(kiv_hal::TRegisters child_context, kiv_os::TThread_Proc address)
 {
 	Thread *thread = new Thread(address, child_context);
+	thread->handlers[kiv_os::NSignal_Id::Terminate] = reinterpret_cast<kiv_os::TThread_Proc>(defaultTerminateHandle);
 	thread->start();
 	threads[thread->tid] = thread;
 	if (state == ProcessState::prepared)

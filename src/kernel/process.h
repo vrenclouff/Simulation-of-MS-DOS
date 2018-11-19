@@ -7,12 +7,15 @@
 #include <mutex>
 #include <condition_variable>
 #include "thread.h"
+
 enum class ProcessState
 {
 	prepared = 1,
 	running,
 	stopped
 };
+
+void defaultTerminateHandle(const kiv_hal::TRegisters &context);
 
 class Process
 {

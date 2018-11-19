@@ -8,6 +8,7 @@
 
 #include "io_manager.h"
 
+
 // ---PRIVATE METHODS---
 
 Process* ProcessManager::_getRunningProcess()
@@ -22,7 +23,7 @@ Process* ProcessManager::_getRunningProcess()
 	return getProcessByTid(thread_id);
 }
 
-Thread* ProcessManager::getRunningThread()
+Thread* ProcessManager::_getRunningThread()
 {
 	size_t thread_id = std::hash<std::thread::id>()(std::this_thread::get_id());
 	return getThreadByTid(thread_id);
@@ -84,6 +85,12 @@ Process* ProcessManager::getRunningProcess()
 	return _getRunningProcess();
 }
 
+Thread* ProcessManager::getRunningThread()
+{
+	std::lock_guard<std::mutex> lock(mtx);
+	return _getRunningThread();
+}
+
 void ProcessManager::SysCall(kiv_hal::TRegisters &regs)
 {
 	switch (static_cast<kiv_os::NOS_Process>(regs.rax.l))
@@ -99,6 +106,9 @@ void ProcessManager::SysCall(kiv_hal::TRegisters &regs)
 			break;
 		case kiv_os::NOS_Process::Read_Exit_Code:
 			handleReadExitCode(regs);
+			break;
+		case kiv_os::NOS_Process::Register_Signal_Handler:
+			registerSignalHandler(regs);
 			break;
 	}
 }
@@ -287,6 +297,34 @@ void ProcessManager::handleReadExitCode(kiv_hal::TRegisters &regs)
 	{
 		removeHandle(target_handle);
 	}
+}
+
+void ProcessManager::registerSignalHandler(kiv_hal::TRegisters &regs)
+{
+	// rcx NSignal_Id
+	// rdx: pointer na TThread_Proc, kde pri jeho volani context.rcx bude id signalu (0 = default handler)
+	std::lock_guard<std::mutex> lock(mtx);
+	regs.flags.carry = 0;
+	kiv_os::NSignal_Id signal = static_cast<kiv_os::NSignal_Id>(regs.rcx.r);
+	if (signal != kiv_os::NSignal_Id::Terminate)
+	{
+		regs.flags.carry = 1;
+		regs.rax.x = static_cast<uint16_t>(kiv_os::NOS_Error::Invalid_Argument);
+		return;
+	}
+
+	kiv_os::TThread_Proc handle;
+	if (regs.rdx.r == 0)
+	{
+		handle = reinterpret_cast<kiv_os::TThread_Proc>(defaultTerminateHandle);
+	}
+	else
+	{
+		handle = reinterpret_cast<kiv_os::TThread_Proc>(regs.rdx.r);
+	}
+
+	Thread* this_thread = _getRunningThread();
+	this_thread->handlers[signal] = handle;
 }
 
 std::string ProcessManager::getProcessTable()
