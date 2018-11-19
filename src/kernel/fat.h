@@ -55,8 +55,8 @@ namespace kiv_fs {
 	};
 
 	struct File_Desc {
-		uint16_t seek;
 		kiv_fs::FATEntire_Directory entire_dir;
+		std::vector<size_t> sectors;
 	};
 
 	void format_disk(const FAT_Version version, void* boot_block, const kiv_hal::TDrive_Parameters &params);

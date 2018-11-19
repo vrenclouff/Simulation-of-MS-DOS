@@ -92,9 +92,19 @@ bool find_entire_dir(kiv_fs::FATEntire_Directory& entire_file, std::vector<std::
 }
 
 
-bool io::open(kiv_fs::Drive_Desc& drive, kiv_fs::FATEntire_Directory& entire_dir, const std::string drive_volume, const std::vector<std::string> path_components) {
+bool io::open(kiv_fs::Drive_Desc& drive, kiv_fs::File_Desc& file, const std::string drive_volume, const std::vector<std::string> path_components) {
 	drive = registred_drivers[drive_volume];
-	return find_entire_dir(entire_dir, path_components, drive);
+
+	kiv_fs::FATEntire_Directory entire_dir;
+	const auto result = find_entire_dir(entire_dir, path_components, drive);
+
+	const std::vector<size_t> sectors = entire_dir.first_cluster != kiv_fs::root_directory_addr(drive.boot_block) ?
+		kiv_fs::sectors_for_entire_dir(entire_dir, drive.boot_block.bytes_per_sector, kiv_fs::offset(drive.boot_block)) :
+		kiv_fs::sectors_for_root_dir(drive.boot_block);
+
+	file = { entire_dir, sectors };
+
+	return result;
 }
 
 std::string io::main_drive() {

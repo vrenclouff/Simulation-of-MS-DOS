@@ -11,27 +11,13 @@
 
 
 STDHandle Register_STD() {
-	IOHandle* console = IOHandle::console();
+	auto console = new IOHandle_Console();
 	const auto  in = Convert_Native_Handle(static_cast<HANDLE>(console));
 	const auto out = Convert_Native_Handle(static_cast<HANDLE>(console));
 	return { in, out };
 }
 
 IOHandle* Open_File(std::string absolute_path, const kiv_os::NOpen_File fm, const kiv_os::NFile_Attributes attributes) {
-
-	// TODO 
-	/*
-		tady urcit co chceme otevrit
-
-		fat_file		-> soubor ktery by mel pracovat s otevrenym souborem read & write
-		absolute_path	-> obsahuje cestu k souboru/slozce nebo SYS
-		fm				-> urcuje pokud soubor existuje a bude se jen otevirat (hledat na disku) nebo ho mame vytvorit
-		attributes		-> pokud soubor existuje zajima nas jen read_only, pokud neexistuje vytvor soubor se vsema atributama
-						   kontrola, zda oteviram stejny typ souboru -> attribute urcuji slozku, tak mam otevrit slozku -> pripadne error
-	
-		disky A: a B: rezerovany pro system
-
-	*/
 
 	std::vector<std::string> components;
 	for (const auto& path : std::filesystem::path(absolute_path)) {
@@ -50,9 +36,9 @@ IOHandle* Open_File(std::string absolute_path, const kiv_os::NOpen_File fm, cons
 		}
 		else {
 			kiv_fs::Drive_Desc drive;
-			kiv_fs::FATEntire_Directory entire_dir;
-			io::open(drive, entire_dir, drive_volume, components);
-			return IOHandle::file(drive, entire_dir);
+			kiv_fs::File_Desc file;
+			io::open(drive, file, drive_volume, components);
+			return new IOHandle_File(drive, file);
 		}
 	}
 	else {
