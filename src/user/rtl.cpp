@@ -58,19 +58,19 @@ bool kiv_os_rtl::Set_Working_Dir(const char *dir) {
 }
 
 bool kiv_os_rtl::Open_File(const char *buffer, const size_t buffer_size, kiv_os::THandle &file_handle, const bool exist, const kiv_os::NFile_Attributes attributes) {
-	// TODO predelat openmode
-	std::string path;
+
+	std::string str_path = std::string(buffer, buffer_size);
 	if (std::filesystem::u8path(buffer).is_relative()) {
-		char absolute_path[10];
+		char absolute_path[100];
 		size_t counter;
 		Get_Working_Dir(absolute_path, sizeof(absolute_path), counter);
-		path = std::string(absolute_path, counter);
+		auto path = std::filesystem::u8path(std::string(absolute_path, counter));
+		path /= str_path;
+		str_path = path.lexically_normal().u8string();
 	}
 
-	path.append(buffer, buffer_size);
-
 	kiv_hal::TRegisters regs = Prepare_SysCall_Context(kiv_os::NOS_Service_Major::File_System, static_cast<uint8_t>(kiv_os::NOS_File_System::Open_File));
-	regs.rdx.r = reinterpret_cast<decltype(regs.rdx.r)>(path.data());
+	regs.rdx.r = reinterpret_cast<decltype(regs.rdx.r)>(str_path.data());
 	regs.rcx.l = exist ? static_cast<decltype(regs.rcx.l)>(kiv_os::NOpen_File::fmOpen_Always) : 0;
 	const auto read_only = static_cast<uint8_t>(kiv_os::NFile_Attributes::Read_Only);
 	regs.rdi.i = static_cast<decltype(regs.rdi.i)>(attributes);

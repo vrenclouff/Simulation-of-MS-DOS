@@ -64,40 +64,10 @@ size_t IOHandle_File::write(char * buffer, size_t buffer_size) {
 	std::vector<std::div_t> allocated_space;
 
 	// TODO pouzit pri appendu posledni offset
-	std::div_t fat_offset = { 1,  MULTIPLY_CONST * MULTIPLY_CONST };
+	const auto fat_offset = START_OF_FAT;
 
-	std::vector<unsigned char> fat(bytes_per_sector);
-	kiv_hal::TDisk_Address_Packet dap;
-	dap.sectors = static_cast<void*>(fat.data());
-	dap.count = 1;
-	dap.lba_index = fat_offset.quot;
-
-	kiv_hal::TRegisters regs;
-	regs.rdx.l = _drive.id;
-	regs.rax.h = static_cast<decltype(regs.rax.h)>(kiv_hal::NDisk_IO::Read_Sectors);
-	regs.rdi.r = reinterpret_cast<decltype(regs.rdi.r)>(&dap);
-	kiv_hal::Call_Interrupt_Handler(kiv_hal::NInterrupt::Disk_IO, regs);
-
-	// find free sectors for file
-	do {
-		if (fat_offset.rem > bytes_per_sector) {
-			fat.resize(fat.size() + bytes_per_sector);
-
-			dap.sectors = static_cast<void*>(fat.data() + bytes_per_sector);
-			dap.lba_index = ++fat_offset.quot;
-			kiv_hal::Call_Interrupt_Handler(kiv_hal::NInterrupt::Disk_IO, regs);
-
-			fat_offset.rem = 0;
-		}
-		uint16_t fat_cell = fat.at(fat_offset.rem) | fat.at(fat_offset.rem + 1) << 8;
-		if (fat_cell == kiv_fs::FAT_Attributes::Free) {
-			allocated_space.push_back(fat_offset);
-		}
-		fat_offset.rem += sizeof(decltype(fat_cell));
-	} while (allocated_space.size() < size_in_blocks);
-
-	if (allocated_space.empty()) {
-		// TODO ERROR no space for file
+	if (!kiv_fs::find_free_sectors(allocated_space, _drive.id, fat_offset, size_in_blocks, _drive.boot_block.bytes_per_sector)) {
+		// TODO error -> no space for a file
 		return 0;
 	}
 
@@ -105,16 +75,17 @@ size_t IOHandle_File::write(char * buffer, size_t buffer_size) {
 		return ((((ofst.quot - 1) * bytes_per_sector) + ofst.rem) / MULTIPLY_CONST);
 	};
 
-	// find real clusters for file
 	const auto _offset = kiv_fs::offset(boot_block);
 
-	auto actual_fat = allocated_space.at(0);
+	// set first_cluster for file
+	auto actual_fat = allocated_space.front();
 	auto fake_sector = find_sector(actual_fat);
 	_file.sectors.push_back(fake_sector + _offset);
 
-	// set first_cluster for file
 	_file.entire_dir.first_cluster = fake_sector;
 
+	// edit FAT
+	std::vector<unsigned char> fat(bytes_per_sector);
 	for (auto next_fat = allocated_space.begin() + 1; next_fat != allocated_space.end(); next_fat++) {
 		fake_sector = find_sector(*next_fat);
 		_file.sectors.push_back(fake_sector + _offset);
@@ -126,55 +97,50 @@ size_t IOHandle_File::write(char * buffer, size_t buffer_size) {
 
 	fat[actual_fat.rem] = fat[actual_fat.rem + 1] = kiv_fs::FAT_Attributes::End >> 8;
 
+	// write modify FAT to the disk
+	kiv_hal::TDisk_Address_Packet dap;
+	dap.sectors = static_cast<void*>(fat.data());
+	dap.count = 1;
+
+	kiv_hal::TRegisters regs;
+	regs.rdx.l = _drive.id;
+	regs.rdi.r = reinterpret_cast<decltype(regs.rdi.r)>(&dap);
+
 	// write allocated fat table to disk
 	dap.sectors = static_cast<void*>(fat.data());
 	dap.lba_index = actual_fat.quot;
 	regs.rax.h = static_cast<decltype(regs.rax.h)>(kiv_hal::NDisk_IO::Write_Sectors);
 	//kiv_hal::Call_Interrupt_Handler(kiv_hal::NInterrupt::Disk_IO, regs);
 
-	// write buffer to real clusters
-	uint16_t cluster_offset = 0;
-	regs.rax.h = static_cast<decltype(regs.rax.h)>(kiv_hal::NDisk_IO::Write_Sectors);
-	for (auto& sector : _file.sectors) {
-		if (buffer_size - cluster_offset < bytes_per_sector) {
-			//_data.resize(size_in_blocks * bytes_per_sector);
-		}
 
-		// TODO set real pointer to buffer
-		dap.sectors = static_cast<void*>(fat.data() + cluster_offset);
-		dap.lba_index = sector;
-		//kiv_hal::Call_Interrupt_Handler(kiv_hal::NInterrupt::Disk_IO, regs);
+	{
+		// write buffer to real clusters
+		uint16_t cluster_offset = 0;
+		regs.rax.h = static_cast<decltype(regs.rax.h)>(kiv_hal::NDisk_IO::Write_Sectors);
+		for (auto& sector : _file.sectors) {
+			if (buffer_size - cluster_offset < bytes_per_sector) {
+				//_data.resize(size_in_blocks * bytes_per_sector);
+			}
 
-		cluster_offset += bytes_per_sector;
-	}
-
-
-	// TODO load sector for parrent
-		// move this code to Close_Handle
-	const auto parrent_sectors = std::vector<size_t>(); // kiv_fs::load_sectors(NULL);
-	const auto max_dir_entries_per_block = static_cast<uint8_t>(bytes_per_sector / sizeof(kiv_fs::FATEntire_Directory));
-	std::vector<unsigned char> root_dir(bytes_per_sector);
-	for (const auto& sector : parrent_sectors) {
-
-		dap.sectors = static_cast<void*>(root_dir.data());
-		dap.lba_index = sector;
-		regs.rax.h = static_cast<decltype(regs.rax.h)>(kiv_hal::NDisk_IO::Read_Sectors);
-		kiv_hal::Call_Interrupt_Handler(kiv_hal::NInterrupt::Disk_IO, regs);
-
-		std::vector<kiv_fs::FATEntire_Directory> dir_entries;
-		kiv_fs::entire_directory(dir_entries, bytes_per_sector, root_dir.data());
-		if (dir_entries.size() < max_dir_entries_per_block) {
-			dir_entries.push_back(_file.entire_dir);
-			dir_entries.resize(max_dir_entries_per_block);
-
-			dap.sectors = static_cast<void*>(dir_entries.data());
+			// TODO set real pointer to buffer
+			dap.sectors = static_cast<void*>(fat.data() + cluster_offset);
 			dap.lba_index = sector;
-			regs.rax.h = static_cast<decltype(regs.rax.h)>(kiv_hal::NDisk_IO::Write_Sectors);
 			//kiv_hal::Call_Interrupt_Handler(kiv_hal::NInterrupt::Disk_IO, regs);
 
-			break;
+			cluster_offset += bytes_per_sector;
 		}
 	}
+
+
+	{
+		// TODO load sector for parrent
+			// move this code to Close_Handle
+		const auto parrent_sectors = std::vector<size_t>(); // kiv_fs::load_sectors(NULL);
+		if (!kiv_fs::save_to_dir(_drive.id, parrent_sectors, bytes_per_sector, _file.entire_dir)) {
+			// TODO error
+		}
+	}
+
 
 	return size_t();
 }

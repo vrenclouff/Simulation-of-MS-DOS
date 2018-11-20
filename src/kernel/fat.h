@@ -11,6 +11,9 @@
 
 #define MULTIPLY_CONST	0x02
 
+#define START_OF_FAT std::div_t{ 1,  MULTIPLY_CONST * MULTIPLY_CONST }
+
+
 namespace kiv_fs {
 
 	enum class FAT_Version : std::uint8_t {
@@ -73,4 +76,10 @@ namespace kiv_fs {
 
 	uint16_t root_directory_addr(const FATBoot_Block& boot_block);
 	uint8_t root_directory_size(const FATBoot_Block& boot_block);
+
+	bool create_dir(const kiv_fs::Drive_Desc& drive, const kiv_fs::File_Desc& parrent, kiv_fs::File_Desc& dir);
+
+	bool find_free_sectors(std::vector<std::div_t>& fat_offsets, const uint8_t drive_id, const std::div_t sector, const size_t count, const size_t bytes_per_sector);
+	bool save_to_dir(const uint8_t drive_id, const std::vector<size_t> sectors, const uint16_t bytes_per_sector, const kiv_fs::FATEntire_Directory entire_dir);
+	bool save_to_fat(const uint8_t drive_id, const std::vector<std::div_t> fat_offsets, const uint16_t bytes_per_sector, const uint16_t offset, std::vector<size_t>& sectors);
 }

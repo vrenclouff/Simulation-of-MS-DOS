@@ -176,7 +176,7 @@ std::vector<size_t> sectors_for_entire_dir(const kiv_fs::FATEntire_Directory & e
 
 bool kiv_fs::find_entire_dir(kiv_fs::FATEntire_Directory& entire_file, std::vector<std::string> components, const kiv_fs::Drive_Desc drive) {
 
-	const auto el = components.front();
+	//const auto el = components.front();
 	components.erase(components.begin());
 
 	if (components.empty()) {
@@ -192,6 +192,10 @@ bool kiv_fs::find_entire_dir(kiv_fs::FATEntire_Directory& entire_file, std::vect
 	std::vector<unsigned char> arr(bytes_per_sector);
 	auto sectors = sectors_for_root_dir(drive.boot_block);
 	do {
+
+		const auto finded_element = fat_tool::parse_entire_name(components.front());
+		components.erase(components.begin());
+
 		for (auto& sector : sectors) {
 
 			kiv_hal::TDisk_Address_Packet dap;
@@ -209,9 +213,7 @@ bool kiv_fs::find_entire_dir(kiv_fs::FATEntire_Directory& entire_file, std::vect
 			std::vector<kiv_fs::FATEntire_Directory> entries;
 			kiv_fs::entire_directory(entries, bytes_per_sector, arr.data());
 
-			const auto elm = components.front();
-			components.erase(components.begin());
-			const auto finded_element = fat_tool::parse_entire_name(elm);
+			if (entries.empty()) break;
 
 			// const auto finded_element = fat_tool::parse_entire_name(components.at(++deep));
 			const auto is_dir = finded_element.extension.empty();
@@ -267,6 +269,167 @@ uint8_t kiv_fs::root_directory_size(const FATBoot_Block& boot_block) {
 	return static_cast<uint8_t>(boot_block.number_of_root_directory_entries * sizeof(kiv_fs::FATEntire_Directory) / boot_block.bytes_per_sector);
 }
 
+bool kiv_fs::find_free_sectors(std::vector<std::div_t>& fat_offsets, const uint8_t drive_id, const std::div_t sector, const size_t count, const size_t bytes_per_sector) {
+
+	std::div_t fat_offset = sector;
+
+	std::vector<unsigned char> fat(bytes_per_sector);
+	kiv_hal::TDisk_Address_Packet dap;
+	dap.sectors = static_cast<void*>(fat.data());
+	dap.count = 1;
+	dap.lba_index = fat_offset.quot;
+
+	kiv_hal::TRegisters regs;
+	regs.rdx.l = drive_id;
+	regs.rax.h = static_cast<decltype(regs.rax.h)>(kiv_hal::NDisk_IO::Read_Sectors);
+	regs.rdi.r = reinterpret_cast<decltype(regs.rdi.r)>(&dap);
+	kiv_hal::Call_Interrupt_Handler(kiv_hal::NInterrupt::Disk_IO, regs);
+
+	do {
+		if (fat_offset.rem > bytes_per_sector) {
+			fat.resize(fat.size() + bytes_per_sector);
+
+			dap.sectors = static_cast<void*>(fat.data() + bytes_per_sector);
+			dap.lba_index = ++fat_offset.quot;
+			kiv_hal::Call_Interrupt_Handler(kiv_hal::NInterrupt::Disk_IO, regs);
+
+			fat_offset.rem = 0;
+		}
+		uint16_t fat_cell = fat.at(fat_offset.rem) | fat.at(fat_offset.rem + 1) << 8;
+		if (fat_cell == kiv_fs::FAT_Attributes::Free) {
+			fat_offsets.push_back(fat_offset);
+		}
+		fat_offset.rem += sizeof(decltype(fat_cell));
+	} while (fat_offsets.size() < count);
+
+	if (fat_offsets.size() < count) {
+		return false;
+	}
+
+	return true;
+}
+
 std::vector<size_t> kiv_fs::load_sectors(const kiv_fs::FATBoot_Block& boot_block, const kiv_fs::FATEntire_Directory & entry_dir) {
 	return entry_dir.first_cluster != root_directory_addr(boot_block) ? sectors_for_entire_dir(entry_dir, boot_block.bytes_per_sector, offset(boot_block)) : sectors_for_root_dir(boot_block);
+}
+
+bool kiv_fs::save_to_dir(const uint8_t drive_id, const std::vector<size_t> sectors, const uint16_t bytes_per_sector, const kiv_fs::FATEntire_Directory entire_dir) {
+
+	std::vector<unsigned char> fat(bytes_per_sector);
+	kiv_hal::TDisk_Address_Packet dap;
+	dap.sectors = static_cast<void*>(fat.data());
+	dap.count = 1;
+
+	kiv_hal::TRegisters regs;
+	regs.rdx.l = drive_id;
+	regs.rax.h = static_cast<decltype(regs.rax.h)>(kiv_hal::NDisk_IO::Read_Sectors);
+	regs.rdi.r = reinterpret_cast<decltype(regs.rdi.r)>(&dap);
+	kiv_hal::Call_Interrupt_Handler(kiv_hal::NInterrupt::Disk_IO, regs);
+
+	const auto max_dir_entries_per_block = static_cast<uint8_t>(bytes_per_sector / sizeof(kiv_fs::FATEntire_Directory));
+	std::vector<unsigned char> dir(bytes_per_sector);
+	dap.sectors = static_cast<void*>(dir.data());
+
+	for (const auto& sector : sectors) {
+
+		dap.lba_index = sector;
+		regs.rax.h = static_cast<decltype(regs.rax.h)>(kiv_hal::NDisk_IO::Read_Sectors);
+		kiv_hal::Call_Interrupt_Handler(kiv_hal::NInterrupt::Disk_IO, regs);
+
+		std::vector<kiv_fs::FATEntire_Directory> dir_entries;
+		kiv_fs::entire_directory(dir_entries, bytes_per_sector, dir.data());
+		if (dir_entries.size() < max_dir_entries_per_block) {
+			dir_entries.push_back(entire_dir);
+			dir_entries.resize(max_dir_entries_per_block);
+
+			dap.sectors = static_cast<void*>(dir_entries.data());
+			dap.lba_index = sector;
+			regs.rax.h = static_cast<decltype(regs.rax.h)>(kiv_hal::NDisk_IO::Write_Sectors);
+			kiv_hal::Call_Interrupt_Handler(kiv_hal::NInterrupt::Disk_IO, regs);
+
+			break;
+		}
+	}
+
+	return true;
+}
+
+bool kiv_fs::save_to_fat(const uint8_t drive_id, const std::vector<std::div_t> fat_offsets, const uint16_t bytes_per_sector, const uint16_t offset, std::vector<size_t>& sectors) {
+
+	auto find_sector = [&](const std::div_t& ofst) {
+		return ((((ofst.quot - 1) * bytes_per_sector) + ofst.rem) / MULTIPLY_CONST);
+	};
+
+	auto actual_fat = fat_offsets.front();
+	auto fake_sector = find_sector(actual_fat);
+	sectors.push_back(fake_sector + offset);
+
+	std::vector<unsigned char> fat(bytes_per_sector);
+	kiv_hal::TDisk_Address_Packet dap;
+	dap.sectors = static_cast<void*>(fat.data());
+	dap.count = 1;
+	dap.lba_index = actual_fat.quot;
+
+	kiv_hal::TRegisters regs;
+	regs.rdx.l = drive_id;
+	regs.rax.h = static_cast<decltype(regs.rax.h)>(kiv_hal::NDisk_IO::Read_Sectors);
+	regs.rdi.r = reinterpret_cast<decltype(regs.rdi.r)>(&dap);
+	kiv_hal::Call_Interrupt_Handler(kiv_hal::NInterrupt::Disk_IO, regs);
+
+
+	for (auto next_fat = fat_offsets.begin() + 1; next_fat != fat_offsets.end(); next_fat++) {
+
+		if (dap.lba_index != (*next_fat).quot) {
+
+			regs.rax.h = static_cast<decltype(regs.rax.h)>(kiv_hal::NDisk_IO::Write_Sectors);
+			kiv_hal::Call_Interrupt_Handler(kiv_hal::NInterrupt::Disk_IO, regs);
+
+			dap.lba_index = (*next_fat).quot;
+			regs.rax.h = static_cast<decltype(regs.rax.h)>(kiv_hal::NDisk_IO::Read_Sectors);
+			kiv_hal::Call_Interrupt_Handler(kiv_hal::NInterrupt::Disk_IO, regs);
+		}
+
+		fake_sector = find_sector(*next_fat);
+		sectors.push_back(fake_sector + offset);
+		auto index = actual_fat.rem;
+		fat[index] = fake_sector & 0xff;
+		fat[index + 1] = (fake_sector & 0xff00) >> 8;
+		actual_fat = *next_fat;
+	}
+	fat[actual_fat.rem] = fat[actual_fat.rem + 1] = kiv_fs::FAT_Attributes::End >> 8;
+
+	regs.rax.h = static_cast<decltype(regs.rax.h)>(kiv_hal::NDisk_IO::Write_Sectors);
+	kiv_hal::Call_Interrupt_Handler(kiv_hal::NInterrupt::Disk_IO, regs);
+
+	return true;
+}
+
+bool kiv_fs::create_dir(const kiv_fs::Drive_Desc& drive, const kiv_fs::File_Desc& parrent, kiv_fs::File_Desc& dir) {
+
+	const auto bytes_per_sector = drive.boot_block.bytes_per_sector;
+
+	std::vector<std::div_t> fat_offsets;
+
+	// najdi volne sektory pro slozku
+	if (!find_free_sectors(fat_offsets, drive.id, START_OF_FAT, 1, bytes_per_sector)) {
+		// TODO error
+		return false;
+	}
+
+	// uloz slozku do FAT
+	if (!save_to_fat(drive.id, fat_offsets, bytes_per_sector, kiv_fs::offset(drive.boot_block), dir.sectors)) {
+		// TODO error
+		return false;
+	}
+
+	//const auto fat_offset = fat_offsets.front();
+	dir.entire_dir.first_cluster = static_cast<decltype(dir.entire_dir.first_cluster)>(dir.sectors.front());
+
+	// uloz do nadrazene slozky entire_dir pro novou slozku
+	if (!save_to_dir(drive.id, parrent.sectors, bytes_per_sector, dir.entire_dir)) {
+		// TODO error
+		return false;
+	}
+
+	return true;
 }

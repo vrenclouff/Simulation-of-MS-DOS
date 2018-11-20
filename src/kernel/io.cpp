@@ -101,13 +101,20 @@ IOHandle* Open_File(std::string absolute_path, const kiv_os::NOpen_File fm, cons
 			return nullptr;
 		}
 
+		if (!fat_tool::is_attr(parrent_entry.attributes, kiv_os::NFile_Attributes::Directory)) {
+			// TODO error -> folder that we want to create new file/dir isn't exist
+			return nullptr;
+		}
+
 		const auto sectors = kiv_fs::load_sectors(drive.boot_block, parrent_entry);
 
 		kiv_fs::File_Desc parrent_file = { parrent_entry, sectors };
 
-		// TODO 
+		if (!kiv_fs::create_dir(drive, parrent_file, file)) {
+			// TODO error -> cannot create new dir
+		}
 
-		return new IOHandle_File(drive, file);
+		return new IOHandle();
 	}
 }
 
@@ -146,9 +153,26 @@ void Handle_IO(kiv_hal::TRegisters &regs) {
 		} break;
 
 		case kiv_os::NOS_File_System::Set_Working_Dir: {
-			const auto path_buffer = reinterpret_cast<char*>(regs.rdx.r);
+			const auto buffer = reinterpret_cast<char*>(regs.rdx.r);
+			auto str_path = std::string(buffer, strlen(buffer));
 			const auto process = process_manager->getRunningProcess();
-			process->working_dir = std::string(path_buffer, strlen(path_buffer));
+
+			if (std::filesystem::u8path(str_path).is_relative()) {
+				auto path = std::filesystem::u8path(process->working_dir);
+				path /= str_path;
+				str_path = path.lexically_normal().u8string();
+			}
+
+			const auto handle = Open_File(str_path, kiv_os::NOpen_File::fmOpen_Always, kiv_os::NFile_Attributes::Directory);
+			if (handle) {
+				process->working_dir = str_path;
+				delete handle;
+			}
+			else {
+				regs.flags.carry = 1;
+				regs.rax.x = static_cast<decltype(regs.rax.x)>(kiv_os::NOS_Error::File_Not_Found);
+			}
+
 		} break;
 	}
 }

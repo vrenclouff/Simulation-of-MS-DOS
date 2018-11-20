@@ -68,7 +68,11 @@ void parse(char* args, kiv_os::THandle shellin, kiv_os::THandle shellout, size_t
 
 	if (!strcmp(first, "cd"))
 	{
-		kiv_os_rtl::Set_Working_Dir(dirname);
+		if (!kiv_os_rtl::Set_Working_Dir(dirname)) {
+			const auto error_msg = std::string_view("Directory doesn't exist.\n");
+			size_t wrote;
+			kiv_os_rtl::Write_File(shellout, error_msg.data(), error_msg.size(), wrote);
+		}
 		return;
 	}
 

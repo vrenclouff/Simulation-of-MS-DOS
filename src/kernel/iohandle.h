@@ -11,8 +11,8 @@ enum class SYS_Type : uint8_t {
 
 class IOHandle {
 public:
-	virtual size_t read(char* buffer, size_t buffer_size) = 0;
-	virtual size_t write(char* buffer, size_t buffer_size) = 0;
+	virtual size_t read(char* buffer, size_t buffer_size)  { return 0; }
+	virtual size_t write(char* buffer, size_t buffer_size) { return 0; }
 };
 
 class IOHandle_Console : public IOHandle {
