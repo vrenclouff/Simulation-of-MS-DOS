@@ -180,28 +180,6 @@ void test_thread(const kiv_hal::TRegisters &regs)
 	return;
 }
 
-size_t __stdcall test_open_file(const kiv_hal::TRegisters & regs) {
-
-	const kiv_os::THandle std_in = static_cast<kiv_os::THandle>(regs.rax.x);
-	const kiv_os::THandle std_out = static_cast<kiv_os::THandle>(regs.rbx.x);
-
-	//std::string file_name("lorem2.txt");
-	std::string file_name("C://home/test.txt");
-
-	kiv_os::THandle file_handle;
-	kiv_os_rtl::Open_File(file_name.c_str(), file_name.size(), file_handle, false, std::iostream::ios_base::in);
-
-	char buffer[5];
-	size_t counter;
-	kiv_os_rtl::Read_File(file_handle, buffer, sizeof(buffer), counter);
-
-	auto str = std::string(buffer, counter);
-
-	const auto close_handle = kiv_os_rtl::Close_Handle(file_handle);
-
-	return 0;
-}
-
 
 // -------------TESTS---------------
 

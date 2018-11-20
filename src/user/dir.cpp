@@ -8,31 +8,40 @@
 
 size_t __stdcall dir(const kiv_hal::TRegisters &regs) {
 
-	const auto input = reinterpret_cast<char*>(regs.rdi.r);
 	const auto std_out = static_cast<kiv_os::THandle>(regs.rbx.x);
 
-	size_t read_counter, write_counter;
-	std::string path;
-	if (strlen(input) == 0) {
+	const auto input = std::string(reinterpret_cast<char*>(regs.rdi.r));
+
+	size_t read, wrote;
+	std::string path = input;
+
+	if (input.empty()) {
 		char buffer[100];
-		kiv_os_rtl::Get_Working_Dir(buffer, sizeof(buffer), read_counter);
-		path = std::string(buffer, read_counter);
+		kiv_os_rtl::Get_Working_Dir(buffer, sizeof(buffer), read);
+		path = std::string(buffer, read);
 	}
-	else {
-		path = input;
-	}
+
 
 	kiv_os::THandle dirhandle;
-	kiv_os_rtl::Open_File(path.c_str(), path.size(), dirhandle, true, 1);
+	if (!kiv_os_rtl::Open_File(path.data(), path.size(), dirhandle, true, kiv_os::NFile_Attributes::Read_Only)) {
+		// TODO predelat na last_error
+		const auto error_msg = std::string_view("Cannot read content of folder.\n");
+		kiv_os_rtl::Write_File(std_out, error_msg.data(), error_msg.size(), wrote);
+		
+		const kiv_os::NOS_Error error = kiv_os_rtl::Last_Error;
+		const auto error_code = static_cast<uint16_t>(error);
+		kiv_os_rtl::Exit(error_code);
+		return error_code;
+	}
 
-	const auto header = "RO\tHIDDEN\tSYSTEM\tVOLUME\tIS DIR\tARCHIVE\tFILENAME\n";
-	kiv_os_rtl::Write_File(std_out, header, strlen(header), write_counter);
+	const auto header = std::string_view("RO\tHIDDEN\tSYSTEM\tVOLUME\tIS DIR\tARCHIVE\tFILENAME\n");
+	kiv_os_rtl::Write_File(std_out, header.data(), header.size(), wrote);
 
 	char buffer[MAX_ENTRY_ITEMS * sizeof(kiv_os::TDir_Entry)];
 	do {
-		kiv_os_rtl::Read_File(dirhandle, buffer, sizeof(buffer), read_counter);
+		kiv_os_rtl::Read_File(dirhandle, buffer, sizeof(buffer), read);
 
-		for (size_t beg = 0; beg < read_counter; beg += sizeof(kiv_os::TDir_Entry)) {
+		for (size_t beg = 0; beg < read; beg += sizeof(kiv_os::TDir_Entry)) {
 
 			const auto dir = reinterpret_cast<kiv_os::TDir_Entry*>(buffer + beg);
 			const auto file_attributes = static_cast<kiv_os::NFile_Attributes>(dir->file_attributes);
@@ -57,9 +66,9 @@ size_t __stdcall dir(const kiv_hal::TRegisters &regs) {
 			;
 
 			const auto text = ss.str();
-			kiv_os_rtl::Write_File(std_out, text.c_str(), text.size(), write_counter);
+			kiv_os_rtl::Write_File(std_out, text.c_str(), text.size(), wrote);
 		}
-	} while (read_counter);
+	} while (read);
 
 	kiv_os_rtl::Close_Handle(dirhandle);
 	kiv_os_rtl::Exit(0);

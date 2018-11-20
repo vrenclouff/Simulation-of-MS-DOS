@@ -3,25 +3,22 @@
 #include "parser.h"
 
 size_t __stdcall md(const kiv_hal::TRegisters &regs) {
+	
+	const auto std_out = static_cast<kiv_os::THandle>(regs.rbx.x);
 
-	char* input = reinterpret_cast<char*>(regs.rdi.r);
+	const auto input = std::string(reinterpret_cast<char*>(regs.rdi.r));
 
 	kiv_os::THandle filehandle;
-	kiv_os_rtl::Open_File(input, sizeof(input), filehandle, false, std::iostream::ios_base::out);
 
-	size_t counter;
-	const kiv_os::THandle std_out = static_cast<kiv_os::THandle>(regs.rbx.x);
-	char* message = "";
+	if (!kiv_os_rtl::Open_File(input.data(), input.size(), filehandle, false, kiv_os::NFile_Attributes::Directory)) {
+		// TODO error
+		const kiv_os::NOS_Error error = kiv_os_rtl::Last_Error;
+		const auto error_code = static_cast<uint16_t>(error);
+		kiv_os_rtl::Exit(error_code);
+		return error_code;
+	}
 
-	kiv_os::NOS_Error error = kiv_os_rtl::Last_Error;
-	if (error != kiv_os::NOS_Error::Success || filehandle == NULL)
-	{
-		getErrorMessage(error, message);
-	}
-	else {
-		message = "Created.\n";
-	}
-	kiv_os_rtl::Write_File(std_out, message, strlen(message), counter);
+	kiv_os_rtl::Close_Handle(filehandle);
 
 	kiv_os_rtl::Exit(0);	
 	return 0;

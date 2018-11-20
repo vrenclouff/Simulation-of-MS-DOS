@@ -22,7 +22,7 @@ namespace kiv_os_rtl {
 
 	bool Set_Working_Dir(const char *dir);
 
-	bool Open_File(const char *buffer, const size_t buffer_size, kiv_os::THandle &file_handle, const bool exist, const std::iostream::ios_base::openmode openmode);
+	bool Open_File(const char *buffer, const size_t buffer_size, kiv_os::THandle &file_handle, const bool exist, const kiv_os::NFile_Attributes attributes);
 
 	bool Delete_File(const char* filename);
 
@@ -34,7 +34,7 @@ namespace kiv_os_rtl {
 
 	bool Wait_For(kiv_os::THandle handlers[]);
 
-	bool Exit(bool exitcode);
+	bool Exit(uint16_t exitcode);
 
 	std::uint8_t Read_Exit_Code(kiv_os::THandle handle);
 

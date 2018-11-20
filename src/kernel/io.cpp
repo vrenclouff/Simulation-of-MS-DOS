@@ -60,12 +60,12 @@ IOHandle* Open_File(std::string absolute_path, const kiv_os::NOpen_File fm, cons
 
 		if (filename.name.size() > sizeof kiv_fs::FATEntire_Directory::file_name ) {
 			// TODO exception -> filename is larger than is allowed
-			return NULL;
+			return nullptr;
 		}
 
 		if (filename.extension.size() > sizeof kiv_fs::FATEntire_Directory::extension) {
 			// TODO exception -> extension is larger than is allowed
-			return NULL;
+			return nullptr;
 		}
 
 
@@ -75,8 +75,12 @@ IOHandle* Open_File(std::string absolute_path, const kiv_os::NOpen_File fm, cons
 
 		const auto is_dir = fat_tool::is_attr(static_cast<uint8_t>(attributes), kiv_os::NFile_Attributes::Directory);
 
-		const auto extension = is_dir ? std::string(0, sizeof entry.extension) : filename.extension;
-		std::copy(&extension[0], &extension[0] + extension.size(), entry.extension);
+		if (is_dir) {
+			entry.extension[0] = 0;
+		}
+		else {
+			std::copy(&filename.extension[0], &filename.extension[0] + filename.extension.size(), entry.extension);
+		}
 
 		entry.attributes = static_cast<decltype(entry.attributes)>(attributes);
 		entry.size = 0;
@@ -97,9 +101,9 @@ IOHandle* Open_File(std::string absolute_path, const kiv_os::NOpen_File fm, cons
 			return nullptr;
 		}
 
-		const std::vector<size_t> sectors = kiv_fs::load_sectors(drive.boot_block, parrent_entry);
+		const auto sectors = kiv_fs::load_sectors(drive.boot_block, parrent_entry);
 
-		kiv_fs::File_Desc parrent_file = { entry, sectors };
+		kiv_fs::File_Desc parrent_file = { parrent_entry, sectors };
 
 		// TODO 
 
