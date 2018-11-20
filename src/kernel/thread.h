@@ -21,6 +21,7 @@ public:
 	uint16_t exitCode;
 	std::thread* thread_obj;
 	kiv_os::TThread_Proc func_addr;
+	std::map<kiv_os::NSignal_Id, kiv_os::TThread_Proc> handlers;
 	kiv_hal::TRegisters context;
 
 	Thread(kiv_os::TThread_Proc func_addr, kiv_hal::TRegisters thread_context);
