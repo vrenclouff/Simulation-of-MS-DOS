@@ -25,6 +25,11 @@ IOHandle* Open_File(std::string absolute_path, const kiv_os::NOpen_File fm, cons
 	for (const auto& path : std::filesystem::path(absolute_path)) {
 		components.push_back(path.generic_string());
 	}
+
+	if (components.back().empty()) {
+		components.pop_back();
+	}
+
 	const auto drive_volume = components.front();
 	components.erase(components.begin());
 
@@ -37,19 +42,14 @@ IOHandle* Open_File(std::string absolute_path, const kiv_os::NOpen_File fm, cons
 			return SYS_HANDLERS.at(sys);
 		}
 		else {
-			
 			kiv_fs::Drive_Desc drive = registred_drivers[drive_volume];
-
 			kiv_fs::FATEntire_Directory entry;
 			if (!kiv_fs::find_entire_dir(entry, components, drive)) {
 				// TODO error -> entire_dir wasn't found -> file doesn't exist
 				return nullptr;
 			}
-
-			const std::vector<size_t> sectors = kiv_fs::load_sectors(drive.boot_block, entry);
-
+			const std::vector<uint16_t> sectors = kiv_fs::load_sectors(drive, entry);
 			kiv_fs::File_Desc file = { entry, sectors };
-
 			return new IOHandle_File(drive, file);
 		}
 	}
@@ -67,7 +67,6 @@ IOHandle* Open_File(std::string absolute_path, const kiv_os::NOpen_File fm, cons
 			// TODO exception -> extension is larger than is allowed
 			return nullptr;
 		}
-
 
 		kiv_fs::FATEntire_Directory entry;
 		std::copy(&(filename.name)[0], &(filename.name)[0] + filename.name.size(), entry.file_name);
@@ -92,7 +91,7 @@ IOHandle* Open_File(std::string absolute_path, const kiv_os::NOpen_File fm, cons
 		entry.time = 0; // fat_tool::to_time(ltm);
 
 		kiv_fs::Drive_Desc drive = registred_drivers[drive_volume];
-		kiv_fs::File_Desc file = { entry, std::vector<size_t>() };
+		kiv_fs::File_Desc file = { entry, std::vector<uint16_t>() };
 
 		// najdi vstupni adresar, kam se ma 'soubor' ulozit
 		kiv_fs::FATEntire_Directory parrent_entry;
@@ -106,7 +105,7 @@ IOHandle* Open_File(std::string absolute_path, const kiv_os::NOpen_File fm, cons
 			return nullptr;
 		}
 
-		const auto sectors = kiv_fs::load_sectors(drive.boot_block, parrent_entry);
+		const auto sectors = kiv_fs::load_sectors(drive, parrent_entry);
 
 		kiv_fs::File_Desc parrent_file = { parrent_entry, sectors };
 
@@ -123,23 +122,29 @@ void Handle_IO(kiv_hal::TRegisters &regs) {
 	switch (static_cast<kiv_os::NOS_File_System>(regs.rax.l)) {
 
 		case kiv_os::NOS_File_System::Open_File: {
-			IOHandle* source = Open_File(reinterpret_cast<char*>(regs.rdx.r), static_cast<kiv_os::NOpen_File>(regs.rcx.l), static_cast<kiv_os::NFile_Attributes>(regs.rdi.i));
+			const auto path = reinterpret_cast<char*>(regs.rdx.r);
+			const auto fm = static_cast<kiv_os::NOpen_File>(regs.rcx.l);
+			const auto attributes = static_cast<kiv_os::NFile_Attributes>(regs.rdi.i);
+			const auto source = Open_File(path, fm, attributes);
 			regs.rax.x = Convert_Native_Handle(static_cast<HANDLE>(source));
 		} break;
 
 		case kiv_os::NOS_File_System::Read_File: {
-			IOHandle* source = static_cast<IOHandle*>(Resolve_kiv_os_Handle(regs.rdx.x));
+			const auto source = static_cast<IOHandle*>(Resolve_kiv_os_Handle(regs.rdx.x));
 			regs.rax.r = source->read(reinterpret_cast<char*>(regs.rdi.r), regs.rcx.r);
 		} break;
 
 		case kiv_os::NOS_File_System::Write_File: {
-			IOHandle* source = static_cast<IOHandle*>(Resolve_kiv_os_Handle(regs.rdx.x));
+			const auto source = static_cast<IOHandle*>(Resolve_kiv_os_Handle(regs.rdx.x));
 			regs.rax.r = source->write(reinterpret_cast<char*>(regs.rdi.r), regs.rcx.r);
-			regs.flags.carry |= (regs.rax.r == 0 ? 1 : 0);	//jestli jsme nezapsali zadny znak, tak jiste doslo k nejake chybe
+			regs.flags.carry |= (regs.rax.r == 0 ? 1 : 0);
 		} break;
 
 		case kiv_os::NOS_File_System::Close_Handle: {
-			regs.rax.x = Remove_Handle(regs.rdx.x);
+			const auto source = static_cast<IOHandle*>(Resolve_kiv_os_Handle(regs.rdx.x));
+			regs.rax.x |= static_cast<decltype(regs.rax.x)>(source->close());
+			regs.rax.x |= static_cast<decltype(regs.rax.x)>(Remove_Handle(regs.rdx.x));
+			delete source;
 		} break;
 
 		case kiv_os::NOS_File_System::Get_Working_Dir: {
@@ -153,14 +158,13 @@ void Handle_IO(kiv_hal::TRegisters &regs) {
 		} break;
 
 		case kiv_os::NOS_File_System::Set_Working_Dir: {
-			const auto buffer = reinterpret_cast<char*>(regs.rdx.r);
-			auto str_path = std::string(buffer, strlen(buffer));
+			auto str_path = std::string(reinterpret_cast<char*>(regs.rdx.r));
 			const auto process = process_manager->getRunningProcess();
 
 			if (std::filesystem::u8path(str_path).is_relative()) {
 				auto path = std::filesystem::u8path(process->working_dir);
 				path /= str_path;
-				str_path = path.lexically_normal().u8string();
+				str_path = path.lexically_normal().string();
 			}
 
 			const auto handle = Open_File(str_path, kiv_os::NOpen_File::fmOpen_Always, kiv_os::NFile_Attributes::Directory);
@@ -172,7 +176,6 @@ void Handle_IO(kiv_hal::TRegisters &regs) {
 				regs.flags.carry = 1;
 				regs.rax.x = static_cast<decltype(regs.rax.x)>(kiv_os::NOS_Error::File_Not_Found);
 			}
-
 		} break;
 	}
 }

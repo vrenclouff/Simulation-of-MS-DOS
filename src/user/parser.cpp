@@ -81,7 +81,7 @@ void parse(char* args, kiv_os::THandle shellin, kiv_os::THandle shellout, size_t
 	const char pipesymbol = '|';
 	const char redirectionsymbol = '>';
 
-	std::istringstream is(args);
+	std::istringstream is(args);	// TODO zde to nahodne pada
 	std::string part;
 	while (std::getline(is, part, pipesymbol)) {
 		parts.push_back(part);

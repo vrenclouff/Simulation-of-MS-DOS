@@ -66,7 +66,7 @@ bool kiv_os_rtl::Open_File(const char *buffer, const size_t buffer_size, kiv_os:
 		Get_Working_Dir(absolute_path, sizeof(absolute_path), counter);
 		auto path = std::filesystem::u8path(std::string(absolute_path, counter));
 		path /= str_path;
-		str_path = path.lexically_normal().u8string();
+		str_path = path.lexically_normal().string();
 	}
 
 	kiv_hal::TRegisters regs = Prepare_SysCall_Context(kiv_os::NOS_Service_Major::File_System, static_cast<uint8_t>(kiv_os::NOS_File_System::Open_File));

@@ -10,7 +10,7 @@ size_t IOHandle_Console::write(char * buffer, size_t buffer_size) {
 	regs.rdx.r = reinterpret_cast<decltype(regs.rdx.r)>(buffer);
 	regs.rcx.r = buffer_size;
 	kiv_hal::Call_Interrupt_Handler(kiv_hal::NInterrupt::VGA_BIOS, regs);
-	return regs.rcx.r;
+	return regs.rcx.x;
 }
 
 size_t IOHandle_Console::read(char * buffer, size_t buffer_size) {
@@ -135,7 +135,7 @@ size_t IOHandle_File::write(char * buffer, size_t buffer_size) {
 	{
 		// TODO load sector for parrent
 			// move this code to Close_Handle
-		const auto parrent_sectors = std::vector<size_t>(); // kiv_fs::load_sectors(NULL);
+		const auto parrent_sectors = std::vector<uint16_t>(); // kiv_fs::load_sectors(NULL);
 		if (!kiv_fs::save_to_dir(_drive.id, parrent_sectors, bytes_per_sector, _file.entire_dir)) {
 			// TODO error
 		}
@@ -149,7 +149,7 @@ size_t IOHandle_File::read(char * buffer, size_t buffer_size) {
 
 	const auto bytes_per_sector = _drive.boot_block.bytes_per_sector;
 
-	const std::vector<size_t> sectors = _file.sectors;
+	const std::vector<uint16_t> sectors = _file.sectors;
 	const kiv_fs::FATEntire_Directory entire_dir = _file.entire_dir;
 
 	std::vector<unsigned char> arr(bytes_per_sector);
@@ -251,18 +251,16 @@ size_t IOHandle_File::read(char * buffer, size_t buffer_size) {
 }
 
 size_t procfs(char * buffer, const size_t buffer_size) {
-
 	const auto result = process_manager->getProcessTable();
-	const auto cresult = result.c_str();
-	const auto size = strlen(cresult) > buffer_size ? buffer_size : strlen(cresult);
-	std::copy(cresult, cresult + size, buffer);
-
-	return strlen(cresult);
+	const auto size = result.size() > buffer_size ? buffer_size : result.size();
+	const auto str = result.data();
+	std::copy(str, str + size, buffer);
+	return size;
 }
 
 size_t IOHandle_SYS::read(char * buffer, size_t buffer_size) {
 	switch (_type) {
-	case SYS_Type::PROCFS: return procfs(buffer, buffer_size);
-	default: return 0;
+		case SYS_Type::PROCFS: return procfs(buffer, buffer_size);
+		default: return 0;
 	}
 }
