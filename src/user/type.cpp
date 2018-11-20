@@ -22,6 +22,7 @@ size_t __stdcall type(const kiv_hal::TRegisters &regs) {
 		if (!kiv_os_rtl::Open_File(input.c_str(), input.size(), filehandle, true, std::iostream::ios_base::in)) {
 			const auto error_msg = std::string_view("Cannot find the file.");
 			kiv_os_rtl::Write_File(std_out, error_msg.data(), error_msg.size(), wrote);
+			kiv_os_rtl::Exit(1);
 			return 1;
 		}
 
@@ -37,7 +38,8 @@ size_t __stdcall type(const kiv_hal::TRegisters &regs) {
 	else {
 		const auto error_msg = std::string_view("Input is empty.\nUse: type <file_path>\n");
 		kiv_os_rtl::Write_File(std_out, error_msg.data(), error_msg.size(), wrote);
-		return 1;
+		kiv_os_rtl::Exit(2);
+		return 2;
 	}
 	
 	kiv_os_rtl::Exit(0);
