@@ -9,6 +9,8 @@
 #include <filesystem>
 #include <functional>
 
+std::map<std::string, kiv_fs::Drive_Desc> registred_drivers;
+
 
 STDHandle Register_STD() {
 	auto console = new IOHandle_Console();
@@ -35,18 +37,73 @@ IOHandle* Open_File(std::string absolute_path, const kiv_os::NOpen_File fm, cons
 			return SYS_HANDLERS.at(sys);
 		}
 		else {
-			kiv_fs::Drive_Desc drive;
-			kiv_fs::File_Desc file;
-			io::open(drive, file, drive_volume, components);
+			
+			kiv_fs::Drive_Desc drive = registred_drivers[drive_volume];
+
+			kiv_fs::FATEntire_Directory entry;
+			if (!kiv_fs::find_entire_dir(entry, components, drive)) {
+				// TODO error -> entire_dir wasn't found -> file doesn't exist
+				return nullptr;
+			}
+
+			const std::vector<size_t> sectors = kiv_fs::load_sectors(drive.boot_block, entry);
+
+			kiv_fs::File_Desc file = { entry, sectors };
+
 			return new IOHandle_File(drive, file);
 		}
 	}
 	else {
-		// TODO neexistuje -> file / dir
+		
+		const auto filename = fat_tool::parse_entire_name(components.back());
+		components.pop_back();
 
-		// vytvorit ve FAT s velikosti sektoru a prirazenim 1 sektorem
-		// najit entire_dir pro novy soubor
-		return NULL;
+		if (filename.name.size() > sizeof kiv_fs::FATEntire_Directory::file_name ) {
+			// TODO exception -> filename is larger than is allowed
+			return NULL;
+		}
+
+		if (filename.extension.size() > sizeof kiv_fs::FATEntire_Directory::extension) {
+			// TODO exception -> extension is larger than is allowed
+			return NULL;
+		}
+
+
+		kiv_fs::FATEntire_Directory entry;
+		std::copy(&(filename.name)[0], &(filename.name)[0] + filename.name.size(), entry.file_name);
+		entry.file_name[filename.name.size()] = 0;
+
+		const auto is_dir = fat_tool::is_attr(static_cast<uint8_t>(attributes), kiv_os::NFile_Attributes::Directory);
+
+		const auto extension = is_dir ? std::string(0, sizeof entry.extension) : filename.extension;
+		std::copy(&extension[0], &extension[0] + extension.size(), entry.extension);
+
+		entry.attributes = static_cast<decltype(entry.attributes)>(attributes);
+		entry.size = 0;
+
+		//time_t now = time(0);
+		//std::tm ltm = *localtime(&now);
+
+		entry.date = 0; // fat_tool::to_date(ltm);
+		entry.time = 0; // fat_tool::to_time(ltm);
+
+		kiv_fs::Drive_Desc drive = registred_drivers[drive_volume];
+		kiv_fs::File_Desc file = { entry, std::vector<size_t>() };
+
+		// najdi vstupni adresar, kam se ma 'soubor' ulozit
+		kiv_fs::FATEntire_Directory parrent_entry;
+		if (!kiv_fs::find_entire_dir(parrent_entry, components, drive)) {
+			// TODO error -> entire_dir wasn't found -> file doesn't exist
+			return nullptr;
+		}
+
+		const std::vector<size_t> sectors = kiv_fs::load_sectors(drive.boot_block, parrent_entry);
+
+		kiv_fs::File_Desc parrent_file = { entry, sectors };
+
+		// TODO 
+
+		return new IOHandle_File(drive, file);
 	}
 }
 
@@ -92,6 +149,15 @@ void Handle_IO(kiv_hal::TRegisters &regs) {
 	}
 }
 
+std::string io::main_drive() {
+	return registred_drivers.begin()->first;
+}
+
+bool io::register_drive(const std::string volume, const uint8_t id, const kiv_fs::FATBoot_Block& book_block) {
+	if (registred_drivers.find(volume) != registred_drivers.end()) { return false; }
+	registred_drivers[volume] = { id, book_block };
+	return true;
+}
 
 
 /* Nasledujici dve vetve jsou ukazka, ze starsiho zadani, ktere ukazuji, jak mate mapovat Windows HANDLE na kiv_os handle a zpet, vcetne jejich alokace a uvolneni

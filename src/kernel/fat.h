@@ -65,10 +65,11 @@ namespace kiv_fs {
 	void boot_block(FATBoot_Block& boot_block, const uint16_t bytes_per_sector, const void* sector);
 	void entire_directory(std::vector<FATEntire_Directory>& entire_directories, const uint16_t bytes_per_sector, void* sector);
 
+	bool find_entire_dir(kiv_fs::FATEntire_Directory& entire_file, std::vector<std::string> components, const kiv_fs::Drive_Desc drive);
+
 	uint16_t offset(const FATBoot_Block& boot_block);
 
-	std::vector<size_t> sectors_for_root_dir(const FATBoot_Block& boot_block);
-	std::vector<size_t> sectors_for_entire_dir(const kiv_fs::FATEntire_Directory& entire_dir, const uint16_t bytes_per_sector, const uint16_t offset);
+	std::vector<size_t> load_sectors(const kiv_fs::FATBoot_Block& boot_block, const kiv_fs::FATEntire_Directory& entry_dir);
 
 	uint16_t root_directory_addr(const FATBoot_Block& boot_block);
 	uint8_t root_directory_size(const FATBoot_Block& boot_block);

@@ -24,7 +24,7 @@ public:
 class IOHandle_File : public IOHandle {
 private:
 	const kiv_fs::Drive_Desc _drive;
-	const kiv_fs::File_Desc _file;
+	kiv_fs::File_Desc _file;
 
 	size_t seek = 0;
 

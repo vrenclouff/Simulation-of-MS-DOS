@@ -63,6 +63,7 @@ size_t IOHandle_File::write(char * buffer, size_t buffer_size) {
 
 	std::vector<std::div_t> allocated_space;
 
+	// TODO pouzit pri appendu posledni offset
 	std::div_t fat_offset = { 1,  MULTIPLY_CONST * MULTIPLY_CONST };
 
 	std::vector<unsigned char> fat(bytes_per_sector);
@@ -105,19 +106,18 @@ size_t IOHandle_File::write(char * buffer, size_t buffer_size) {
 	};
 
 	// find real clusters for file
-	std::vector<uint16_t> real_clusters;
 	const auto _offset = kiv_fs::offset(boot_block);
 
 	auto actual_fat = allocated_space.at(0);
 	auto fake_sector = find_sector(actual_fat);
-	real_clusters.push_back(fake_sector + _offset);
+	_file.sectors.push_back(fake_sector + _offset);
 
-	// TODO set first_cluster for file
-	const auto first_cluster = fake_sector;
+	// set first_cluster for file
+	_file.entire_dir.first_cluster = fake_sector;
 
 	for (auto next_fat = allocated_space.begin() + 1; next_fat != allocated_space.end(); next_fat++) {
 		fake_sector = find_sector(*next_fat);
-		real_clusters.push_back(fake_sector + _offset);
+		_file.sectors.push_back(fake_sector + _offset);
 		auto index = actual_fat.rem;
 		fat[index] = fake_sector & 0xff;
 		fat[index + 1] = (fake_sector & 0xff00) >> 8;
@@ -135,7 +135,7 @@ size_t IOHandle_File::write(char * buffer, size_t buffer_size) {
 	// write buffer to real clusters
 	uint16_t cluster_offset = 0;
 	regs.rax.h = static_cast<decltype(regs.rax.h)>(kiv_hal::NDisk_IO::Write_Sectors);
-	for (auto& sector : real_clusters) {
+	for (auto& sector : _file.sectors) {
 		if (buffer_size - cluster_offset < bytes_per_sector) {
 			//_data.resize(size_in_blocks * bytes_per_sector);
 		}
@@ -148,11 +148,13 @@ size_t IOHandle_File::write(char * buffer, size_t buffer_size) {
 		cluster_offset += bytes_per_sector;
 	}
 
-	const auto root_dir_addr = kiv_fs::root_directory_addr(boot_block);
-	const auto root_dir_size = kiv_fs::root_directory_size(boot_block);
+
+	// TODO load sector for parrent
+		// move this code to Close_Handle
+	const auto parrent_sectors = std::vector<size_t>(); // kiv_fs::load_sectors(NULL);
 	const auto max_dir_entries_per_block = static_cast<uint8_t>(bytes_per_sector / sizeof(kiv_fs::FATEntire_Directory));
 	std::vector<unsigned char> root_dir(bytes_per_sector);
-	for (auto sector = root_dir_addr; sector < root_dir_size + root_dir_addr; sector++) {
+	for (const auto& sector : parrent_sectors) {
 
 		dap.sectors = static_cast<void*>(root_dir.data());
 		dap.lba_index = sector;
@@ -162,7 +164,7 @@ size_t IOHandle_File::write(char * buffer, size_t buffer_size) {
 		std::vector<kiv_fs::FATEntire_Directory> dir_entries;
 		kiv_fs::entire_directory(dir_entries, bytes_per_sector, root_dir.data());
 		if (dir_entries.size() < max_dir_entries_per_block) {
-			//dir_entries.push_back(_entire_dir);
+			dir_entries.push_back(_file.entire_dir);
 			dir_entries.resize(max_dir_entries_per_block);
 
 			dap.sectors = static_cast<void*>(dir_entries.data());
