@@ -33,9 +33,9 @@ size_t __stdcall sort(const kiv_hal::TRegisters &regs) {
 	for (std::string item : elements) {
 		const char* out = item.c_str();
 		kiv_os_rtl::Write_File(std_out, out, strlen(out), counter);
+		kiv_os_rtl::Write_File(std_out, linebreak, strlen(linebreak), counter);
 	}
 
-	kiv_os_rtl::Write_File(std_out, linebreak, strlen(linebreak), counter);
 
 	kiv_os_rtl::Exit(0);
 	return 0;
