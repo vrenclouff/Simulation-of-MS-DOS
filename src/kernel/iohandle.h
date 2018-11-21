@@ -1,9 +1,11 @@
 #pragma once
 
+#include "fat.h"
+#include "pipe.h"
+
 #include <map>
 #include <functional>
-
-#include "fat.h"
+#include <mutex>
 
 enum class SYS_Type : uint8_t {
 	PROCFS = 1,
@@ -47,6 +49,21 @@ public:
 
 	virtual size_t read(char* buffer, size_t buffer_size) final override;
 	virtual size_t write(char* buffer, size_t buffer_size) final override { return 0; }
+};
+
+class IOHandle_Pipe : public IOHandle {
+
+private:
+	Pipe* pipe;
+	std::mutex pipemtx;
+	std::condition_variable condition_variable; // todo semafor
+
+public:
+	IOHandle_Pipe(Pipe* pipe) : pipe(pipe) {}
+
+	virtual size_t read(char* buffer, size_t buffer_size) final override;
+	virtual size_t write(char* buffer, size_t buffer_size) final override;
+
 };
 
 static const std::map<std::string, IOHandle*> SYS_HANDLERS = {

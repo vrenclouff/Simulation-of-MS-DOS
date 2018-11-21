@@ -4,6 +4,8 @@
 #include "fat_tools.h"
 #include "common.h"
 
+#include <mutex>
+
 size_t IOHandle_Console::write(char * buffer, size_t buffer_size) {
 	kiv_hal::TRegisters regs;
 	regs.rax.h = static_cast<decltype(regs.rax.h)>(kiv_hal::NVGA_BIOS::Write_String);
@@ -263,4 +265,31 @@ size_t IOHandle_SYS::read(char * buffer, size_t buffer_size) {
 		case SYS_Type::PROCFS: return procfs(buffer, buffer_size);
 		default: return 0;
 	}
+}
+
+size_t IOHandle_Pipe::write(char* buffer, size_t buffer_size) {
+	std::lock_guard<std::mutex> lock(pipemtx);
+
+	if (pipe->hasEnoughSpace(buffer_size)) {
+		for (char to_write : std::string(buffer)) {
+			pipe->write(to_write);
+		}
+	}
+	else {
+		return 1; // TODO
+	}
+	
+	return 0; //TODO
+}
+
+size_t IOHandle_Pipe::read(char* buffer, size_t buffer_size) {
+	std::lock_guard<std::mutex> lock(pipemtx);
+	size_t read = 0;
+
+	for (int i = 0; (i < buffer_size - 1 && i < pipe->getSize()); i++) {
+		buffer[i] = pipe->read();
+		read++;
+	}
+
+	return read;
 }

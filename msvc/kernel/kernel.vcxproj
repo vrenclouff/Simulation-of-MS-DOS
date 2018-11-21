@@ -28,6 +28,7 @@
     <ClCompile Include="..\..\src\kernel\iohandle.cpp" />
     <ClCompile Include="..\..\src\kernel\io_manager.cpp" />
     <ClCompile Include="..\..\src\kernel\kernel.cpp" />
+    <ClCompile Include="..\..\src\kernel\pipe.cpp" />
     <ClCompile Include="..\..\src\kernel\process.cpp" />
     <ClCompile Include="..\..\src\kernel\process_manager.cpp" />
     <ClCompile Include="..\..\src\kernel\thread.cpp" />
@@ -44,6 +45,7 @@
     <ClInclude Include="..\..\src\kernel\iohandle.h" />
     <ClInclude Include="..\..\src\kernel\io_manager.h" />
     <ClInclude Include="..\..\src\kernel\kernel.h" />
+    <ClInclude Include="..\..\src\kernel\pipe.h" />
     <ClInclude Include="..\..\src\kernel\process.h" />
     <ClInclude Include="..\..\src\kernel\process_manager.h" />
     <ClInclude Include="..\..\src\kernel\thread.h" />
