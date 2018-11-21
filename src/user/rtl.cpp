@@ -6,6 +6,7 @@
 #include <sstream>
 #include <vector>
 #include <filesystem>
+#include <array>
 
 std::atomic<kiv_os::NOS_Error> kiv_os_rtl::Last_Error;
 
@@ -93,13 +94,14 @@ bool kiv_os_rtl::Close_Handle(const kiv_os::THandle file_handle) {
 	return kiv_os::Sys_Call(regs);
 }
 
-kiv_os::THandle* kiv_os_rtl::Create_Pipe() {
+std::array<kiv_os::THandle, 2> kiv_os_rtl::Create_Pipe() {
 	kiv_hal::TRegisters regs = Prepare_SysCall_Context(kiv_os::NOS_Service_Major::File_System, static_cast<uint8_t>(kiv_os::NOS_File_System::Create_Pipe));
 
 	const bool result = kiv_os::Sys_Call(regs);
 
-	kiv_os::THandle* handles = reinterpret_cast<kiv_os::THandle*>(regs.rdx.l);
-	return handles;
+	kiv_os::THandle *handles = reinterpret_cast<kiv_os::THandle*>(regs.rbx.r);
+	std::array<kiv_os::THandle, 2> handlearray {*handles, *(handles + 1)};
+	return handlearray;
 }
 
 // PROCESS

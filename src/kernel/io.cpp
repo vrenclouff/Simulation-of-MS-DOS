@@ -1,6 +1,7 @@
 #include "io.h"
 #include "kernel.h"
 #include "handles.h"
+#include "pipe.h"
 
 #include "fat_tools.h"
 #include "io_manager.h"
@@ -8,6 +9,7 @@
 
 #include <filesystem>
 #include <functional>
+#include <vector>
 
 namespace fs = std::filesystem;
 
@@ -222,6 +224,15 @@ void Handle_IO(kiv_hal::TRegisters &regs) {
 				regs.flags.carry = 1;
 				regs.rax.x = static_cast<decltype(regs.rax.x)>(kiv_os::NOS_Error::File_Not_Found);
 			}
+		} break;
+
+		case kiv_os::NOS_File_System::Create_Pipe: {
+			Pipe* pipe = new Pipe();
+			kiv_os::THandle handles[2];
+
+			handles[0] = Convert_Native_Handle(static_cast<HANDLE>(new IOHandle_Pipe(pipe)));
+			handles[1] = Convert_Native_Handle(static_cast<HANDLE>(new IOHandle_Pipe(pipe)));
+			regs.rbx.r = reinterpret_cast<decltype(regs.rbx.r)>(handles);
 		} break;
 	}
 }

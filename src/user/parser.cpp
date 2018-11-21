@@ -6,6 +6,12 @@
 #include <iostream>
 #include <sstream>
 
+std::string trim(std::string& str) {
+	str.erase(0, str.find_first_not_of(' '));
+	str.erase(str.find_last_not_of(' ') + 1);
+	return str;
+}
+
 bool parsePart(std::string args, kiv_os::THandle stdin_handle, kiv_os::THandle stdout_handle) {
 
 	std::istringstream is(args);
@@ -58,17 +64,17 @@ void wrongRedirection(kiv_os::THandle shellout, size_t shellcounter, kiv_os::THa
 
 void parse(char* args, kiv_os::THandle shellin, kiv_os::THandle shellout, size_t shellcounter) {
 
-	char* first = "";
-	char* dirname;
-	size_t inputsize = strlen(args) + 1;
-	char* tokenize = new char[inputsize];
+	std::istringstream cdis(args);
+	std::string cd;
+	std::string dirname;
+	char space = ' ';
 
-	strcpy_s(tokenize, strlen(tokenize), args);
-	first = strtok_s(tokenize, " ", &dirname);
+	std::getline(cdis, cd, space);
 
-	if (!strcmp(first, "cd"))
+	if (cd.find("cd") != std::string::npos)
 	{
-		if (!kiv_os_rtl::Set_Working_Dir(dirname)) {
+		std::getline(cdis, dirname, space);
+		if (!kiv_os_rtl::Set_Working_Dir(dirname.c_str())) {
 			const auto error_msg = std::string_view("Directory doesn't exist.\n");
 			size_t wrote;
 			kiv_os_rtl::Write_File(shellout, error_msg.data(), error_msg.size(), wrote);
@@ -89,19 +95,19 @@ void parse(char* args, kiv_os::THandle shellin, kiv_os::THandle shellout, size_t
 
 	kiv_os::THandle stdin_handle = shellin;
 
-	kiv_os::THandle* handles = NULL;
+	std::array<kiv_os::THandle, 2> pipehandles;
 
 	for (int i = 0; i < parts.size(); i++) {
 
-		std::string curr = parts.at(i);
+		std::string curr = trim(parts.at(i));
 
 		kiv_os::THandle stdout_handle = shellout;
 
 		bool hasnext = (i != (parts.size() - 1));
 
 		if (hasnext) {
-			handles = kiv_os_rtl::Create_Pipe();
-			stdout_handle = *handles;
+			pipehandles = kiv_os_rtl::Create_Pipe();
+			stdout_handle = pipehandles.at(0);
 
 			if (curr.find(redirectionsymbol) != std::string::npos) {
 				wrongRedirection(shellout, shellcounter, stdin_handle, stdout_handle);
@@ -136,15 +142,14 @@ void parse(char* args, kiv_os::THandle shellin, kiv_os::THandle shellout, size_t
 			else {
 				parsePart(curr, stdin_handle, stdout_handle);
 			}
-			
-
+		
 		}
-
+	
 		//kiv_os_rtl::Close_Handle(stdin_handle);
 		//kiv_os_rtl::Close_Handle(stdout_handle);
 
 		if (hasnext) {
-			stdin_handle = *(handles + 1);
+			stdin_handle = pipehandles.at(1);
 		}
 		
 	}
