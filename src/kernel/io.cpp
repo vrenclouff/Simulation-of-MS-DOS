@@ -9,6 +9,8 @@
 #include <filesystem>
 #include <functional>
 
+namespace fs = std::filesystem;
+
 std::map<std::string, kiv_fs::Drive_Desc> registred_drivers;
 
 
@@ -19,16 +21,28 @@ STDHandle Register_STD() {
 	return { in, out };
 }
 
-IOHandle* Open_File(std::string absolute_path, const kiv_os::NOpen_File fm, const kiv_os::NFile_Attributes attributes) {
-
-	std::vector<std::string> components;
-	for (const auto& path : std::filesystem::path(absolute_path)) {
-		components.push_back(path.generic_string());
+std::string to_absolute_path(std::string base_path, std::string path) {
+	if (fs::u8path(path).is_absolute()) {
+		return path;
 	}
+	auto fsbasepath = fs::u8path(base_path);
+	fsbasepath /= path;
+	return fsbasepath.lexically_normal().string();
+}
 
+void to_absolute_components(std::vector<std::string>& components, std::string path) {
+	for (const auto& item : std::filesystem::path(path)) {
+		components.push_back(item.string());
+	}
 	if (components.back().empty()) {
 		components.pop_back();
 	}
+}
+
+IOHandle* Open_File(std::string absolute_path, const kiv_os::NOpen_File fm, const kiv_os::NFile_Attributes attributes) {
+
+	std::vector<std::string> components;
+	to_absolute_components(components, absolute_path);
 
 	const auto drive_volume = components.front();
 	components.erase(components.begin());
@@ -117,6 +131,36 @@ IOHandle* Open_File(std::string absolute_path, const kiv_os::NOpen_File fm, cons
 	}
 }
 
+bool Remove_File(std::string absolute_path) {
+
+	std::vector<std::string> components;
+	to_absolute_components(components, absolute_path);
+
+
+	kiv_fs::Drive_Desc drive = registred_drivers[components.front()];
+	components.erase(components.begin());
+
+	kiv_fs::FATEntire_Directory entry;
+	if (!kiv_fs::find_entire_dir(entry, components, drive)) {
+		// TODO error -> entire_dir wasn't found -> the dir doesn't exist
+		return false;
+	}
+
+	if (!fat_tool::is_attr(entry.attributes, kiv_os::NFile_Attributes::Directory)) {
+		// TODO error -> isn't the dir
+		return false;
+	}
+
+	if (entry.size > 0) {
+		// TODO error -> can delete only free dirs
+		return false;
+	}
+
+
+
+	return false;
+}
+
 void Handle_IO(kiv_hal::TRegisters &regs) {
 
 	switch (static_cast<kiv_os::NOS_File_System>(regs.rax.l)) {
@@ -140,10 +184,17 @@ void Handle_IO(kiv_hal::TRegisters &regs) {
 			regs.flags.carry |= (regs.rax.r == 0 ? 1 : 0);
 		} break;
 
+		case kiv_os::NOS_File_System::Delete_File: {
+			auto path = std::string(reinterpret_cast<char*>(regs.rdx.r));
+			const auto process = process_manager->getRunningProcess();
+			regs.flags.carry = !Remove_File(to_absolute_path(process->working_dir, path));
+
+		} break;
+
 		case kiv_os::NOS_File_System::Close_Handle: {
 			const auto source = static_cast<IOHandle*>(Resolve_kiv_os_Handle(regs.rdx.x));
-			regs.rax.x |= static_cast<decltype(regs.rax.x)>(source->close());
-			regs.rax.x |= static_cast<decltype(regs.rax.x)>(Remove_Handle(regs.rdx.x));
+			regs.flags.carry |= !source->close();
+			regs.flags.carry |= !Remove_Handle(regs.rdx.x);
 			delete source;
 		} break;
 
@@ -158,18 +209,13 @@ void Handle_IO(kiv_hal::TRegisters &regs) {
 		} break;
 
 		case kiv_os::NOS_File_System::Set_Working_Dir: {
-			auto str_path = std::string(reinterpret_cast<char*>(regs.rdx.r));
+			const auto path = std::string(reinterpret_cast<char*>(regs.rdx.r));
 			const auto process = process_manager->getRunningProcess();
+			const auto full_path = to_absolute_path(process->working_dir, path);
 
-			if (std::filesystem::u8path(str_path).is_relative()) {
-				auto path = std::filesystem::u8path(process->working_dir);
-				path /= str_path;
-				str_path = path.lexically_normal().string();
-			}
-
-			const auto handle = Open_File(str_path, kiv_os::NOpen_File::fmOpen_Always, kiv_os::NFile_Attributes::Directory);
+			const auto handle = Open_File(full_path, kiv_os::NOpen_File::fmOpen_Always, kiv_os::NFile_Attributes::Directory);
 			if (handle) {
-				process->working_dir = str_path;
+				process->working_dir = full_path;
 				delete handle;
 			}
 			else {
