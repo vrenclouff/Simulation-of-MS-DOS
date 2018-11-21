@@ -1,9 +1,14 @@
+
+#include <stdlib.h>  
+#include <crtdbg.h>
 #include <Windows.h>
 #include <iostream>
 
 #include "../api/hal.h"
 #include "idt.h"
 #include "keyboard.h"
+
+
 
 bool Setup_HW() {
 	if (!Init_Keyboard()) {
@@ -23,7 +28,7 @@ bool Setup_HW() {
 	return true;
 }
 
-int __cdecl main() {
+int main() {
 	if (!Setup_HW()) return 1;
 
 	//HW je nastaven, zavedeme simulovany operacni system
@@ -41,5 +46,6 @@ int __cdecl main() {
 	//a az simulovany OS skonci, uvolnime zdroje z pameti
 	FreeLibrary(kernel);
 	TlsFree(kiv_hal::Expected_Tls_IDT_Index);
+	_CrtDumpMemoryLeaks();
 	return 0;
 }
