@@ -136,7 +136,7 @@ size_t IOHandle_File::write(char * buffer, size_t buffer_size) {
 		// TODO load sector for parrent
 			// move this code to Close_Handle
 		const auto parrent_sectors = std::vector<uint16_t>(); // kiv_fs::load_sectors(NULL);
-		if (!kiv_fs::save_to_dir(_drive.id, parrent_sectors, bytes_per_sector, _file.entire_dir)) {
+		if (!kiv_fs::save_to_dir(_drive.id, parrent_sectors, bytes_per_sector, _file.entire_dir, kiv_fs::Edit_Type::Add)) {
 			// TODO error
 		}
 	}

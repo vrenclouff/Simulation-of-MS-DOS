@@ -62,6 +62,13 @@ namespace kiv_fs {
 		std::vector<uint16_t> sectors;
 	};
 
+	enum class Edit_Type : uint8_t {
+		Add = 1,
+		Del = 2,
+		Edit = 3,
+	};
+
+
 	void format_disk(const FAT_Version version, void* boot_block, const kiv_hal::TDrive_Parameters &params);
 	bool is_formatted(const void* sector);
 
@@ -74,12 +81,15 @@ namespace kiv_fs {
 
 	std::vector<uint16_t> load_sectors(const kiv_fs::Drive_Desc& drive, const kiv_fs::FATEntire_Directory& entry_dir);
 
+	bool is_entry_root(const kiv_fs::FATBoot_Block& boot, const kiv_fs::FATEntire_Directory& entry);
 	uint16_t root_directory_addr(const FATBoot_Block& boot_block);
 	uint8_t root_directory_size(const FATBoot_Block& boot_block);
 
 	bool create_dir(const kiv_fs::Drive_Desc& drive, const kiv_fs::File_Desc& parrent, kiv_fs::File_Desc& dir);
 
 	bool find_free_sectors(std::vector<std::div_t>& fat_offsets, const uint8_t drive_id, const std::div_t sector, const size_t count, const size_t bytes_per_sector);
-	bool save_to_dir(const uint8_t drive_id, const std::vector<uint16_t> sectors, const size_t bytes_per_sector, const kiv_fs::FATEntire_Directory entire_dir);
+	bool save_to_dir(const uint8_t drive_id, const std::vector<uint16_t> sectors, const size_t bytes_per_sector, const kiv_fs::FATEntire_Directory entire_dir, const kiv_fs::Edit_Type type);
 	bool save_to_fat(const uint8_t drive_id, const std::vector<std::div_t> fat_offsets, const size_t bytes_per_sector, const uint16_t offset, std::vector<uint16_t>& sectors, uint16_t& first_sector);
+
+	void remove_sectors_in_fat(const kiv_fs::FATEntire_Directory& entire_dir, const size_t bytes_per_sector, const uint8_t drive_id);
 }
