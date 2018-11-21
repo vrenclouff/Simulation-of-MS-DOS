@@ -20,7 +20,7 @@ bool parsePart(std::string args, kiv_os::THandle stdin_handle, kiv_os::THandle s
 	std::string rest;
 
 	std::getline(is, tofunc, ' ');
-	std::getline(is, arguments, ' ');
+	std::getline(is, arguments);
 
 	if (tofunc.empty()) {
 		return NULL;
