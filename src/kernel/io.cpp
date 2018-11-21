@@ -133,7 +133,6 @@ IOHandle* Open_File(std::string absolute_path, const kiv_os::NOpen_File fm, cons
 
 		// if (!kiv_fs::is_entry_root(drive.boot_block, parrent_entry)) {
 		if (components.size() > 1) {
-			parrent_entry.size += sizeof kiv_fs::FATEntire_Directory;
 			components.pop_back();
 
 			kiv_fs::FATEntire_Directory grandparent_entry;
@@ -142,8 +141,10 @@ IOHandle* Open_File(std::string absolute_path, const kiv_os::NOpen_File fm, cons
 				return nullptr;
 			}
 
+			parrent_entry.size += sizeof kiv_fs::FATEntire_Directory;
+
 			const auto grandparent_sectors = kiv_fs::load_sectors(drive, grandparent_entry);
-			if (!kiv_fs::save_to_dir(drive.id, grandparent_sectors, drive.boot_block.bytes_per_sector, parrent_entry, kiv_fs::Edit_Type::Add)) {
+			if (!kiv_fs::save_to_dir(drive.id, grandparent_sectors, drive.boot_block.bytes_per_sector, parrent_entry, kiv_fs::Edit_Type::Edit)) {
 				// TODO error
 				return nullptr;
 			}
