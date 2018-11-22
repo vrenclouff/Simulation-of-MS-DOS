@@ -11,15 +11,31 @@ enum class SYS_Type : uint8_t {
 	PROCFS = 1,
 };
 
+enum Permission : uint8_t {
+	Read = 1,
+	Write = 2,
+};
+
 class IOHandle {
+private:
+	const uint8_t _permission ;
 public:
+	IOHandle() : _permission(Permission::Read) {}
+	IOHandle(const uint8_t permission) : _permission(permission) {}
 	virtual size_t read(char* buffer, size_t buffer_size)  { return 0; }
 	virtual size_t write(char* buffer, size_t buffer_size) { return 0; }
 	virtual bool close() { return true; }
+
+	void check_ACL(Permission acl) {
+		if (!_permission & acl) {
+			throw std::exception{"Doesn't have a permission for this operation."};
+		}
+	}
 };
 
 class IOHandle_Console : public IOHandle {
 public:
+	IOHandle_Console(const uint8_t permission) : IOHandle(permission) {}
 	virtual size_t read(char* buffer, size_t buffer_size) final override;
 	virtual size_t write(char* buffer, size_t buffer_size) final override;
 };
@@ -32,9 +48,7 @@ private:
 	size_t seek = 0;
 
 public:
-
-	IOHandle_File(const kiv_fs::Drive_Desc drive, const kiv_fs::File_Desc file) : _drive(drive), _file(file) {}
-
+	IOHandle_File(const kiv_fs::Drive_Desc drive, const kiv_fs::File_Desc file, const uint8_t permission) : IOHandle(permission), _drive(drive), _file(file) {}
 	virtual size_t read(char* buffer, size_t buffer_size) final override;
 	virtual size_t write(char* buffer, size_t buffer_size) final override;
 };
@@ -46,7 +60,6 @@ private:
 
 public:
 	IOHandle_SYS(const SYS_Type type) : _type(type) {}
-
 	virtual size_t read(char* buffer, size_t buffer_size) final override;
 	virtual size_t write(char* buffer, size_t buffer_size) final override { return 0; }
 };

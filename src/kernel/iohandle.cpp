@@ -7,6 +7,8 @@
 #include <mutex>
 
 size_t IOHandle_Console::write(char * buffer, size_t buffer_size) {
+	IOHandle::check_ACL(Permission::Write);
+
 	kiv_hal::TRegisters regs;
 	regs.rax.h = static_cast<decltype(regs.rax.h)>(kiv_hal::NVGA_BIOS::Write_String);
 	regs.rdx.r = reinterpret_cast<decltype(regs.rdx.r)>(buffer);
@@ -16,6 +18,8 @@ size_t IOHandle_Console::write(char * buffer, size_t buffer_size) {
 }
 
 size_t IOHandle_Console::read(char * buffer, size_t buffer_size) {
+	IOHandle::check_ACL(Permission::Read);
+
 	kiv_hal::TRegisters registers;
 
 	size_t pos = 0;
@@ -56,6 +60,7 @@ size_t IOHandle_Console::read(char * buffer, size_t buffer_size) {
 }
 
 size_t IOHandle_File::write(char * buffer, size_t buffer_size) {
+	IOHandle::check_ACL(Permission::Write);
 
 	const auto boot_block = _drive.boot_block;
 	const auto bytes_per_sector = _drive.boot_block.bytes_per_sector;
@@ -148,6 +153,7 @@ size_t IOHandle_File::write(char * buffer, size_t buffer_size) {
 }
 
 size_t IOHandle_File::read(char * buffer, size_t buffer_size) {
+	IOHandle::check_ACL(Permission::Read);
 
 	const auto bytes_per_sector = _drive.boot_block.bytes_per_sector;
 
@@ -261,6 +267,8 @@ size_t procfs(char * buffer, const size_t buffer_size) {
 }
 
 size_t IOHandle_SYS::read(char * buffer, size_t buffer_size) {
+	IOHandle::check_ACL(Permission::Read);
+
 	switch (_type) {
 		case SYS_Type::PROCFS: return procfs(buffer, buffer_size);
 		default: return 0;

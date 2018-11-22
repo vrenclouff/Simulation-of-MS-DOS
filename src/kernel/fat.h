@@ -85,7 +85,7 @@ namespace kiv_fs {
 	uint16_t root_directory_addr(const FATBoot_Block& boot_block);
 	uint8_t root_directory_size(const FATBoot_Block& boot_block);
 
-	bool create_dir(const kiv_fs::Drive_Desc& drive, const kiv_fs::File_Desc& parrent, kiv_fs::File_Desc& dir);
+	bool create_file(const kiv_fs::Drive_Desc& drive, const kiv_fs::File_Desc& parrent, kiv_fs::File_Desc& file);
 
 	bool find_free_sectors(std::vector<std::div_t>& fat_offsets, const uint8_t drive_id, const std::div_t sector, const size_t count, const size_t bytes_per_sector);
 	bool save_to_dir(const uint8_t drive_id, const std::vector<uint16_t> sectors, const size_t bytes_per_sector, const kiv_fs::FATEntire_Directory entire_dir, const kiv_fs::Edit_Type type);

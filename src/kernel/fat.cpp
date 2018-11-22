@@ -461,29 +461,6 @@ bool kiv_fs::save_to_fat(const uint8_t drive_id, const std::vector<std::div_t> f
 	return true;
 }
 
-bool kiv_fs::create_dir(const kiv_fs::Drive_Desc& drive, const kiv_fs::File_Desc& parrent, kiv_fs::File_Desc& dir) {
-
-	const auto bytes_per_sector = drive.boot_block.bytes_per_sector;
-
-	std::vector<std::div_t> fat_offsets;
-
-	// najdi volne sektory pro slozku
-	if (!find_free_sectors(fat_offsets, drive.id, START_OF_FAT, 1, bytes_per_sector)) {
-		// TODO error
-		return false;
-	}
-
-	// uloz slozku do FAT
-	if (!save_to_fat(drive.id, fat_offsets, bytes_per_sector, kiv_fs::offset(drive.boot_block), dir.sectors, dir.entire_dir.first_cluster)) {
-		// TODO error
-		return false;
-	}
-
-	// uloz do nadrazene slozky entire_dir pro novou slozku
-	if (!save_to_dir(drive.id, parrent.sectors, bytes_per_sector, dir.entire_dir, kiv_fs::Edit_Type::Add)) {
-		// TODO error
-		return false;
-	}
-
-	return true;
+bool kiv_fs::create_file(const kiv_fs::Drive_Desc& drive, const kiv_fs::File_Desc& parrent, kiv_fs::File_Desc& file) {
+	return false;
 }

@@ -10,6 +10,7 @@
 #include <filesystem>
 #include <functional>
 #include <vector>
+#include <ctime>
 
 namespace fs = std::filesystem;
 
@@ -17,9 +18,8 @@ std::map<std::string, kiv_fs::Drive_Desc> registred_drivers;
 
 
 STDHandle Register_STD() {
-	auto console = new IOHandle_Console();
-	const auto  in = Convert_Native_Handle(static_cast<HANDLE>(console));
-	const auto out = Convert_Native_Handle(static_cast<HANDLE>(console));
+	const auto  in = Convert_Native_Handle(static_cast<HANDLE>(new IOHandle_Console(Permission::Read)));
+	const auto out = Convert_Native_Handle(static_cast<HANDLE>(new IOHandle_Console(Permission::Write)));
 	return { in, out };
 }
 
@@ -59,6 +59,8 @@ IOHandle* Open_File(std::string absolute_path, const kiv_os::NOpen_File fm, cons
 	const auto drive_volume = components.front();
 	components.erase(components.begin());
 
+	const auto is_read_only = fat_tool::is_attr(static_cast<uint8_t>(attributes), kiv_os::NFile_Attributes::Read_Only);
+
 	if (fm == kiv_os::NOpen_File::fmOpen_Always) {
 		if (drive_volume.compare("A:") == 0) {
 			std::string sys;
@@ -76,7 +78,7 @@ IOHandle* Open_File(std::string absolute_path, const kiv_os::NOpen_File fm, cons
 			}
 			const std::vector<uint16_t> sectors = kiv_fs::load_sectors(drive, entry);
 			kiv_fs::File_Desc file = { entry, sectors };
-			return new IOHandle_File(drive, file);
+			return new IOHandle_File(drive, file, is_read_only);
 		}
 	}
 	else {
@@ -110,16 +112,13 @@ IOHandle* Open_File(std::string absolute_path, const kiv_os::NOpen_File fm, cons
 		entry.attributes = static_cast<decltype(entry.attributes)>(attributes);
 		entry.size = 0;
 
-		//time_t now = time(0);
-		//std::tm ltm = *localtime(&now);
-
-		entry.date = 0; // fat_tool::to_date(ltm);
-		entry.time = 0; // fat_tool::to_time(ltm);
+		entry.date = 0; // fat_tool::to_date(tm);
+		entry.time = 0; // fat_tool::to_time(tm);
 
 		kiv_fs::Drive_Desc drive = registred_drivers[drive_volume];
 		kiv_fs::File_Desc file = { entry, std::vector<uint16_t>() };
 
-		// najdi vstupni adresar, kam se ma 'soubor' ulozit
+		// najdi vstupni adresar, kam se ma soubor ulozit
 		kiv_fs::FATEntire_Directory parrent_entry;
 		if (!kiv_fs::find_entire_dir(parrent_entry, components, drive)) {
 			// TODO error -> entire_dir wasn't found -> file doesn't exist
@@ -128,6 +127,26 @@ IOHandle* Open_File(std::string absolute_path, const kiv_os::NOpen_File fm, cons
 
 		if (!fat_tool::is_attr(parrent_entry.attributes, kiv_os::NFile_Attributes::Directory)) {
 			// TODO error -> folder that we want to create new file/dir isn't exist
+			return nullptr;
+		}
+
+		std::vector<std::div_t> fat_offsets;
+		// najdi volne sektory pro slozku
+		if (!kiv_fs::find_free_sectors(fat_offsets, drive.id, START_OF_FAT, 1, drive.boot_block.bytes_per_sector)) {
+			// TODO error
+			return nullptr;
+		}
+
+		// uloz slozku do FAT
+		if (!kiv_fs::save_to_fat(drive.id, fat_offsets, drive.boot_block.bytes_per_sector, kiv_fs::offset(drive.boot_block), file.sectors, file.entire_dir.first_cluster)) {
+			// TODO error
+			return nullptr;
+		}
+
+		const auto parrent_sectors = kiv_fs::load_sectors(drive, parrent_entry);
+		// uloz do nadrazene slozky entire_dir pro novou slozku
+		if (!kiv_fs::save_to_dir(drive.id, parrent_sectors, drive.boot_block.bytes_per_sector, file.entire_dir, kiv_fs::Edit_Type::Add)) {
+			// TODO error
 			return nullptr;
 		}
 
@@ -149,12 +168,8 @@ IOHandle* Open_File(std::string absolute_path, const kiv_os::NOpen_File fm, cons
 			}
 		}
 
-		const auto sectors = kiv_fs::load_sectors(drive, parrent_entry);
-		if (!kiv_fs::create_dir(drive, kiv_fs::File_Desc{ parrent_entry, sectors }, file)) {
-			// TODO error -> cannot create new dir
-		}
-
-		return new IOHandle();
+		uint8_t permission = is_read_only ? Permission::Read : Permission::Read | Permission::Write;
+		return is_dir ? new IOHandle() : new IOHandle_File(drive, file, permission);
 	}
 }
 
