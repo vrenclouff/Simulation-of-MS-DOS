@@ -5,6 +5,7 @@
 #include <ctime>
 #include <cfloat>
 #include <limits>
+#include <sstream>
 
 void waitForCtrlz(const kiv_hal::TRegisters &regs) {
 
@@ -32,12 +33,14 @@ size_t __stdcall rgen(const kiv_hal::TRegisters &regs) {
 	const kiv_os::THandle std_out = static_cast<kiv_os::THandle>(regs.rbx.x);
 	size_t counter;
 
-	char* input = reinterpret_cast<char*>(regs.rdi.r);
-	char* arg = strtok_s(input, " ", &input);
+	std::istringstream is(reinterpret_cast<char*>(regs.rdi.r));
+	std::string arg;
 
-	if (arg != NULL) {
-		char* tooMuchArguments = "Rgen function has no arguments.\n";
-		kiv_os_rtl::Write_File(std_out, tooMuchArguments, strlen(tooMuchArguments), counter);
+	std::getline(is, arg, ' ');
+
+	if (!arg.empty()) {
+		std::string tooMuchArguments = "Rgen function has no arguments.\n";
+		kiv_os_rtl::Write_File(std_out, tooMuchArguments.c_str(), tooMuchArguments.length(), counter);
 		kiv_os_rtl::Exit(1);
 		return 1;
 	}

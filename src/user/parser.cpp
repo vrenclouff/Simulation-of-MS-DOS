@@ -17,10 +17,9 @@ bool parsePart(std::string args, kiv_os::THandle stdin_handle, kiv_os::THandle s
 	std::istringstream is(args);
 	std::string tofunc;
 	std::string arguments;
-	std::string rest;
 
 	std::getline(is, tofunc, ' ');
-	std::getline(is, arguments, ' ');
+	std::getline(is, arguments);
 
 	if (tofunc.empty()) {
 		return NULL;
@@ -45,8 +44,8 @@ bool parsePart(std::string args, kiv_os::THandle stdin_handle, kiv_os::THandle s
 	if (handlers[0] == NULL)
 	{
 		size_t counter;
-		const char* error = "Invalid command.\n";
-		kiv_os_rtl::Write_File(stdout_handle, error, strlen(error), counter);
+		const std::string error = "Invalid command.\n";
+		kiv_os_rtl::Write_File(stdout_handle, error.c_str(), error.length(), counter);
 		return 1;
 	}
 
@@ -58,8 +57,8 @@ bool parsePart(std::string args, kiv_os::THandle stdin_handle, kiv_os::THandle s
 void wrongRedirection(kiv_os::THandle shellout, size_t shellcounter, kiv_os::THandle stdin_handle, kiv_os::THandle stdout_handle) {
 	kiv_os_rtl::Close_Handle(stdin_handle);
 	kiv_os_rtl::Close_Handle(stdout_handle);
-	const char* error = "Redirections are not allowed at these places.\n";
-	kiv_os_rtl::Write_File(shellout, error, strlen(error), shellcounter);
+	const std::string error = "Redirections are not allowed at these places.\n";
+	kiv_os_rtl::Write_File(shellout, error.c_str(), error.length(), shellcounter);
 }
 
 void parse(char* args, kiv_os::THandle shellin, kiv_os::THandle shellout, size_t shellcounter) {
@@ -156,7 +155,7 @@ void parse(char* args, kiv_os::THandle shellin, kiv_os::THandle shellout, size_t
 
 }
 
-void getErrorMessage(kiv_os::NOS_Error error, char* message) {
+void getErrorMessage(kiv_os::NOS_Error error, std::string message) {
 
 	switch (error) {
 
