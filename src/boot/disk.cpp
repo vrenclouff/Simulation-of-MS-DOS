@@ -13,7 +13,7 @@ void __stdcall Disk_Handler(kiv_hal::TRegisters &context) {
 		auto cmos_params = cmos.Drive_Parameters(context.rdx.l);
 		if (cmos_params.is_present) {
 			if (cmos_params.is_ram_disk) disk_drives[context.rdx.l].reset(new CRAM_Disk{ cmos_params });
-			else disk_drives[context.rdx.l].reset(new CDisk_Image{ cmos_params });
+				else disk_drives[context.rdx.l].reset(new CDisk_Image{ cmos_params });
 		}
 		else {
 			context.flags.carry = 1;
@@ -21,7 +21,7 @@ void __stdcall Disk_Handler(kiv_hal::TRegisters &context) {
 		}
 	}
 
-	switch (static_cast<kiv_hal::NDisk_IO>(context.rax.h)) {
+	switch (static_cast<kiv_hal::NDisk_IO>(context.rax.h)) {		
 		case kiv_hal::NDisk_IO::Read_Sectors:		return disk_drives[context.rdx.l]->Read_Sectors(context);
 		case kiv_hal::NDisk_IO::Write_Sectors:		return disk_drives[context.rdx.l]->Write_Sectors(context);
 		case kiv_hal::NDisk_IO::Drive_Parameters:	return disk_drives[context.rdx.l]->Drive_Parameters(context);
@@ -45,27 +45,27 @@ void CDisk_Drive::Drive_Parameters(kiv_hal::TRegisters &context) {
 
 	const size_t MB = 1024 * 1024; //1MiB
 	bool assisted_translation = true;
-
+	
 	if (mDisk_Size < 504 * MB) params.heads = 16;
-	else  if (mDisk_Size < 1008 * MB) params.heads = 32;
-	else if (mDisk_Size < 2016 * MB) params.heads = 64;
-	else if (mDisk_Size < 4032 * MB) params.heads = 128;
-	else if (mDisk_Size < 8032 * MB) params.heads = 255;
-	else
-		//pro tyhle cisla nemame standardni prepocet, tak nastavime vse na max
-	{
-		params.sectors_per_track = std::numeric_limits<decltype(params.sectors_per_track)>::max();
-		params.heads = std::numeric_limits<decltype(params.heads)>::max();
-		params.cylinders = std::numeric_limits<decltype(params.cylinders)>::max();
-		assisted_translation = false;
-	};
+	 else  if (mDisk_Size < 1008 * MB) params.heads = 32;
+		else if (mDisk_Size < 2016 * MB) params.heads = 64;
+			else if (mDisk_Size < 4032 * MB) params.heads = 128;
+				else if (mDisk_Size < 8032 * MB) params.heads = 255;
+				else
+					//pro tyhle cisla nemame standardni prepocet, tak nastavime vse na max
+					{
+						params.sectors_per_track = std::numeric_limits<decltype(params.sectors_per_track)>::max();
+						params.heads = std::numeric_limits<decltype(params.heads)>::max();
+						params.cylinders = std::numeric_limits<decltype(params.cylinders)>::max();
+						assisted_translation = false;
+					};
 
 	if (assisted_translation) {
 		params.sectors_per_track = 63;
-		//		size_t tmp1 = static_cast<size_t>(params.sectors_per_track * params.heads);
-				//size_t tmp2 = tmp1 * mBytes_Per_Sector;
-				//tmp2 /= mDisk_Size;
-		params.cylinders = static_cast<decltype(params.cylinders)> (mDisk_Size / (static_cast<size_t>(params.sectors_per_track) * static_cast<size_t>(params.heads) * mBytes_Per_Sector));
+//		size_t tmp1 = static_cast<size_t>(params.sectors_per_track * params.heads);
+		//size_t tmp2 = tmp1 * mBytes_Per_Sector;
+		//tmp2 /= mDisk_Size;
+		params.cylinders = static_cast<decltype(params.cylinders) > (mDisk_Size / (static_cast<size_t>(params.sectors_per_track) * static_cast<size_t>(params.heads) * mBytes_Per_Sector));
 		//params.cylinders = static_cast<decltype(params.cylinders)>(tmp2);
 	}
 
@@ -90,7 +90,7 @@ bool CDisk_Drive::Check_DAP(kiv_hal::TRegisters &context) {
 CDisk_Image::CDisk_Image(const TCMOS_Drive_Parameters &cmos_parameters) : CDisk_Drive(cmos_parameters) {
 	auto open_mode = std::ios::binary | std::ios::in;
 	if (!cmos_parameters.read_only) open_mode |= std::ios::out;
-	mDisk_Image.open(cmos_parameters.disk_image, open_mode);
+	mDisk_Image.open(cmos_parameters.disk_image, open_mode);	
 	mDisk_Image.seekg(0, std::ios::end);      //rovnou nastavime pozici na konce souboru, protoze pri zapisu ji budeme stejne prestavovat
 	mDisk_Size = mDisk_Image.tellg();
 }
@@ -103,14 +103,13 @@ void CDisk_Image::Read_Sectors(kiv_hal::TRegisters &context) {
 		const auto bytes_to_read = dap.count*mBytes_Per_Sector;
 		mDisk_Image.read(static_cast<char*>(dap.sectors), bytes_to_read);
 		if (mDisk_Image.gcount() == bytes_to_read) Set_Status(context, kiv_hal::NDisk_Status::No_Error);
-		else Set_Status(context, kiv_hal::NDisk_Status::Address_Mark_Not_Found_Or_Bad_Sector);
+			else Set_Status(context, kiv_hal::NDisk_Status::Address_Mark_Not_Found_Or_Bad_Sector);
 	}
 }
 
 void CDisk_Image::Write_Sectors(kiv_hal::TRegisters &context) {
 	if (Check_DAP(context)) {
 		kiv_hal::TDisk_Address_Packet &dap = *reinterpret_cast<kiv_hal::TDisk_Address_Packet*>(context.rdi.r);
-
 		mDisk_Image.seekg(mBytes_Per_Sector*dap.lba_index, std::ios::beg);
 		const auto bytes_to_write = dap.count*mBytes_Per_Sector;
 
@@ -119,7 +118,7 @@ void CDisk_Image::Write_Sectors(kiv_hal::TRegisters &context) {
 		const auto number_of_bytes_written = mDisk_Image.tellp() - before;
 
 		if (number_of_bytes_written == bytes_to_write) Set_Status(context, kiv_hal::NDisk_Status::No_Error);
-		else Set_Status(context, kiv_hal::NDisk_Status::Fixed_Disk_Write_Fault_On_Selected_Drive);
+			else Set_Status(context, kiv_hal::NDisk_Status::Fixed_Disk_Write_Fault_On_Selected_Drive);
 	}
 }
 

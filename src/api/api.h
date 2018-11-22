@@ -7,7 +7,7 @@
 
 namespace kiv_os {
 	const kiv_hal::NInterrupt System_Int_Number = kiv_hal::NInterrupt(0x21);
-	//je to libovolne arbitrarni cislo, ktere neni uz obsazene v kiv_hal::NInterrupt
+			//je to libovolne arbitrarni cislo, ktere neni uz obsazene v kiv_hal::NInterrupt
 
 #ifndef KERNEL
 	bool Sys_Call(kiv_hal::TRegisters &context);
@@ -40,14 +40,14 @@ namespace kiv_os {
 		Open_File = 1,					//rdx je pointer na null - terminated ANSI char string udavajici file_name;
 										//rcx jsou flags k otevreni souboru - viz NOpen_File konstanty
 										//rdi jsou atributy souboru - viz NFile_Attributes
-										//OUT : rax je handle nove otevreneho souboru
+										//OUT : ax je handle nove otevreneho souboru
 
 		Write_File,						//IN : dx je handle souboru, rdi je pointer na buffer, rcx je pocet bytu v bufferu k zapsani
 										//OUT : rax je pocet zapsanych bytu
 
 		Read_File,						//IN : dx je handle souboru, rdi je pointer na buffer, kam zapsat, rcx je velikost bufferu v bytech
 										//OUT : rax je pocet prectenych bytu
-
+		
 		Seek,							//IN : dx je handle souboru, rdi je nova pozice v souboru
 										//cl konstatna je typ pozice - viz NFile_Seek,
 										//		Beginning : od zacatku souboru
@@ -61,60 +61,58 @@ namespace kiv_os {
 		Close_Handle,					//IN : dx  je handle libovolneho typu k zavreni
 
 		Delete_File,					//IN : rdx je pointer na null - terminated ANSI char string udavajici file_name
-		
 
+		
 
 		Set_Working_Dir,				//IN : rdx je pointer na null - terminated ANSI char string udavajici novy adresar(muze byt relativni cesta)
 		Get_Working_Dir,				//IN : rdx je pointer na ANSI char buffer, rcx je velikost buffer
 										//OUT : rax pocet zapsanych znaku
 
-
-										//vytvoreni adresare - vytvori se soubor s atributem adresar
-										//smazani adresare - smaze se soubor
-										//vypis adresare - otevre se adresar jako read - only soubor a cte se jako binarni soubor obsahujici jenom polozky TDir_Entry
+		
+		//vytvoreni adresare - vytvori se soubor s atributem adresar
+		//smazani adresare - smaze se soubor
+		//vypis adresare - otevre se adresar jako read - only soubor a cte se jako binarni soubor obsahujici jenom polozky TDir_Entry
 
 
 		Create_Pipe,					//IN : rdx je pointer na pole dvou Thandle - prvni zapis a druhy pro cteni z pipy
 
-
+		
 	};
 
 
 	enum class NOS_Process : std::uint8_t {
-		Clone = 1,					//IN : rcx je NClone hodnota
-									//	Create_Process: rdx je je pointer na null - terminated string udavajici jmeno souboru ke spusteni(tj.retezec pro GetProcAddress v kernelu)
-									//		rdi je pointer na null-termined ANSI char string udavajici argumenty programu
-									//		bx obsahuje 2x THandle na stdin a stdout, tj. bx.e = (stdin << 16) | stdout
-									//OUT - v programu, ktery zavolal Clone: ax je handle noveho procesu 
-									//		ve spustenem programu:	ax a bx jsou hodnoty stdin a stdout, stderr pro jednoduchost nepodporujeme
-									//
-									//anebo
-									//	Create_Thread a pak rdx je TThread_Proc a rdi jsou *data
-									//OUT : rax je handle noveho procesu / threadu
-									//
-									//	Funkce procesu i vlakna maji prototyp TThread_Proc, protoze proces na zacatku bezi jako jedno vlakno,
-									//		context.rdi v TThread_Proc pak pro proces ukazuji na retezec udavajiciho jeho argumenty, tj. co bylo dano do rdi
-									//		a u vlakna je to pointer na jeho data
+		Clone = 1,			//IN : rcx je NClone hodnota
+							//	Create_Process: rdx je je pointer na null - terminated string udavajici jmeno souboru ke spusteni(tj.retezec pro GetProcAddress v kernelu)
+							//		rdi je pointer na null-termined ANSI char string udavajici argumenty programu
+							//		bx obsahuje 2x THandle na stdin a stdout, tj. bx.e = (stdin << 16) | stdout
+							//OUT - v programu, ktery zavolal Clone: ax je handle noveho procesu 
+							//		ve spustenem programu:	ax a bx jsou hodnoty stdin a stdout, stderr pro jednoduchost nepodporujeme
+							//
+							//anebo
+							//	Create_Thread a pak rdx je TThread_Proc a rdi jsou *data
+							//OUT : rax je handle noveho procesu / threadu
+							//
+							//	Funkce procesu i vlakna maji prototyp TThread_Proc, protoze proces na zacatku bezi jako jedno vlakno,
+							//		context.rdi v TThread_Proc pak pro proces ukazuji na retezec udavajiciho jeho argumenty, tj. co bylo dano do rdi
+							//		a u vlakna je to pointer na jeho data
 
-		Wait_For,					//IN : rdx pointer na pole THandle, na ktere se ma cekat, rcx je pocet handlu
-									//funkce se vraci jakmile je signalizovan prvni handle
-									//OUT : rax je index handle, ktery byl signalizovan
+		Wait_For,			//IN : rdx pointer na pole THandle, na ktere se ma cekat, rcx je pocet handlu
+							//funkce se vraci jakmile je signalizovan prvni handle
+							//OUT : rax je index handle, ktery byl signalizovan
+		Read_Exit_Code,		//IN:  dx je handle procesu/thread jehoz exit code se ma cist
+							//OUT: cx je exitcode
 
-		Read_Exit_Code,				//IN:  dx je handle procesu/thread jehoz exit code se ma cist
-									//OUT: cx je exitcode
+		Exit,				//ukonci proces/vlakno
+							//IN: cx je exit code
 
-		Exit,						//ukonci proces/vlakno
-									//IN: cx je exit code
-
-		Shutdown,					//nema parametry, nejprve korektne ukonci vsechny bezici procesy a pak kernel, cimz se preda rizeni do boot.exe, ktery provede simulaci vypnuti pocitace pres ACPI
-
+		Shutdown,			//nema parametry, nejprve korektne ukonci vsechny bezici procesy a pak kernel, cimz se preda rizeni do boot.exe, ktery provede simulaci vypnuti pocitace pres ACPI
 		Register_Signal_Handler		//IN: rcx NSignal_Id, rdx 
-									//	a) pointer na TThread_Proc, kde pri jeho volani context.rcx bude id signalu
-									//	b) 0 a pak si OS dosadi defualtni obsluhu signalu
+						//	a) pointer na TThread_Proc, kde pri jeho volani context.rcx bude id signalu
+						//	b) 0 a pak si OS dosadi defualtni obsluhu signalu
 	};
 
 
-
+	
 	//Navratove kody OS
 	enum class NOS_Error : uint16_t {
 		Success = 0,				//vse v poradku
@@ -122,7 +120,7 @@ namespace kiv_os {
 		File_Not_Found,				//soubor  nenalezen
 		Directory_Not_Empty,		//adresar neni prazdny (a napr. proto nesel smazat)
 		Not_Enough_Disk_Space,
-		Out_Of_Memory,
+		Out_Of_Memory,	
 		Permission_Denied,
 		IO_Error,
 
@@ -164,7 +162,7 @@ namespace kiv_os {
 	//rezim otevreni noveho souboru
 	enum class NOpen_File : std::uint8_t {
 		fmOpen_Always = 1	//pokud je nastavena, pak soubor musi existovat, aby byl otevren
-							//není-li fmOpen_Always nastaveno, pak je soubor vždy vytvoøen - tj. i pøepsán starý soubor
+								//není-li fmOpen_Always nastaveno, pak je soubor vždy vytvoøen - tj. i pøepsán starý soubor
 	};
 
 
