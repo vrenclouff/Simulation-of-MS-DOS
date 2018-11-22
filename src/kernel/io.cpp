@@ -131,7 +131,6 @@ IOHandle* Open_File(std::string absolute_path, const kiv_os::NOpen_File fm, cons
 			return nullptr;
 		}
 
-		// if (!kiv_fs::is_entry_root(drive.boot_block, parrent_entry)) {
 		if (components.size() > 1) {
 			components.pop_back();
 
