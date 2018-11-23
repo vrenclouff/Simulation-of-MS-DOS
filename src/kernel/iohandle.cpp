@@ -287,12 +287,14 @@ size_t IOHandle_SYS::read(char* buffer, size_t buffer_size) {
 
 size_t IOHandle_Pipe::write(char* buffer, size_t buffer_size) {
 	std::lock_guard<std::mutex> lock(pipemtx);
+	size_t written = 0;
 
 	for (char to_write : std::string(buffer)) {
 		pipe->write(to_write);
+		written++;
 	}
 	
-	return 0; //TODO
+	return written; //TODO
 }
 
 size_t IOHandle_Pipe::read(char* buffer, size_t buffer_size) {
