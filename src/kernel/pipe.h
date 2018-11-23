@@ -14,6 +14,7 @@ public:
 	char read();
 	bool hasEnoughSpace(size_t buffer_size);
 	size_t getSize();
+	bool isEmpty();
 
 private:
 
@@ -22,6 +23,5 @@ private:
 	size_t start;
 	size_t end;
 	bool full;
-	bool isEmpty();
 
 };
