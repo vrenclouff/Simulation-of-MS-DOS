@@ -7,6 +7,7 @@ extern "C" size_t __stdcall test_delay(const kiv_hal::TRegisters &regs);
 extern "C" size_t __stdcall test_exit0(const kiv_hal::TRegisters &regs);
 extern "C" size_t __stdcall test_exit1(const kiv_hal::TRegisters &regs);
 extern "C" size_t __stdcall test_long_delay(const kiv_hal::TRegisters &regs);
+extern "C" size_t __stdcall test_write_to_file(const kiv_hal::TRegisters &regs);
 
 void test_thread(const kiv_hal::TRegisters &regs);
 

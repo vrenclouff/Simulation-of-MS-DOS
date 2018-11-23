@@ -133,7 +133,7 @@ void parse(char* args, kiv_os::THandle shellin, kiv_os::THandle shellout, size_t
 				}
 
 				kiv_os::THandle filehandle;
-				kiv_os_rtl::Open_File(filename.c_str(), filename.size(), filehandle, false, kiv_os::NFile_Attributes::Read_Only);
+				kiv_os_rtl::Open_File(filename.c_str(), filename.size(), filehandle, false, static_cast<kiv_os::NFile_Attributes>(0));
 
 				parsePart(command, stdin_handle, filehandle);
 				kiv_os_rtl::Close_Handle(filehandle);

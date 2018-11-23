@@ -80,6 +80,7 @@ namespace kiv_fs {
 	uint16_t offset(const FATBoot_Block& boot_block);
 
 	std::vector<uint16_t> load_sectors(const kiv_fs::Drive_Desc& drive, const kiv_fs::FATEntire_Directory& entry_dir);
+	void sector_to_fat_offset(std::vector<std::div_t>& fat_offsets, const std::vector<uint16_t> sectors, const size_t bytes_per_sector, const uint16_t offset);
 
 	bool is_entry_root(const kiv_fs::FATBoot_Block& boot, const kiv_fs::FATEntire_Directory& entry);
 	uint16_t root_directory_addr(const FATBoot_Block& boot_block);

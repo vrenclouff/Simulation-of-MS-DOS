@@ -4,7 +4,7 @@
 #include <vector>
 #include <sstream>
 
-#define MAX_ENTRY_ITEMS	 30
+#define MAX_ENTRY_ITEMS	 16
 
 size_t __stdcall dir(const kiv_hal::TRegisters &regs) {
 
@@ -34,12 +34,15 @@ size_t __stdcall dir(const kiv_hal::TRegisters &regs) {
 		return error_code;
 	}
 
-	const auto header = std::string_view("RO\tHIDDEN\tSYSTEM\tVOLUME\tIS DIR\tARCHIVE\tFILENAME\n");
-	kiv_os_rtl::Write_File(std_out, header.data(), header.size(), wrote);
+	std::stringstream ss;
+
+	ss << "RO\tHIDDEN\tSYSTEM\tVOLUME\tIS DIR\tARCHIVE\tFILENAME\n";
 
 	char buffer[MAX_ENTRY_ITEMS * sizeof(kiv_os::TDir_Entry)];
 	do {
 		kiv_os_rtl::Read_File(dirhandle, buffer, sizeof(buffer), read);
+
+		if (!read) break;
 
 		for (size_t beg = 0; beg < read; beg += sizeof(kiv_os::TDir_Entry)) {
 
@@ -54,7 +57,6 @@ size_t __stdcall dir(const kiv_hal::TRegisters &regs) {
 			const auto is_dir = std::to_string(dir->file_attributes & static_cast<uint8_t>(kiv_os::NFile_Attributes::Directory));
 			const auto archive = std::to_string(dir->file_attributes & static_cast<uint8_t>(kiv_os::NFile_Attributes::Archive));
 
-			std::stringstream ss;
 			ss
 				<< read_only << "\t"
 				<< hidden << "\t"
@@ -64,11 +66,12 @@ size_t __stdcall dir(const kiv_hal::TRegisters &regs) {
 				<< archive << "\t"
 				<< filename << "\n"
 			;
-
-			const auto text = ss.str();
-			kiv_os_rtl::Write_File(std_out, text.c_str(), text.size(), wrote);
 		}
-	} while (read);
+
+		const auto text = ss.str();
+		kiv_os_rtl::Write_File(std_out, text.c_str(), text.size(), wrote);
+
+	} while (1);
 
 	kiv_os_rtl::Close_Handle(dirhandle);
 	kiv_os_rtl::Exit(0);

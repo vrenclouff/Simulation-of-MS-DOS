@@ -4,6 +4,21 @@
 
 #include <numeric>
 
+
+kiv_hal::TRegisters Prepare_SysCall_Context(kiv_hal::NDisk_IO operation, const uint8_t drive_id, char* data, const uint16_t sector_id) {
+	kiv_hal::TDisk_Address_Packet dap;
+
+	dap.sectors = static_cast<void*>(data);
+	dap.count = 1;
+	dap.lba_index = sector_id;
+
+	kiv_hal::TRegisters regs;
+	regs.rdx.l = drive_id;
+	regs.rax.h = static_cast<decltype(regs.rax.h)>(operation);
+	regs.rdi.r = reinterpret_cast<decltype(regs.rdi.r)>(&dap);
+	return regs;
+}
+
 void format_fat16(unsigned char* boot_block, const kiv_hal::TDrive_Parameters& params) {
 
 	// Clean boot block
@@ -123,13 +138,10 @@ uint16_t kiv_fs::offset(const FATBoot_Block & boot_block) {
 }
 
 std::vector<uint16_t> sectors_for_root_dir(const kiv_fs::FATBoot_Block& boot_block) {
-
 	const auto address = root_directory_addr(boot_block);
 	const auto size = root_directory_size(boot_block);
-
 	std::vector<uint16_t> sectors(size);
 	std::iota(sectors.begin(), sectors.end(), address);
-
 	return sectors;
 }
 
@@ -170,6 +182,14 @@ void kiv_fs::remove_sectors_in_fat(const kiv_fs::FATEntire_Directory& entire_dir
 	regs.rax.h = static_cast<decltype(regs.rax.h)>(kiv_hal::NDisk_IO::Write_Sectors);
 	kiv_hal::Call_Interrupt_Handler(kiv_hal::NInterrupt::Disk_IO, regs);
 
+}
+
+void kiv_fs::sector_to_fat_offset(std::vector<std::div_t>& fat_offsets, const std::vector<uint16_t> sectors, const size_t bytes_per_sector, const uint16_t offset) {
+	for (const auto& sector : sectors) {
+		auto fat_offset = std::div((sector - offset) * MULTIPLY_CONST, static_cast<int>(bytes_per_sector));
+		fat_offset.quot += 1;
+		fat_offsets.push_back(fat_offset);
+	}
 }
 
 std::vector<uint16_t> sectors_for_entire_dir(const kiv_fs::FATEntire_Directory& entire_dir, const size_t bytes_per_sector, const uint16_t offset, const uint8_t drive_id) {
@@ -298,14 +318,6 @@ bool kiv_fs::find_entire_dir(kiv_fs::FATEntire_Directory& entire_file, std::vect
 	return founded;
 }
 
-uint16_t kiv_fs::root_directory_addr(const FATBoot_Block& boot_block) {
-	return boot_block.number_of_fat * boot_block.blocks_for_fat + 1;
-}
-
-uint8_t kiv_fs::root_directory_size(const FATBoot_Block& boot_block) {
-	return static_cast<uint8_t>(boot_block.number_of_root_directory_entries * sizeof(kiv_fs::FATEntire_Directory) / boot_block.bytes_per_sector);
-}
-
 bool kiv_fs::find_free_sectors(std::vector<std::div_t>& fat_offsets, const uint8_t drive_id, const std::div_t sector, const size_t count, const size_t bytes_per_sector) {
 
 	std::div_t fat_offset = sector;
@@ -346,15 +358,15 @@ bool kiv_fs::find_free_sectors(std::vector<std::div_t>& fat_offsets, const uint8
 	return true;
 }
 
-bool kiv_fs::is_entry_root(const kiv_fs::FATBoot_Block& boot, const kiv_fs::FATEntire_Directory& entry) {
-	return entry.first_cluster != root_directory_addr(boot);
-}
-
 std::vector<uint16_t> kiv_fs::load_sectors(const kiv_fs::Drive_Desc& drive, const kiv_fs::FATEntire_Directory & entry_dir) {
 	const auto boot = drive.boot_block;
 	return is_entry_root(boot, entry_dir) ? sectors_for_entire_dir(entry_dir, boot.bytes_per_sector, offset(boot), drive.id) : sectors_for_root_dir(boot);
 }
 bool kiv_fs::save_to_dir(const uint8_t drive_id, const std::vector<uint16_t> sectors, const size_t bytes_per_sector, const kiv_fs::FATEntire_Directory entire_dir, const kiv_fs::Edit_Type type) {
+
+	if (sectors.empty()) {
+		return true;
+	}
 
 	std::vector<unsigned char> fat(bytes_per_sector);
 	kiv_hal::TDisk_Address_Packet dap;
@@ -463,4 +475,16 @@ bool kiv_fs::save_to_fat(const uint8_t drive_id, const std::vector<std::div_t> f
 
 bool kiv_fs::create_file(const kiv_fs::Drive_Desc& drive, const kiv_fs::File_Desc& parrent, kiv_fs::File_Desc& file) {
 	return false;
+}
+
+bool kiv_fs::is_entry_root(const kiv_fs::FATBoot_Block& boot, const kiv_fs::FATEntire_Directory& entry) {
+	return entry.first_cluster != root_directory_addr(boot);
+}
+
+uint16_t kiv_fs::root_directory_addr(const FATBoot_Block& boot_block) {
+	return boot_block.number_of_fat * boot_block.blocks_for_fat + 1;
+}
+
+uint8_t kiv_fs::root_directory_size(const FATBoot_Block& boot_block) {
+	return static_cast<uint8_t>(boot_block.number_of_root_directory_entries * sizeof(kiv_fs::FATEntire_Directory) / boot_block.bytes_per_sector);
 }

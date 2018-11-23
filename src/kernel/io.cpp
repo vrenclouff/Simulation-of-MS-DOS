@@ -18,8 +18,8 @@ std::map<std::string, kiv_fs::Drive_Desc> registred_drivers;
 
 
 STDHandle Register_STD() {
-	const auto  in = Convert_Native_Handle(static_cast<HANDLE>(new IOHandle_Console(Permission::Read)));
-	const auto out = Convert_Native_Handle(static_cast<HANDLE>(new IOHandle_Console(Permission::Write)));
+	const auto  in = Convert_Native_Handle(static_cast<HANDLE>(new IOHandle_Keyboard()));
+	const auto out = Convert_Native_Handle(static_cast<HANDLE>(new IOHandle_VGA()));
 	return { in, out };
 }
 
@@ -76,9 +76,23 @@ IOHandle* Open_File(std::string absolute_path, const kiv_os::NOpen_File fm, cons
 				// TODO error -> entire_dir wasn't found -> file doesn't exist
 				return nullptr;
 			}
+
+			std::vector<uint16_t> parrent_sectors;
+			if (!is_read_only) {
+				components.pop_back();
+
+				kiv_fs::FATEntire_Directory parrent_entry;
+				if (!kiv_fs::find_entire_dir(parrent_entry, components, drive)) {
+					// TODO error -> entire_dir wasn't found -> file doesn't exist
+					return nullptr;
+				}
+
+				parrent_sectors = kiv_fs::load_sectors(drive, parrent_entry);
+			}
+
 			const std::vector<uint16_t> sectors = kiv_fs::load_sectors(drive, entry);
 			kiv_fs::File_Desc file = { entry, sectors };
-			return new IOHandle_File(drive, file, is_read_only);
+			return new IOHandle_File(drive, file, is_read_only, parrent_sectors);
 		}
 	}
 	else {
@@ -102,7 +116,7 @@ IOHandle* Open_File(std::string absolute_path, const kiv_os::NOpen_File fm, cons
 
 		const auto is_dir = fat_tool::is_attr(static_cast<uint8_t>(attributes), kiv_os::NFile_Attributes::Directory);
 
-		if (is_dir) {
+		if (is_dir || filename.extension.empty()) {
 			entry.extension[0] = 0;
 		}
 		else {
@@ -169,7 +183,7 @@ IOHandle* Open_File(std::string absolute_path, const kiv_os::NOpen_File fm, cons
 		}
 
 		uint8_t permission = is_read_only ? Permission::Read : Permission::Read | Permission::Write;
-		return is_dir ? new IOHandle() : new IOHandle_File(drive, file, permission);
+		return is_dir ? new IOHandle() : new IOHandle_File(drive, file, permission, is_read_only ? std::vector<uint16_t>(0) : parrent_sectors);
 	}
 }
 
@@ -301,6 +315,12 @@ void Handle_IO(kiv_hal::TRegisters &regs) {
 				regs.flags.carry = 1;
 				regs.rax.x = static_cast<decltype(regs.rax.x)>(kiv_os::NOS_Error::File_Not_Found);
 			}
+		} break;
+
+		case kiv_os::NOS_File_System::Seek: {
+			const auto source = static_cast<IOHandle*>(Resolve_kiv_os_Handle(regs.rdx.x));
+				
+
 		} break;
 
 		case kiv_os::NOS_File_System::Create_Pipe: {

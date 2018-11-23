@@ -18,5 +18,5 @@ EXPORTS
 	test_exit0
 	test_exit1
 	test_long_delay
-	
+	test_write_to_file
 	

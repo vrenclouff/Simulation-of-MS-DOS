@@ -180,6 +180,25 @@ void test_thread(const kiv_hal::TRegisters &regs)
 	return;
 }
 
+size_t __stdcall test_write_to_file(const kiv_hal::TRegisters &regs)
+{
+	
+	const auto filename = std::string_view("test.txt");
+
+	kiv_os::THandle file_handle; size_t wrote;
+	kiv_os_rtl::Open_File(filename.data(), filename.size(), file_handle, false, static_cast<kiv_os::NFile_Attributes>(0));
+
+	char buffer[1024] = { "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut consectetur, diam sed tempus sollicitudin, mi lectus imperdiet eros, a sodales purus dolor ac nisl. Quisque fermentum ligula eget neque varius, nec sodales purus aliquet. Nunc tincidunt placerat enim sit amet gravida. Sed pellentesque risus vitae nulla facilisis ullamcorper. Vivamus vehicula eget purus id ultrices. Vestibulum vel lorem suscipit, iaculis dolor vitae, imperdiet ante. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Donetc dignissim elementum orci vel convaallis. Duis tempus ipsum at elit iaculis tincidunt. Phasellus porttitor, magna eu luctus pellentesque, tellus tellus cursus est, at tristique urna diam gravida purus. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae. Integer eu mauris erat.Nulla facilisi.Nulla condimentum efficitur lacus, eget volutpat nisl dignissim sit amet.Nunc diam justo, tincidunt et ipsum non, eleifend laoreet dui.Donec volutpat." };	 
+
+	kiv_os_rtl::Write_File(file_handle, buffer, sizeof(buffer), wrote);
+
+	kiv_os_rtl::Close_Handle(file_handle);
+
+	// call exit
+	exitCall(0);
+	return 0;
+}
+
 
 // -------------TESTS---------------
 
