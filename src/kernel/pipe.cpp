@@ -5,7 +5,7 @@ bool Pipe::isEmpty() {
 }
 
 size_t Pipe::getSize() {
-	size_t size;
+	size_t size = 0;
 
 	if (!full)
 	{
