@@ -10,7 +10,7 @@ public:
 		this->start = 0;
 		this->end = 0;
 		this->full = false;
-		this->writeSem = new Semaphore(0);
+		this->writeSem = new Semaphore(this->max);
 		this->readSem = new Semaphore(0);
 	}
 
