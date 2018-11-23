@@ -12,4 +12,4 @@ void wrongRedirection(kiv_os::THandle shellout, size_t shellcounter, kiv_os::THa
 
 void parse(char* args, kiv_os::THandle shellin, kiv_os::THandle shellout, size_t shellcounter);
 
-void getErrorMessage(kiv_os::NOS_Error error, std::string message);
+std::string getErrorMessage(kiv_os::NOS_Error error);
