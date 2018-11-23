@@ -1,6 +1,6 @@
 #include "semaphore.h"
 
-inline void Semaphore::p()
+void Semaphore::p()
 {
 	std::unique_lock<std::mutex> lock(mtx);
 
@@ -10,7 +10,7 @@ inline void Semaphore::p()
 	count--;
 }
 
-inline void Semaphore::v()
+void Semaphore::v()
 {
 	std::unique_lock<std::mutex> lock(mtx);
 	count++;

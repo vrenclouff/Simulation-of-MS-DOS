@@ -9,9 +9,9 @@ public:
 
 	Semaphore(int count_ = 0) : count(count_) {}
 
-	inline void p();
+	void p();
 
-	inline void v();
+	void v();
 
 private:
 
