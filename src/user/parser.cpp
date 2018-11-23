@@ -86,7 +86,7 @@ void parse(char* args, kiv_os::THandle shellin, kiv_os::THandle shellout, size_t
 	const char pipesymbol = '|';
 	const char redirectionsymbol = '>';
 
-	std::istringstream is(args);	// TODO zde to nahodne pada
+	std::istringstream is(args);
 	std::string part;
 	while (std::getline(is, part, pipesymbol)) {
 		parts.push_back(part);
@@ -155,33 +155,33 @@ void parse(char* args, kiv_os::THandle shellin, kiv_os::THandle shellout, size_t
 
 }
 
-void getErrorMessage(kiv_os::NOS_Error error, std::string message) {
+std::string getErrorMessage(kiv_os::NOS_Error error) {
 
 	switch (error) {
 
 	case (kiv_os::NOS_Error::Directory_Not_Empty):
-		message = "Directory is not empty.\n";
+		return "Directory is not empty.\n";
 		break;
 	case (kiv_os::NOS_Error::File_Not_Found):
-		message = "File not found.\n";
+		return "File not found.\n";
 		break;
 	case (kiv_os::NOS_Error::Invalid_Argument):
-		message = "Invalid argument.\n";
+		return "Invalid argument.\n";
 		break;
 	case (kiv_os::NOS_Error::IO_Error):
-		message = "I/O error occured.\n";
+		return "I/O error occured.\n";
 		break;
 	case (kiv_os::NOS_Error::Not_Enough_Disk_Space):
-		message = "Not enough disk space.\n";
+		return "Not enough disk space.\n";
 		break;
 	case (kiv_os::NOS_Error::Out_Of_Memory):
-		message = "Out of memmory.\n";
+		return "Out of memmory.\n";
 		break;
 	case (kiv_os::NOS_Error::Permission_Denied):
-		message = "Permission denied.\n";
+		return "Permission denied.\n";
 		break;
 	default:
-		message = "Something went wrong.\n";
+		return "Something went wrong.\n";
 		break;
 	}
 
