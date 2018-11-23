@@ -126,7 +126,10 @@ void parse(char* args, kiv_os::THandle shellin, kiv_os::THandle shellout, size_t
 
 				std::getline(is, command, redirectionsymbol);
 				std::getline(is, filename, redirectionsymbol);
-				
+
+				command = trim(command);
+				filename = trim(filename);
+
 				if (std::getline(is, rest, redirectionsymbol)) {
 					wrongRedirection(shellout, shellcounter, stdin_handle, stdout_handle);
 					return;

@@ -273,24 +273,24 @@ bool kiv_fs::find_entire_dir(kiv_fs::FATEntire_Directory& entire_file, std::vect
 
 			if (entries.empty()) break;
 
-			const auto is_dir = finded_element.extension.empty();
+			// const auto is_dir = finded_element.extension.empty();
 			founded = false;
 			for (auto& entire : entries) {
 				// pokud hledam slozku a slozka to neni, prejdi na dalsi
-				const auto is_entire_dir = fat_tool::is_attr(entire.attributes, kiv_os::NFile_Attributes::Directory);
-				if (is_dir && !is_entire_dir) {
-					continue;
-				}
+				//const auto is_entire_dir = fat_tool::is_attr(entire.attributes, kiv_os::NFile_Attributes::Directory);
+				//if (is_dir && !is_entire_dir) {
+				//	continue;
+				//}
 
 				// porovnej jmena a zjisti, zda hledam prave tento 'soubor'
 				const auto name = fat_tool::rtrim(std::string(entire.file_name, sizeof(entire.file_name)));
 				if (finded_element.name.compare(name) == 0) {
 
 					// pokud hledam slozku, porovnej nazvy a shoduji-li se, uloz vstup
-					if (is_entire_dir) {
-						entire_file = entire;
-						founded = true; break;
-					}
+					//if (is_entire_dir) {
+					//	entire_file = entire;
+					//	founded = true; break;
+					//}
 
 					// pokud hledam soubor, porovnej konzovky a shoduji-li se, uloz vstup
 					const auto extension = fat_tool::rtrim(std::string(entire.extension, sizeof(entire.extension)));

@@ -177,15 +177,16 @@ size_t IOHandle_File::read(char * buffer, size_t buffer_size) {
 				return offset;
 			}
 
-			for (auto dir = entire_dirs.begin() + start_entry; dir != entire_dirs.end(); dir++) {
+			for (auto item = entire_dirs.begin() + start_entry; item != entire_dirs.end(); item++) {
+				const auto& dir = *item;
 				read_entries++;
 
-				memcpy(buffer + offset, &(*dir).attributes, sizeof kiv_os::TDir_Entry::file_attributes);
+				memcpy(buffer + offset, &dir.attributes, sizeof kiv_os::TDir_Entry::file_attributes);
 				offset += sizeof kiv_os::TDir_Entry::file_attributes;
 
-				auto file_name = fat_tool::rtrim(std::string((*dir).file_name, sizeof kiv_fs::FATEntire_Directory::file_name));
-				if (!fat_tool::is_attr((*dir).attributes, kiv_os::NFile_Attributes::Directory)) {
-					file_name.append(".").append(fat_tool::rtrim(std::string((*dir).extension, sizeof kiv_fs::FATEntire_Directory::extension)));
+				auto file_name = fat_tool::rtrim(std::string(dir.file_name, sizeof kiv_fs::FATEntire_Directory::file_name));
+				if (!fat_tool::is_attr(dir.attributes, kiv_os::NFile_Attributes::Directory) && strlen(dir.extension)) {
+					file_name.append(".").append(fat_tool::rtrim(std::string(dir.extension, sizeof kiv_fs::FATEntire_Directory::extension)));
 				}
 				std::transform(file_name.begin(), file_name.end(), file_name.begin(), ::tolower);
 				memcpy(buffer + offset, &file_name[0], file_name.size());
