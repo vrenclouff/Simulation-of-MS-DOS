@@ -119,7 +119,7 @@ void parse(char* args, kiv_os::THandle shellin, kiv_os::THandle shellout, size_t
 
 			if (curr.find(redirectionsymbol) != std::string::npos) {
 
-r				std::istringstream is(curr);
+				std::istringstream is(curr);
 				std::string command;
 				std::string filename;
 				std::string rest;
