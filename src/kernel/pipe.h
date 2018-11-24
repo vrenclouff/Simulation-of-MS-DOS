@@ -1,5 +1,7 @@
 #pragma once
 
+#include "semaphore.h"
+
 class Pipe {
 
 public:
@@ -8,6 +10,8 @@ public:
 		this->start = 0;
 		this->end = 0;
 		this->full = false;
+		this->writeSem = new Semaphore(this->max);
+		this->readSem = new Semaphore(0);
 	}
 
 	size_t write(char to_write);
@@ -23,5 +27,7 @@ private:
 	size_t start;
 	size_t end;
 	bool full;
+	Semaphore* writeSem;
+	Semaphore* readSem;
 
 };

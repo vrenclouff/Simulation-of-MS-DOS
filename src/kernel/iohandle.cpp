@@ -251,7 +251,7 @@ size_t procfs(char * buffer, const size_t buffer_size) {
 	return size;
 }
 
-size_t IOHandle_SYS::read(char * buffer, size_t buffer_size) {
+size_t IOHandle_SYS::read(char* buffer, size_t buffer_size) {
 	IOHandle::check_ACL(Permission::Read);
 
 	switch (_type) {
@@ -262,24 +262,21 @@ size_t IOHandle_SYS::read(char * buffer, size_t buffer_size) {
 
 size_t IOHandle_Pipe::write(char* buffer, size_t buffer_size) {
 	std::lock_guard<std::mutex> lock(pipemtx);
+	size_t written = 0;
 
-	if (pipe->hasEnoughSpace(buffer_size)) {
-		for (char to_write : std::string(buffer)) {
-			pipe->write(to_write);
-		}
-	}
-	else {
-		return 1; // TODO
+	for (char to_write : std::string(buffer)) {
+		pipe->write(to_write);
+		written++;
 	}
 	
-	return 0; //TODO
+	return written; //TODO
 }
 
 size_t IOHandle_Pipe::read(char* buffer, size_t buffer_size) {
 	std::lock_guard<std::mutex> lock(pipemtx);
 	size_t read = 0;
 
-	for (int i = 0; ((i < buffer_size - 1) && (!pipe->isEmpty())); i++) {
+	for (int i = 0; i < pipe->getSize(); i++) {
 		buffer[i] = pipe->read();
 		read++;
 	}
