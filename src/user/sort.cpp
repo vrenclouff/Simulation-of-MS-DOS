@@ -7,10 +7,10 @@
 #include <algorithm>
 
 size_t __stdcall sort(const kiv_hal::TRegisters &regs) {
-	size_t counter;
+	size_t written;
 	const kiv_os::THandle std_out = static_cast<kiv_os::THandle>(regs.rbx.x);
 	const kiv_os::THandle std_in = static_cast<kiv_os::THandle>(regs.rax.x);
-	const char* linebreak = "\n";
+	const std::string linebreak = "\n";
 
 	char* input = reinterpret_cast<char*>(regs.rdi.r);
 
@@ -22,7 +22,7 @@ size_t __stdcall sort(const kiv_hal::TRegisters &regs) {
 	do
 	{
 		if (kiv_os_rtl::Read_File(std_in, buffer, buffer_size, read)) {
-			kiv_os_rtl::Write_File(std_out, linebreak, strlen(linebreak), counter);
+			kiv_os_rtl::Write_File(std_out, linebreak.c_str(), linebreak.length(), written);
 			buffer[read] = 0;
 			elements.push_back(buffer);
 		}
@@ -31,11 +31,9 @@ size_t __stdcall sort(const kiv_hal::TRegisters &regs) {
 	std::sort(elements.begin(), elements.end());
 
 	for (std::string item : elements) {
-		const char* out = item.c_str();
-		kiv_os_rtl::Write_File(std_out, out, strlen(out), counter);
-		kiv_os_rtl::Write_File(std_out, linebreak, strlen(linebreak), counter);
+		kiv_os_rtl::Write_File(std_out, item.c_str(), item.length(), written);
+		kiv_os_rtl::Write_File(std_out, linebreak.c_str(), linebreak.length(), written);
 	}
-
 
 	kiv_os_rtl::Exit(0);
 	return 0;

@@ -7,7 +7,7 @@
 #include <vector>
 
 size_t __stdcall wc(const kiv_hal::TRegisters &regs) {
-	char* input = reinterpret_cast<char*>(regs.rdi.r);
+	std::string input = std::string(reinterpret_cast<char*>(regs.rdi.r));
 
 	std::istringstream is(input);
 	std::string first;
@@ -18,13 +18,13 @@ size_t __stdcall wc(const kiv_hal::TRegisters &regs) {
 	std::getline(is, second, space);
 
 	size_t written;
-	const char* linebreak = "\n";
+	const std::string linebreak = "\n";
 	const kiv_os::THandle std_out = static_cast<kiv_os::THandle>(regs.rbx.x);
 
 	if ((first.compare("\\v") || second.compare("\\c")) && (first.compare("\\c") || second.compare("\\v")))
 	{
-		const std::string notImplementedYet = "Incorrect use of find command. Try: find \\v \\c \"<some text or file>\"\n";
-		kiv_os_rtl::Write_File(std_out, notImplementedYet.c_str(), notImplementedYet.length(), written);
+		const std::string incorrect_Use = "Incorrect use of find command. Try: find \\v \\c \"<some text or file>\"\n";
+		kiv_os_rtl::Write_File(std_out, incorrect_Use.c_str(), incorrect_Use.length(), written);
 		kiv_os_rtl::Exit(1);
 		return 1;
 	}
@@ -54,7 +54,7 @@ size_t __stdcall wc(const kiv_hal::TRegisters &regs) {
 	}
 
 	kiv_os_rtl::Write_File(std_out, output.c_str(), output.length(), written);
-	kiv_os_rtl::Write_File(std_out, linebreak, strlen(linebreak), written);
+	kiv_os_rtl::Write_File(std_out, linebreak.c_str(), linebreak.length(), written);
 
 	kiv_os_rtl::Exit(0);
 	return 0;

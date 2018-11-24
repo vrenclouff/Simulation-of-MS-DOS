@@ -7,7 +7,7 @@
 #include <limits>
 #include <sstream>
 
-void waitForCtrlz(const kiv_hal::TRegisters &regs) {
+void wait_For_Ctrlz(const kiv_hal::TRegisters &regs) {
 
 	const kiv_os::THandle std_in = static_cast<kiv_os::THandle>(regs.rax.x);
 	bool* generating = reinterpret_cast<bool*>(regs.rdi.r);
@@ -39,15 +39,15 @@ size_t __stdcall rgen(const kiv_hal::TRegisters &regs) {
 	std::getline(is, arg, ' ');
 
 	if (!arg.empty()) {
-		std::string tooMuchArguments = "Rgen function has no arguments.\n";
-		kiv_os_rtl::Write_File(std_out, tooMuchArguments.c_str(), tooMuchArguments.length(), counter);
+		std::string too_Much_Arguments = "Rgen function has no arguments.\n";
+		kiv_os_rtl::Write_File(std_out, too_Much_Arguments.c_str(), too_Much_Arguments.length(), counter);
 		kiv_os_rtl::Exit(1);
 		return 1;
 	}
 
 	bool generating = true;
 
-	kiv_os::THandle handler = kiv_os_rtl::Create_Thread(&waitForCtrlz, &generating, std_in, std_out);
+	kiv_os::THandle handler = kiv_os_rtl::Create_Thread(&wait_For_Ctrlz, &generating, std_in, std_out);
 
 	std::mt19937 generator((unsigned int) time(0));
 

@@ -12,7 +12,7 @@ std::string trim(std::string& str) {
 	return str;
 }
 
-bool parsePart(std::string args, kiv_os::THandle stdin_handle, kiv_os::THandle stdout_handle) {
+bool parse_Part(std::string args, kiv_os::THandle stdin_handle, kiv_os::THandle stdout_handle) {
 
 	std::istringstream is(args);
 	std::string tofunc;
@@ -54,7 +54,7 @@ bool parsePart(std::string args, kiv_os::THandle stdin_handle, kiv_os::THandle s
 	return 0;
 }
 
-void wrongRedirection(kiv_os::THandle shellout, size_t shellcounter, kiv_os::THandle stdin_handle, kiv_os::THandle stdout_handle) {
+void wrong_Redirection(kiv_os::THandle shellout, size_t shellcounter, kiv_os::THandle stdin_handle, kiv_os::THandle stdout_handle) {
 	kiv_os_rtl::Close_Handle(stdin_handle);
 	kiv_os_rtl::Close_Handle(stdout_handle);
 	const std::string error = "Redirections are not allowed at these places.\n";
@@ -109,11 +109,11 @@ void parse(char* args, kiv_os::THandle shellin, kiv_os::THandle shellout, size_t
 			stdout_handle = pipehandles.at(0);
 
 			if (curr.find(redirectionsymbol) != std::string::npos) {
-				wrongRedirection(shellout, shellcounter, stdin_handle, stdout_handle);
+				wrong_Redirection(shellout, shellcounter, stdin_handle, stdout_handle);
 				return;
 			}
 
-			parsePart(curr, stdin_handle, stdout_handle);
+			parse_Part(curr, stdin_handle, stdout_handle);
 		}
 		else {
 
@@ -131,18 +131,18 @@ void parse(char* args, kiv_os::THandle shellin, kiv_os::THandle shellout, size_t
 				filename = trim(filename);
 
 				if (std::getline(is, rest, redirectionsymbol)) {
-					wrongRedirection(shellout, shellcounter, stdin_handle, stdout_handle);
+					wrong_Redirection(shellout, shellcounter, stdin_handle, stdout_handle);
 					return;
 				}
 
 				kiv_os::THandle filehandle;
 				kiv_os_rtl::Open_File(filename.c_str(), filename.size(), filehandle, false, static_cast<kiv_os::NFile_Attributes>(0));
 
-				parsePart(command, stdin_handle, filehandle);
+				parse_Part(command, stdin_handle, filehandle);
 				kiv_os_rtl::Close_Handle(filehandle);
 			}
 			else {
-				parsePart(curr, stdin_handle, stdout_handle);
+				parse_Part(curr, stdin_handle, stdout_handle);
 			}
 		
 		}
@@ -158,7 +158,7 @@ void parse(char* args, kiv_os::THandle shellin, kiv_os::THandle shellout, size_t
 
 }
 
-std::string getErrorMessage(kiv_os::NOS_Error error) {
+std::string get_Error_Message(kiv_os::NOS_Error error) {
 
 	switch (error) {
 

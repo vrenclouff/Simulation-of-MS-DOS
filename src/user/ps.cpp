@@ -12,7 +12,7 @@ size_t __stdcall ps(const kiv_hal::TRegisters &regs) {
 	kiv_os::THandle filehandle;
 	if (!kiv_os_rtl::Open_File(input.data(), input.size(), filehandle, true, kiv_os::NFile_Attributes::Read_Only)) {
 		const kiv_os::NOS_Error error = kiv_os_rtl::Last_Error;
-		std::string error_msg = getErrorMessage(error);
+		std::string error_msg = get_Error_Message(error);
 		kiv_os_rtl::Write_File(std_out, error_msg.c_str(), error_msg.length(), wrote);
 
 		const auto error_code = static_cast<uint16_t>(error);
