@@ -300,8 +300,9 @@ size_t IOHandle_Pipe::write(char* buffer, size_t buffer_size) {
 size_t IOHandle_Pipe::read(char* buffer, size_t buffer_size) {
 	std::lock_guard<std::mutex> lock(pipemtx);
 	size_t read = 0;
+	size_t pipesize = pipe->getSize();
 
-	for (int i = 0; i < pipe->getSize(); i++) {
+	for (int i = 0; i < pipesize; i++) {
 		buffer[i] = pipe->read();
 		read++;
 	}
