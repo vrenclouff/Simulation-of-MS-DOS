@@ -20,7 +20,7 @@ size_t __stdcall freq(const kiv_hal::TRegisters &regs) {
 	do
 	{
 		if (kiv_os_rtl::Read_File(std_in, buffer, buffer_size, read)) {
-			kiv_os_rtl::Write_File(std_out, linebreak.capacity.c_str(), linebreak.length(), written);
+			kiv_os_rtl::Write_File(std_out, linebreak.c_str(), linebreak.length(), written);
 			buffer[read] = 0;
 			bytes.append(buffer);
 		}

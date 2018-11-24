@@ -269,7 +269,7 @@ size_t IOHandle_Pipe::write(char* buffer, size_t buffer_size) {
 		written++;
 	}
 	
-	return written; //TODO
+	return written;
 }
 
 size_t IOHandle_Pipe::read(char* buffer, size_t buffer_size) {
