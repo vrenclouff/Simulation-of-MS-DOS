@@ -46,9 +46,9 @@ bool is_exist_dir(std::string path) {
 	to_absolute_components(components, path);
 	kiv_fs::Drive_Desc drive = registred_drivers[components.front()];
 	components.erase(components.begin());
-	kiv_fs::FATEntire_Directory entry;
-	const auto res = kiv_fs::find_entire_dir(entry, components, drive);
-	return res && fat_tool::is_attr(entry.attributes, kiv_os::NFile_Attributes::Directory);
+	std::vector<kiv_fs::File_Desc> files;
+	const auto res = kiv_fs::find_entire_dirs(drive, files, components);
+	return res && fat_tool::is_attr(files.back().entire_dir.attributes, kiv_os::NFile_Attributes::Directory);
 }
 
 IOHandle* Open_File(std::string absolute_path, const kiv_os::NOpen_File fm, const kiv_os::NFile_Attributes attributes) {
@@ -60,6 +60,9 @@ IOHandle* Open_File(std::string absolute_path, const kiv_os::NOpen_File fm, cons
 	components.erase(components.begin());
 
 	const auto is_read_only = fat_tool::is_attr(static_cast<uint8_t>(attributes), kiv_os::NFile_Attributes::Read_Only);
+	const auto drive = registred_drivers[drive_volume];
+	const auto is_root = components.size() == 1;
+
 
 	if (fm == kiv_os::NOpen_File::fmOpen_Always) {
 		if (drive_volume.compare("A:") == 0) {
@@ -70,120 +73,78 @@ IOHandle* Open_File(std::string absolute_path, const kiv_os::NOpen_File fm, cons
 			return SYS_HANDLERS.at(sys);
 		}
 		else {
-			kiv_fs::Drive_Desc drive = registred_drivers[drive_volume];
-			kiv_fs::FATEntire_Directory entry;
-			if (!kiv_fs::find_entire_dir(entry, components, drive)) {
-				// TODO error -> entire_dir wasn't found -> file doesn't exist
+			std::vector<kiv_fs::File_Desc> files;
+			if (!kiv_fs::find_entire_dirs(drive, files, components)) {
+				// TODO error
 				return nullptr;
 			}
-
-			std::vector<uint16_t> parrent_sectors;
-			if (!is_read_only) {
-				components.pop_back();
-
-				kiv_fs::FATEntire_Directory parrent_entry;
-				if (!kiv_fs::find_entire_dir(parrent_entry, components, drive)) {
-					// TODO error -> entire_dir wasn't found -> file doesn't exist
-					return nullptr;
-				}
-
-				parrent_sectors = kiv_fs::load_sectors(drive, parrent_entry);
-			}
-
-			const std::vector<uint16_t> sectors = kiv_fs::load_sectors(drive, entry);
-			kiv_fs::File_Desc file = { entry, sectors };
-			return new IOHandle_File(drive, file, is_read_only, parrent_sectors);
+			return new IOHandle_File(drive, files.back(), is_read_only, !is_root ? files.rbegin()[1].sectors : std::vector<uint16_t>(0));
 		}
 	}
 	else {
-		
-		const auto filename = fat_tool::parse_entire_name(components.back());
-		components.pop_back();
 
-		if (filename.name.size() > sizeof kiv_fs::FATEntire_Directory::file_name ) {
-			// TODO exception -> filename is larger than is allowed
+		std::vector<kiv_fs::File_Desc> files;
+		const auto exist = kiv_fs::find_entire_dirs(drive, files, components);
+
+		kiv_fs::File_Desc new_file;
+
+		if (exist) {
+			new_file = files.back();
+			files.pop_back();
+			new_file.sectors.erase(new_file.sectors.begin() + 1, new_file.sectors.end());
+		} else if (files.size() != components.size() - 1) {
+			// TODO error -> cannot create a file in non-exist folder
 			return nullptr;
-		}
-
-		if (filename.extension.size() > sizeof kiv_fs::FATEntire_Directory::extension) {
-			// TODO exception -> extension is larger than is allowed
-			return nullptr;
-		}
-
-		kiv_fs::FATEntire_Directory entry;
-		std::copy(&(filename.name)[0], &(filename.name)[0] + filename.name.size(), entry.file_name);
-		entry.file_name[filename.name.size()] = 0;
-
-		const auto is_dir = fat_tool::is_attr(static_cast<uint8_t>(attributes), kiv_os::NFile_Attributes::Directory);
-
-		if (is_dir || filename.extension.empty()) {
-			entry.extension[0] = 0;
 		}
 		else {
-			std::copy(&filename.extension[0], &filename.extension[0] + filename.extension.size(), entry.extension);
+			new_file.sectors = std::vector<uint16_t>();
+			if (kiv_fs::new_entire_dir(new_file.entire_dir, components.back(), static_cast<uint8_t>(attributes))) {
+				// TODO error
+			}
 		}
 
-		entry.attributes = static_cast<decltype(entry.attributes)>(attributes);
-		entry.size = 0;
+		const auto parrent_file = files.back();
+		files.pop_back();
 
-		entry.date = 0; // fat_tool::to_date(tm);
-		entry.time = 0; // fat_tool::to_time(tm);
-
-		kiv_fs::Drive_Desc drive = registred_drivers[drive_volume];
-		kiv_fs::File_Desc file = { entry, std::vector<uint16_t>() };
-
-		// najdi vstupni adresar, kam se ma soubor ulozit
-		kiv_fs::FATEntire_Directory parrent_entry;
-		if (!kiv_fs::find_entire_dir(parrent_entry, components, drive)) {
-			// TODO error -> entire_dir wasn't found -> file doesn't exist
-			return nullptr;
-		}
-
-		if (!fat_tool::is_attr(parrent_entry.attributes, kiv_os::NFile_Attributes::Directory)) {
+		if (!fat_tool::is_attr(parrent_file.entire_dir.attributes, kiv_os::NFile_Attributes::Directory)) {
 			// TODO error -> folder that we want to create new file/dir isn't exist
 			return nullptr;
 		}
 
-		std::vector<std::div_t> fat_offsets;
-		// najdi volne sektory pro slozku
-		if (!kiv_fs::find_free_sectors(fat_offsets, drive.id, START_OF_FAT, 1, drive.boot_block.bytes_per_sector)) {
-			// TODO error
-			return nullptr;
-		}
-
-		// uloz slozku do FAT
-		if (!kiv_fs::save_to_fat(drive.id, fat_offsets, drive.boot_block.bytes_per_sector, kiv_fs::offset(drive.boot_block), file.sectors, file.entire_dir.first_cluster)) {
-			// TODO error
-			return nullptr;
-		}
-
-		const auto parrent_sectors = kiv_fs::load_sectors(drive, parrent_entry);
-		// uloz do nadrazene slozky entire_dir pro novou slozku
-		if (!kiv_fs::save_to_dir(drive.id, parrent_sectors, drive.boot_block.bytes_per_sector, file.entire_dir, kiv_fs::Edit_Type::Add)) {
-			// TODO error
-			return nullptr;
-		}
-
-		if (components.size() > 1) {
-			components.pop_back();
-
-			kiv_fs::FATEntire_Directory grandparent_entry;
-			if (!kiv_fs::find_entire_dir(grandparent_entry, components, drive)) {
+		// find free sector for the new directory
+		if (new_file.sectors.empty()) {
+			std::vector<std::div_t> fat_offsets;
+			if (!kiv_fs::find_free_sectors(fat_offsets, drive.id, START_OF_FAT, 1, drive.boot_block.bytes_per_sector)) {
 				// TODO error
 				return nullptr;
 			}
 
-			parrent_entry.size += sizeof kiv_fs::FATEntire_Directory;
-
-			const auto grandparent_sectors = kiv_fs::load_sectors(drive, grandparent_entry);
-			if (!kiv_fs::save_to_dir(drive.id, grandparent_sectors, drive.boot_block.bytes_per_sector, parrent_entry, kiv_fs::Edit_Type::Edit)) {
+			// save new directory to the FAT
+			if (!kiv_fs::save_to_fat(drive.id, fat_offsets, drive.boot_block.bytes_per_sector, kiv_fs::offset(drive.boot_block), new_file.sectors, new_file.entire_dir.first_cluster)) {
 				// TODO error
 				return nullptr;
 			}
+
+			// uloz do nadrazene slozky entire_dir pro novou slozku
+			if (!kiv_fs::save_to_dir(drive.id, parrent_file.sectors, drive.boot_block.bytes_per_sector, new_file.entire_dir, kiv_fs::Edit_Type::Add)) {
+				// TODO error
+				return nullptr;
+			}
+
+			if (!files.empty()) {
+				auto grandparent_file = files.back();
+				grandparent_file.entire_dir.size += sizeof kiv_fs::FATEntire_Directory;
+				if (!kiv_fs::save_to_dir(drive.id, grandparent_file.sectors, drive.boot_block.bytes_per_sector, parrent_file.entire_dir, kiv_fs::Edit_Type::Edit)) {
+					// TODO error
+					return nullptr;
+				}
+			}
 		}
 
+		const auto is_newfile_dir = fat_tool::is_attr(new_file.entire_dir.attributes, kiv_os::NFile_Attributes::Directory);
 		uint8_t permission = is_read_only ? Permission::Read : Permission::Read | Permission::Write;
-		return is_dir ? new IOHandle() : new IOHandle_File(drive, file, permission, is_read_only ? std::vector<uint16_t>(0) : parrent_sectors);
+
+		return is_newfile_dir ? new IOHandle() : new IOHandle_File(drive, new_file, permission, is_read_only ? std::vector<uint16_t>(0) : parrent_file.sectors);
 	}
 }
 
@@ -192,62 +153,50 @@ bool Remove_File(std::string absolute_path) {
 	std::vector<std::string> components;
 	to_absolute_components(components, absolute_path);
 
-
-	kiv_fs::Drive_Desc drive = registred_drivers[components.front()];
+	const auto drive = registred_drivers[components.front()];
 	components.erase(components.begin());
 
-	kiv_fs::FATEntire_Directory entry_to_dell;
-	if (!kiv_fs::find_entire_dir(entry_to_dell, components, drive)) {
-		// TODO error -> entire_dir wasn't found -> the dir doesn't exist
+	std::vector<kiv_fs::File_Desc> files;
+	if (!kiv_fs::find_entire_dirs(drive, files, components)) {
+		// TODO error
 		kiv_os::NOS_Error::File_Not_Found;
 		return false;
 	}
 
-	if (!fat_tool::is_attr(entry_to_dell.attributes, kiv_os::NFile_Attributes::Directory)) {
+	const auto file_to_dell = files.back();
+	files.pop_back();
+
+	if (!fat_tool::is_attr(file_to_dell.entire_dir.attributes, kiv_os::NFile_Attributes::Directory)) {
 		// TODO error -> isn't the dir
 		kiv_os::NOS_Error::File_Not_Found;
 		return false;
 	}
 
-	if (entry_to_dell.size) {
+	if (file_to_dell.entire_dir.size) {
 		// TODO error -> can delete only free dirs
 		kiv_os::NOS_Error::Directory_Not_Empty;
 		return false;
 	}
 
-
 	// free space in FAT
-	kiv_fs::remove_sectors_in_fat(entry_to_dell, drive.boot_block.bytes_per_sector, drive.id);
+	kiv_fs::remove_sectors_in_fat(file_to_dell.entire_dir, drive.boot_block.bytes_per_sector, drive.id);
 
 	// find parrent to remove Entry_dir
-	components.pop_back();
-	kiv_fs::FATEntire_Directory parrent_entry;
-	if (!kiv_fs::find_entire_dir(parrent_entry, components, drive)) {
-		// TODO error -> entire_dir wasn't found -> file doesn't exist
-		return false;
-	}
+	auto parrent_file = files.back();
+	files.pop_back();
 
-	const auto parrent_sectors = kiv_fs::load_sectors(drive, parrent_entry);
-	if (!kiv_fs::save_to_dir(drive.id, parrent_sectors, drive.boot_block.bytes_per_sector, entry_to_dell, kiv_fs::Edit_Type::Del)) {
+	if (!kiv_fs::save_to_dir(drive.id, parrent_file.sectors, drive.boot_block.bytes_per_sector, file_to_dell.entire_dir, kiv_fs::Edit_Type::Del)) {
 		// TODO error -> cannot delete entry_dir from cluster
 		return false;
 	}
 
-	if (components.size() > 1) {
+	if (files.size() > 1) {
 		// find grandparent
+		const auto grandparrent_file = files.back();
+		files.pop_back();
 
-		components.pop_back();
-		kiv_fs::FATEntire_Directory grandparrent_entry;
-		if (!kiv_fs::find_entire_dir(grandparrent_entry, components, drive)) {
-			// TODO error -> entire_dir wasn't found -> file doesn't exist
-			kiv_os::NOS_Error::File_Not_Found;;
-			return false;
-		}
-
-		parrent_entry.size -= sizeof kiv_fs::FATEntire_Directory;
-
-		const auto grandparrent_sectors = kiv_fs::load_sectors(drive, grandparrent_entry);
-		if (!kiv_fs::save_to_dir(drive.id, grandparrent_sectors, drive.boot_block.bytes_per_sector, parrent_entry, kiv_fs::Edit_Type::Edit)) {
+		parrent_file.entire_dir.size -= sizeof kiv_fs::FATEntire_Directory;
+		if (!kiv_fs::save_to_dir(drive.id, grandparrent_file.sectors, drive.boot_block.bytes_per_sector, parrent_file.entire_dir, kiv_fs::Edit_Type::Edit)) {
 			// TODO error
 			return false;
 		}
@@ -265,6 +214,10 @@ void Handle_IO(kiv_hal::TRegisters &regs) {
 			const auto fm = static_cast<kiv_os::NOpen_File>(regs.rcx.l);
 			const auto attributes = static_cast<kiv_os::NFile_Attributes>(regs.rdi.i);
 			const auto source = Open_File(path, fm, attributes);
+			if (!source) {
+				// TODO error -> cannot open the file
+				break;
+			}
 			regs.rax.x = Convert_Native_Handle(static_cast<HANDLE>(source));
 		} break;
 
@@ -288,7 +241,6 @@ void Handle_IO(kiv_hal::TRegisters &regs) {
 
 		case kiv_os::NOS_File_System::Close_Handle: {
 			const auto source = static_cast<IOHandle*>(Resolve_kiv_os_Handle(regs.rdx.x));
-			regs.flags.carry |= !source->close();
 			regs.flags.carry |= !Remove_Handle(regs.rdx.x);
 			delete source;
 		} break;

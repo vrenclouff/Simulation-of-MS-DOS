@@ -101,6 +101,41 @@ void format_fat16(unsigned char* boot_block, const kiv_hal::TDrive_Parameters& p
 	boot_block[0x3d] = 0x20;
 }
 
+bool kiv_fs::new_entire_dir(kiv_fs::FATEntire_Directory & entry, const std::string name, const uint8_t attributes) {
+
+	const auto filename = fat_tool::parse_entire_name(name);
+
+	if (filename.name.size() > sizeof kiv_fs::FATEntire_Directory::file_name) {
+		// TODO exception -> filename is larger than is allowed
+		return false;
+	}
+
+	if (filename.extension.size() > sizeof kiv_fs::FATEntire_Directory::extension) {
+		// TODO exception -> extension is larger than is allowed
+		return false;
+	}
+
+	std::copy(&(filename.name)[0], &(filename.name)[0] + filename.name.size(), entry.file_name);
+	entry.file_name[filename.name.size()] = 0;
+
+	const auto is_dir = fat_tool::is_attr(attributes, kiv_os::NFile_Attributes::Directory);
+
+	if (is_dir || filename.extension.empty()) {
+		entry.extension[0] = 0;
+	}
+	else {
+		std::copy(&filename.extension[0], &filename.extension[0] + filename.extension.size(), entry.extension);
+	}
+
+	entry.attributes = attributes;
+	entry.size = 0;
+
+	entry.date = 0; // fat_tool::to_date(tm);
+	entry.time = 0; // fat_tool::to_time(tm);
+
+	return true;
+}
+
 void kiv_fs::format_disk(const FAT_Version version, void* boot_block, const kiv_hal::TDrive_Parameters& params) {
 	switch (version) {
 		case kiv_fs::FAT_Version::FAT16: format_fat16(static_cast<unsigned char*>(boot_block), params); break;
@@ -233,22 +268,25 @@ std::vector<uint16_t> sectors_for_entire_dir(const kiv_fs::FATEntire_Directory& 
 	return sectors;
 }
 
-bool kiv_fs::find_entire_dir(kiv_fs::FATEntire_Directory& entire_file, std::vector<std::string> components, const kiv_fs::Drive_Desc drive) {
+bool kiv_fs::find_entire_dirs(const kiv_fs::Drive_Desc drive, std::vector<kiv_fs::File_Desc>& files, std::vector<std::string> components) {
 
 	components.erase(components.begin());
+	kiv_fs::FATEntire_Directory root;
+	root.first_cluster = kiv_fs::root_directory_addr(drive.boot_block);
+	root.attributes = static_cast<decltype(root.attributes)>(kiv_os::NFile_Attributes::Directory);
+	const auto root_sectors = sectors_for_root_dir(drive.boot_block);
 
-	if (components.empty()) {
-		entire_file.first_cluster = kiv_fs::root_directory_addr(drive.boot_block);
-		entire_file.attributes = static_cast<decltype(entire_file.attributes)>(kiv_os::NFile_Attributes::Directory);
-		return true;
-	}
+	files.push_back({ root, root_sectors});
+
+	if (components.empty()) return true;
 
 	const auto bytes_per_sector = drive.boot_block.bytes_per_sector;
 	const auto fat_offset = kiv_fs::offset(drive.boot_block);
 
 	bool founded;
 	std::vector<unsigned char> arr(bytes_per_sector);
-	auto sectors = sectors_for_root_dir(drive.boot_block);
+	auto sectors = root_sectors;
+	kiv_fs::FATEntire_Directory actual_entry;
 	do {
 
 		const auto finded_element = fat_tool::parse_entire_name(components.front());
@@ -273,29 +311,13 @@ bool kiv_fs::find_entire_dir(kiv_fs::FATEntire_Directory& entire_file, std::vect
 
 			if (entries.empty()) break;
 
-			// const auto is_dir = finded_element.extension.empty();
 			founded = false;
 			for (auto& entire : entries) {
-				// pokud hledam slozku a slozka to neni, prejdi na dalsi
-				//const auto is_entire_dir = fat_tool::is_attr(entire.attributes, kiv_os::NFile_Attributes::Directory);
-				//if (is_dir && !is_entire_dir) {
-				//	continue;
-				//}
-
-				// porovnej jmena a zjisti, zda hledam prave tento 'soubor'
 				const auto name = fat_tool::rtrim(std::string(entire.file_name, sizeof(entire.file_name)));
 				if (finded_element.name.compare(name) == 0) {
-
-					// pokud hledam slozku, porovnej nazvy a shoduji-li se, uloz vstup
-					//if (is_entire_dir) {
-					//	entire_file = entire;
-					//	founded = true; break;
-					//}
-
-					// pokud hledam soubor, porovnej konzovky a shoduji-li se, uloz vstup
 					const auto extension = fat_tool::rtrim(std::string(entire.extension, sizeof(entire.extension)));
 					if (finded_element.extension.compare(extension) == 0) {
-						entire_file = entire;
+						actual_entry = entire;
 						founded = true; break;
 					}
 				}
@@ -303,14 +325,12 @@ bool kiv_fs::find_entire_dir(kiv_fs::FATEntire_Directory& entire_file, std::vect
 			if (founded) break;
 		}
 
-		if (!components.empty()) {
-			if (founded) {
-				sectors = sectors_for_entire_dir(entire_file, bytes_per_sector, fat_offset, drive.id);
-			}
-			else {
-				// TODO error -> entire_file nenalezen, ale stale je co zpracovavat
-				return false;
-			}
+		if (founded) {
+			sectors = sectors_for_entire_dir(actual_entry, bytes_per_sector, fat_offset, drive.id);
+			files.push_back({ actual_entry, sectors });
+		}
+		else if (!components.empty()) {
+			return false;
 		}
 
 	} while (!components.empty());

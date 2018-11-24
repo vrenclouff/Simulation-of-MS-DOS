@@ -68,6 +68,7 @@ namespace kiv_fs {
 		Edit = 3,
 	};
 
+	bool new_entire_dir(kiv_fs::FATEntire_Directory& entry, const std::string name, const uint8_t attributes);
 
 	void format_disk(const FAT_Version version, void* boot_block, const kiv_hal::TDrive_Parameters &params);
 	bool is_formatted(const void* sector);
@@ -75,7 +76,7 @@ namespace kiv_fs {
 	void boot_block(FATBoot_Block& boot_block, const size_t bytes_per_sector, const void* sector);
 	void entire_directory(std::vector<FATEntire_Directory>& entire_directories, const size_t bytes_per_sector, void* sector);
 
-	bool find_entire_dir(kiv_fs::FATEntire_Directory& entire_file, std::vector<std::string> components, const kiv_fs::Drive_Desc drive);
+	bool find_entire_dirs(const kiv_fs::Drive_Desc drive, std::vector<kiv_fs::File_Desc>& files, std::vector<std::string> components);
 
 	uint16_t offset(const FATBoot_Block& boot_block);
 
