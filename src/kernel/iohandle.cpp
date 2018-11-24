@@ -264,8 +264,8 @@ size_t IOHandle_Pipe::write(char* buffer, size_t buffer_size) {
 	std::lock_guard<std::mutex> lock(pipemtx);
 	size_t written = 0;
 
-	for (char to_write : std::string(buffer)) {
-		pipe->write(to_write);
+	for (int i = 0; i < buffer_size; i++) {
+		pipe->write(buffer[i]);
 		written++;
 	}
 	
