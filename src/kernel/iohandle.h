@@ -24,7 +24,6 @@ public:
 	IOHandle(const uint8_t permission) : _permission(permission) {}
 	virtual size_t read(char* buffer, size_t buffer_size)  { return 0; }
 	virtual size_t write(char* buffer, size_t buffer_size) { return 0; }
-	virtual bool close() { return true; }
 
 	void check_ACL(Permission acl) {
 		if (!(_permission & acl)) {
@@ -64,7 +63,6 @@ public:
 		IOHandle(permission), _drive(drive), _file(file), _parrent_sectors(parrent_sectors) {}
 	virtual size_t read(char* buffer, size_t buffer_size) final override;
 	virtual size_t write(char* buffer, size_t buffer_size) final override;
-	virtual bool close() final override;
 };
 
 class IOHandle_SYS : public IOHandle {

@@ -243,31 +243,6 @@ size_t IOHandle_File::read(char * buffer, size_t buffer_size) {
 	}
 }
 
-bool IOHandle_File::close() {
-
-	/*
-	const auto bytes_per_sector = _drive.boot_block.bytes_per_sector;
-	const auto offset = kiv_fs::offset(_drive.boot_block);
-
-	std::vector<std::div_t> fat_offsets;
-	std::vector<uint16_t> sectors;
-	uint16_t first_sector;
-
-	kiv_fs::sector_to_fat_offset(fat_offsets, _file.sectors, bytes_per_sector, offset);
-	if (!kiv_fs::save_to_fat(_drive.id, fat_offsets, bytes_per_sector, offset, sectors, first_sector)) {
-		// TODO error
-		return false;
-	}
-
-	_file.entire_dir.size += static_cast<uint32_t>(seek);
-
-	if (!kiv_fs::save_to_dir(_drive.id, _parrent_sectors, bytes_per_sector, _file.entire_dir, kiv_fs::Edit_Type::Edit)) {
-		// TODO error
-	}
-	*/
-	return true;
-}
-
 size_t procfs(char * buffer, const size_t buffer_size) {
 	const auto result = process_manager->getProcessTable();
 	const auto size = result.size() > buffer_size ? buffer_size : result.size();
