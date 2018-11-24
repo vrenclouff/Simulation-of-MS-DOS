@@ -10,15 +10,13 @@ public:
 		this->start = 0;
 		this->end = 0;
 		this->full = false;
-		this->writeSem = new Semaphore((int) this->max);
-		this->readSem = new Semaphore(0);
+		this->write_Sem = new Semaphore((int) this->max);
+		this->read_Sem = new Semaphore(0);
 	}
 
 	size_t write(char to_write);
 	char read();
-	bool hasEnoughSpace(size_t buffer_size);
-	size_t getSize();
-	bool isEmpty();
+	size_t get_Size();
 
 private:
 
@@ -27,7 +25,8 @@ private:
 	size_t start;
 	size_t end;
 	bool full;
-	Semaphore* writeSem;
-	Semaphore* readSem;
+	Semaphore* write_Sem;
+	Semaphore* read_Sem;
+	bool is_Empty();
 
 };

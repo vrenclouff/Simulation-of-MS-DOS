@@ -1,10 +1,10 @@
 #include "pipe.h"
 
-bool Pipe::isEmpty() {
+bool Pipe::is_Empty() {
 	return (!full && (start == end));
 }
 
-size_t Pipe::getSize() {
+size_t Pipe::get_Size() {
 	size_t size = 0;
 
 	if (!full)
@@ -22,16 +22,9 @@ size_t Pipe::getSize() {
 	return size;
 }
 
-bool Pipe::hasEnoughSpace(size_t buffer_size) {
-
-	size_t freeSpace = max - getSize();
-
-	return (freeSpace >= buffer_size);
-}
-
 size_t Pipe::write(char to_write) {
 
-	writeSem->p(); // cekej, pokud neni misto pro zapis
+	write_Sem->p(); // cekej, pokud neni misto pro zapis
 
 	ring[start] = to_write;
 
@@ -44,16 +37,16 @@ size_t Pipe::write(char to_write) {
 
 	full = (start == end);
 
-	readSem->v(); // nyni lze dalsi precist
+	read_Sem->v(); // nyni lze dalsi precist
 
 	return 0;
 }
 
 char Pipe::read() {
 
-	readSem->p(); // cekej, dokud neni co cist
+	read_Sem->p(); // cekej, dokud neni co cist
 
-	if (isEmpty())
+	if (is_Empty())
 	{
 		return 0; //TODO
 	}
@@ -62,7 +55,7 @@ char Pipe::read() {
 	full = false;
 	end = (end + 1) % max;
 
-	writeSem->v(); // nyni lze dalsi zapsat
+	write_Sem->v(); // nyni lze dalsi zapsat
 
 	return val;
 }
