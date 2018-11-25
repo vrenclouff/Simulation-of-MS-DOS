@@ -4,7 +4,7 @@
 
 size_t __stdcall ps(const kiv_hal::TRegisters &regs) {
 
-	size_t read, wrote;
+	size_t read, written;
 	const kiv_os::THandle std_out = static_cast<kiv_os::THandle>(regs.rbx.x);
 
 	const auto input = std::string_view("A:/procfs");
@@ -13,7 +13,7 @@ size_t __stdcall ps(const kiv_hal::TRegisters &regs) {
 	if (!kiv_os_rtl::Open_File(input.data(), input.size(), filehandle, true, kiv_os::NFile_Attributes::Read_Only)) {
 		const kiv_os::NOS_Error error = kiv_os_rtl::Last_Error;
 		const auto error_msg = Error_Message(error);
-		kiv_os_rtl::Write_File(std_out, error_msg.data(), error_msg.length(), wrote);
+		kiv_os_rtl::Write_File(std_out, error_msg.data(), error_msg.length(), written);
 		const auto error_code = static_cast<uint16_t>(error);
 		kiv_os_rtl::Exit(error_code);
 		return error_code;
@@ -22,7 +22,7 @@ size_t __stdcall ps(const kiv_hal::TRegisters &regs) {
 	char content[1024];
 	kiv_os_rtl::Read_File(filehandle, content, sizeof(content), read);
 	content[read] = 0;
-	kiv_os_rtl::Write_File(std_out, content, read + 1, wrote);
+	kiv_os_rtl::Write_File(std_out, content, read + 1, written);
 
 	kiv_os_rtl::Exit(0);
 	return 0;
