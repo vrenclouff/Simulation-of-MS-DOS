@@ -6,7 +6,7 @@
 
 #include <mutex>
 
-size_t IOHandle_VGA::write(char * buffer, size_t buffer_size) {
+size_t IOHandle_VGA::write(const char* buffer, const size_t buffer_size) {
 	IOHandle::check_ACL(Permission::Write);
 
 	kiv_hal::TRegisters regs;
@@ -17,7 +17,7 @@ size_t IOHandle_VGA::write(char * buffer, size_t buffer_size) {
 	return regs.rcx.x;
 }
 
-size_t IOHandle_Keyboard::read(char * buffer, size_t buffer_size) {
+size_t IOHandle_Keyboard::read(char* buffer, const size_t buffer_size) {
 	IOHandle::check_ACL(Permission::Read);
 
 	kiv_hal::TRegisters registers;
@@ -59,7 +59,7 @@ size_t IOHandle_Keyboard::read(char * buffer, size_t buffer_size) {
 	return pos;
 }
 
-size_t IOHandle_File::write(char * buffer, size_t buffer_size) {
+size_t IOHandle_File::write(const char * buffer, const size_t buffer_size) {
 	IOHandle::check_ACL(Permission::Write);
 
 	const auto& boot_block = _drive.boot_block;
@@ -136,7 +136,7 @@ size_t IOHandle_File::write(char * buffer, size_t buffer_size) {
 	return buffer_size;
 }
 
-size_t IOHandle_File::read(char * buffer, size_t buffer_size) {
+size_t IOHandle_File::read(char* buffer, const size_t buffer_size) {
 	IOHandle::check_ACL(Permission::Read);
 
 	const auto bytes_per_sector = _drive.boot_block.bytes_per_sector;
@@ -243,7 +243,7 @@ size_t IOHandle_File::read(char * buffer, size_t buffer_size) {
 	}
 }
 
-size_t procfs(char * buffer, const size_t buffer_size) {
+size_t procfs(char* buffer, const size_t buffer_size) {
 	const auto result = process_manager->getProcessTable();
 	const auto size = result.size() > buffer_size ? buffer_size : result.size();
 	const auto str = result.data();
@@ -251,7 +251,7 @@ size_t procfs(char * buffer, const size_t buffer_size) {
 	return size;
 }
 
-size_t IOHandle_SYS::read(char* buffer, size_t buffer_size) {
+size_t IOHandle_SYS::read(char* buffer, const size_t buffer_size) {
 	IOHandle::check_ACL(Permission::Read);
 
 	switch (_type) {
@@ -260,26 +260,24 @@ size_t IOHandle_SYS::read(char* buffer, size_t buffer_size) {
 	}
 }
 
-size_t IOHandle_Pipe::write(char* buffer, size_t buffer_size) {
+size_t IOHandle_Pipe::write(const char* buffer, const size_t buffer_size) {
 	std::lock_guard<std::mutex> lock(pipemtx);
-	size_t written = 0;
 
-	for (int i = 0; i < buffer_size; i++) {
-		pipe->write(buffer[i]);
-		written++;
+	size_t written = 0;
+	for (; written < buffer_size; written++) {
+		_circular_buffer->write(buffer[written]);
 	}
 	
 	return written;
 }
 
-size_t IOHandle_Pipe::read(char* buffer, size_t buffer_size) {
+size_t IOHandle_Pipe::read(char* buffer, const size_t buffer_size) {
 	std::lock_guard<std::mutex> lock(pipemtx);
-	size_t read = 0;
-	size_t pipe_size = pipe->get_Size();
 
-	for (int i = 0; i < pipe_size; i++) {
-		buffer[i] = pipe->read();
-		read++;
+	size_t read = 0; char item;
+	for (; read < _circular_buffer->size() || read < buffer_size; read++) {
+		if ((item = _circular_buffer->read()) == 0) return read;
+		buffer[read] = item;
 	}
 
 	return read;

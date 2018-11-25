@@ -51,10 +51,13 @@
     <ClCompile Include="..\..\src\kernel\thread.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\kernel\pipe.cpp">
+    <ClCompile Include="..\..\src\kernel\semaphore.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\kernel\semaphore.cpp">
+    <ClCompile Include="..\..\src\kernel\circular_buffer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\kernel\circular_buffer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -101,10 +104,10 @@
     <ClInclude Include="..\..\src\kernel\thread.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\kernel\pipe.h">
+    <ClInclude Include="..\..\src\kernel\semaphore.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\kernel\semaphore.h">
+    <ClInclude Include="..\..\src\kernel\circular_buffer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -113,6 +113,7 @@ void parse(char* args, kiv_os::THandle shellin, kiv_os::THandle shellout, size_t
 				return;
 			}
 
+			// TODO zasekne se to na Wait_For a spusti se jen jeden program
 			parse_Part(curr, stdin_handle, stdout_handle);
 		}
 		else {

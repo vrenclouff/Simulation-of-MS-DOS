@@ -1,7 +1,7 @@
 #pragma once
 
 #include "fat.h"
-#include "pipe.h"
+#include "circular_buffer.h"
 
 #include <map>
 #include <functional>
@@ -22,8 +22,8 @@ private:
 public:
 	IOHandle() : _permission(Permission::Read) {}
 	IOHandle(const uint8_t permission) : _permission(permission) {}
-	virtual size_t read(char* buffer, size_t buffer_size)  { return 0; }
-	virtual size_t write(char* buffer, size_t buffer_size) { return 0; }
+	virtual size_t read(char* buffer, const size_t buffer_size)  { return 0; }
+	virtual size_t write(const char* buffer, const size_t buffer_size) { return 0; }
 
 	void check_ACL(Permission acl) {
 		if (!(_permission & acl)) {
@@ -35,8 +35,8 @@ public:
 class IOHandle_Keyboard : public IOHandle {
 public:
 	IOHandle_Keyboard() : IOHandle(Permission::Read) {}
-	virtual size_t read(char* buffer, size_t buffer_size) final override;
-	virtual size_t write(char* buffer, size_t buffer_size) final override {
+	virtual size_t read(char* buffer, const size_t buffer_size) final override;
+	virtual size_t write(const char* buffer, const size_t buffer_size) final override {
 		IOHandle::check_ACL(Permission::Write); return 0;
 	}
 };
@@ -44,10 +44,10 @@ public:
 class IOHandle_VGA : public IOHandle {
 public:
 	IOHandle_VGA() : IOHandle(Permission::Write) {}
-	virtual size_t read(char* buffer, size_t buffer_size) final override {
+	virtual size_t read(char* buffer, const size_t buffer_size) final override {
 		IOHandle::check_ACL(Permission::Read); return 0;
 	}
-	virtual size_t write(char* buffer, size_t buffer_size) final override;
+	virtual size_t write(const char* buffer, const size_t buffer_size) final override;
 };
 
 class IOHandle_File : public IOHandle {
@@ -61,8 +61,8 @@ private:
 public:
 	IOHandle_File(const kiv_fs::Drive_Desc drive, const kiv_fs::File_Desc file, const uint8_t permission, const std::vector<uint16_t> parrent_sectors) :
 		IOHandle(permission), _drive(drive), _file(file), _parrent_sectors(parrent_sectors) {}
-	virtual size_t read(char* buffer, size_t buffer_size) final override;
-	virtual size_t write(char* buffer, size_t buffer_size) final override;
+	virtual size_t read(char* buffer, const size_t buffer_size) final override;
+	virtual size_t write(const char* buffer, const size_t buffer_size) final override;
 };
 
 class IOHandle_SYS : public IOHandle {
@@ -72,8 +72,8 @@ private:
 
 public:
 	IOHandle_SYS(const SYS_Type type) : _type(type) {}
-	virtual size_t read(char* buffer, size_t buffer_size) final override;
-	virtual size_t write(char* buffer, size_t buffer_size) final override {
+	virtual size_t read(char* buffer, const size_t buffer_size) final override;
+	virtual size_t write(const char* buffer, const size_t buffer_size) final override {
 		IOHandle::check_ACL(Permission::Write); return 0; 
 	}
 };
@@ -81,15 +81,18 @@ public:
 class IOHandle_Pipe : public IOHandle {
 
 private:
-	Pipe* pipe;
+	// std::shared_ptr<Circular_buffer> _circular_buffer;
+	Circular_buffer* _circular_buffer;
+
 	std::mutex pipemtx;
 	std::condition_variable condition_variable; // todo semafor
 
 public:
-	IOHandle_Pipe(Pipe* pipe) : pipe(pipe) {}
+	// IOHandle_Pipe(std::shared_ptr<Circular_buffer> circular_buffer) : _circular_buffer(circular_buffer) {}
+	IOHandle_Pipe(Circular_buffer* circular_buffer) : _circular_buffer(circular_buffer) {}
 
-	virtual size_t read(char* buffer, size_t buffer_size) final override;
-	virtual size_t write(char* buffer, size_t buffer_size) final override;
+	virtual size_t read(char* buffer, const size_t buffer_size) final override;
+	virtual size_t write(const char* buffer, const size_t buffer_size) final override;
 
 };
 

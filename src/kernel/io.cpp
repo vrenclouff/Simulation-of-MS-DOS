@@ -1,7 +1,6 @@
 #include "io.h"
 #include "kernel.h"
 #include "handles.h"
-#include "pipe.h"
 
 #include "fat_tools.h"
 #include "io_manager.h"
@@ -275,8 +274,12 @@ void Handle_IO(kiv_hal::TRegisters &regs) {
 		} break;
 
 		case kiv_os::NOS_File_System::Create_Pipe: {
-			Pipe* pipe = new Pipe();
+			// auto handlers = reinterpret_cast<kiv_os::THandle*>(regs.rbx.r);
+
+			//auto pipe = std::make_shared<Pipe>(Pipe());
+			Circular_buffer* pipe = new Circular_buffer();
 			kiv_os::THandle handles[2];
+
 
 			handles[0] = Convert_Native_Handle(static_cast<HANDLE>(new IOHandle_Pipe(pipe)));
 			handles[1] = Convert_Native_Handle(static_cast<HANDLE>(new IOHandle_Pipe(pipe)));

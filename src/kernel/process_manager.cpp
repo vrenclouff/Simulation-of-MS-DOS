@@ -372,26 +372,17 @@ std::string ProcessManager::getProcessTable()
 	std::lock_guard<std::mutex> lock(mtx);
 	std::ostringstream result;
 	result << "PID\tPPID\tSTATUS\tCOMMAND" << std::endl;
-	for (auto const& process_entry : processes)
-	{
-		Process* process = process_entry.second;
-		std::string process_state;
-		switch (process->state)
-		{
-		case ProcessState::prepared:
-			process_state = "prepared";
-			break;
-		case ProcessState::running:
-			process_state = "running";
-			break;
-		case ProcessState::stopped:
-			process_state = "stopped";
-			break;
-		default:
-			process_state = "unknown";
-			break;
+	for (auto const& process_entry : processes) {
+		const auto process = process_entry.second;
+
+		result << process->handle << "\t" << process->parent_handle << "\t";
+		switch (process->state) {
+			case ProcessState::prepared:	result << "prepared";	break;
+			case ProcessState::running:		result << "running";	break;
+			case ProcessState::stopped:		result << "stopped";	break;
+			default:						result << "unknown";	break;
 		}
-		result << process->handle << "\t" << process->parent_handle << "\t" << process_state << "\t" << process->userfunc_name << std::endl;
+		result << "\t" << process->userfunc_name << std::endl;
 	}
 	return result.str();
 }
