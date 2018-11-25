@@ -12,8 +12,6 @@ size_t Circular_buffer::write(const char item) {
 	std::unique_lock<std::mutex> locker(_mutex);
 	_cond.wait(locker, [&](){return size() < BUFFER_SIZE; });
 
-	//write_Sem->p(); // cekej, pokud neni misto pro zapis
-
 	buffer[start] = item;
 
 	if (full) {
@@ -25,20 +23,13 @@ size_t Circular_buffer::write(const char item) {
 
 	locker.unlock();
 	_cond.notify_all();
-	// read_Sem->v(); // nyni lze dalsi precist
-
+		
 	return 0;
 }
 
 char Circular_buffer::read() {
 	std::unique_lock<std::mutex> locker(_mutex);
-	_cond.wait(locker, [&](){return size() > 0; });
-
-	//read_Sem->p(); // cekej, dokud neni co cist
-
-	if (empty()) {
-		return 0; //TODO
-	}
+	_cond.wait(locker, [&](){return !empty(); });
 
 	auto val = buffer[end];
 	full = false;
@@ -46,7 +37,6 @@ char Circular_buffer::read() {
 
 	locker.unlock();
 	_cond.notify_all();
-	// write_Sem->v(); // nyni lze dalsi zapsat
 
 	return val;
 }

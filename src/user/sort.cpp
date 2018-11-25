@@ -7,32 +7,31 @@
 #include <algorithm>
 
 size_t __stdcall sort(const kiv_hal::TRegisters &regs) {
-	size_t written;
-	const kiv_os::THandle std_out = static_cast<kiv_os::THandle>(regs.rbx.x);
-	const kiv_os::THandle std_in = static_cast<kiv_os::THandle>(regs.rax.x);
-	const std::string linebreak = "\n";
 
-	char* input = reinterpret_cast<char*>(regs.rdi.r);
+	const auto std_out = static_cast<kiv_os::THandle>(regs.rbx.x);
+	const auto std_in = static_cast<kiv_os::THandle>(regs.rax.x);
 
+	// char* input = reinterpret_cast<char*>(regs.rdi.r);
+
+	char buffer[1024];
+	size_t read, written;
 	std::vector<std::string> elements;
-
-	const size_t buffer_size = 256;
-	char buffer[buffer_size];
-	size_t read;
-	do
-	{
-		if (kiv_os_rtl::Read_File(std_in, buffer, buffer_size, read)) {
-			kiv_os_rtl::Write_File(std_out, linebreak.c_str(), linebreak.length(), written);
-			buffer[read] = 0;
-			elements.push_back(buffer);
+	do {
+		if (!kiv_os_rtl::Read_File(std_in, buffer, sizeof buffer, read)) {
+			// TODO error
 		}
-	} while (read != 0);
+
+		buffer[read] = 0;
+		elements.push_back(buffer);
+
+	} while (read == sizeof buffer);
 
 	std::sort(elements.begin(), elements.end());
 
+	// kiv_os_rtl::Write_File(std_out, "\n", 1, written);
+
 	for (std::string item : elements) {
 		kiv_os_rtl::Write_File(std_out, item.c_str(), item.length(), written);
-		kiv_os_rtl::Write_File(std_out, linebreak.c_str(), linebreak.length(), written);
 	}
 
 	kiv_os_rtl::Exit(0);

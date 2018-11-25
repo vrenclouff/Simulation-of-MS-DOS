@@ -94,14 +94,12 @@ bool kiv_os_rtl::Close_Handle(const kiv_os::THandle file_handle) {
 	return kiv_os::Sys_Call(regs);
 }
 
-std::array<kiv_os::THandle, 2> kiv_os_rtl::Create_Pipe() {
+bool kiv_os_rtl::Create_Pipe(kiv_os::THandle* handlers) {
 	kiv_hal::TRegisters regs = Prepare_SysCall_Context(kiv_os::NOS_Service_Major::File_System, static_cast<uint8_t>(kiv_os::NOS_File_System::Create_Pipe));
+	regs.rdx.r = reinterpret_cast<decltype(regs.rdx.r)>(handlers);
 
 	const bool result = kiv_os::Sys_Call(regs);
-
-	kiv_os::THandle *handles = reinterpret_cast<kiv_os::THandle*>(regs.rbx.r);
-	std::array<kiv_os::THandle, 2> handlearray {*handles, *(handles + 1)};
-	return handlearray;
+	return result;
 }
 
 // PROCESS

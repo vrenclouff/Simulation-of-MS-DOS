@@ -29,7 +29,7 @@ namespace kiv_os_rtl {
 
 	bool Close_Handle(const kiv_os::THandle file_handle);
 
-	std::array<kiv_os::THandle, 2> Create_Pipe();
+	bool Create_Pipe(kiv_os::THandle* handlers);
 
 	kiv_os::THandle Clone(const char* function, const char* arguments, kiv_os::THandle stdin_handle, kiv_os::THandle stdout_handle);
 

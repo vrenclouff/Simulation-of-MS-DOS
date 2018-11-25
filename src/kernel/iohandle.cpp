@@ -274,10 +274,10 @@ size_t IOHandle_Pipe::write(const char* buffer, const size_t buffer_size) {
 size_t IOHandle_Pipe::read(char* buffer, const size_t buffer_size) {
 	std::lock_guard<std::mutex> lock(pipemtx);
 
-	size_t read = 0; char item;
-	for (; read < _circular_buffer->size() || read < buffer_size; read++) {
-		if ((item = _circular_buffer->read()) == 0) return read;
-		buffer[read] = item;
+	size_t read = 0;
+	for (; read < buffer_size; read++) {
+		buffer[read] = _circular_buffer->read();
+		if (buffer[read] == 0) break;
 	}
 
 	return read;

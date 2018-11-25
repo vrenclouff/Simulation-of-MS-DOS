@@ -274,16 +274,13 @@ void Handle_IO(kiv_hal::TRegisters &regs) {
 		} break;
 
 		case kiv_os::NOS_File_System::Create_Pipe: {
-			// auto handlers = reinterpret_cast<kiv_os::THandle*>(regs.rbx.r);
+			kiv_os::THandle* handle_ptr = reinterpret_cast<kiv_os::THandle*>(regs.rdx.r);
 
-			//auto pipe = std::make_shared<Pipe>(Pipe());
+			//auto pipe = std::make_shared<Pipe>(Circular_buffer());
 			Circular_buffer* pipe = new Circular_buffer();
-			kiv_os::THandle handles[2];
 
-
-			handles[0] = Convert_Native_Handle(static_cast<HANDLE>(new IOHandle_Pipe(pipe)));
-			handles[1] = Convert_Native_Handle(static_cast<HANDLE>(new IOHandle_Pipe(pipe)));
-			regs.rbx.r = reinterpret_cast<decltype(regs.rbx.r)>(handles);
+			*(handle_ptr)	  = Convert_Native_Handle(static_cast<HANDLE>(new IOHandle_Pipe(pipe, Permission::Write)));
+			*(handle_ptr + 1) = Convert_Native_Handle(static_cast<HANDLE>(new IOHandle_Pipe(pipe, Permission::Read)));
 		} break;
 	}
 }

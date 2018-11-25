@@ -89,7 +89,7 @@ private:
 
 public:
 	// IOHandle_Pipe(std::shared_ptr<Circular_buffer> circular_buffer) : _circular_buffer(circular_buffer) {}
-	IOHandle_Pipe(Circular_buffer* circular_buffer) : _circular_buffer(circular_buffer) {}
+	IOHandle_Pipe(Circular_buffer* circular_buffer, const uint8_t permission) : IOHandle(permission), _circular_buffer(circular_buffer) {}
 
 	virtual size_t read(char* buffer, const size_t buffer_size) final override;
 	virtual size_t write(const char* buffer, const size_t buffer_size) final override;

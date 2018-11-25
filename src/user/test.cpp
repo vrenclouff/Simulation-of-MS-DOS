@@ -199,6 +199,31 @@ size_t __stdcall test_write_to_file(const kiv_hal::TRegisters &regs)
 	return 0;
 }
 
+size_t __stdcall test_pipe(const kiv_hal::TRegisters & regs) {
+
+	const auto std_in = static_cast<kiv_os::THandle>(regs.rax.x);
+	const auto std_out = static_cast<kiv_os::THandle>(regs.rbx.x);
+
+	kiv_os::THandle file_handles[2];
+	kiv_os_rtl::Create_Pipe(file_handles);
+
+	kiv_os::THandle process_handles[2];
+	process_handles[0] = kiv_os_rtl::Clone("ps", "", std_in, file_handles[0]);
+	process_handles[1] = kiv_os_rtl::Clone("sort", "", file_handles[1], std_out);
+
+	for (int i = 0; i < sizeof process_handles; i++) {
+		kiv_os::NOS_Error error; kiv_hal::TFlags flags;
+		kiv_os::THandle handle_completed = waitFor(&process_handles[i], 1, error, flags);
+		readExitCode(handle_completed, error, flags);
+	}
+
+	kiv_os_rtl::Close_Handle(file_handles[0]);
+	kiv_os_rtl::Close_Handle(file_handles[1]);
+
+	exitCall(0);
+	return 0;
+}
+
 
 // -------------TESTS---------------
 

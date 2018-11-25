@@ -94,7 +94,7 @@ void parse(char* args, kiv_os::THandle shellin, kiv_os::THandle shellout, size_t
 
 	kiv_os::THandle stdin_handle = shellin;
 
-	std::array<kiv_os::THandle, 2> pipehandles;
+	kiv_os::THandle pipehandles[2];
 
 	for (int i = 0; i < parts.size(); i++) {
 
@@ -105,8 +105,11 @@ void parse(char* args, kiv_os::THandle shellin, kiv_os::THandle shellout, size_t
 		bool hasnext = (i != (parts.size() - 1));
 
 		if (hasnext) {
-			pipehandles = kiv_os_rtl::Create_Pipe();
-			stdout_handle = pipehandles.at(0);
+			if (!kiv_os_rtl::Create_Pipe(pipehandles)) {
+				// TODO error 
+			}
+
+			stdout_handle = pipehandles[0];
 
 			if (curr.find(redirectionsymbol) != std::string::npos) {
 				wrong_Redirection(shellout, shellcounter, stdin_handle, stdout_handle);
@@ -152,7 +155,7 @@ void parse(char* args, kiv_os::THandle shellin, kiv_os::THandle shellout, size_t
 		//kiv_os_rtl::Close_Handle(stdout_handle);
 
 		if (hasnext) {
-			stdin_handle = pipehandles.at(1);
+			stdin_handle = pipehandles[1];
 		}
 		
 	}
