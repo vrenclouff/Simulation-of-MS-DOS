@@ -4,8 +4,6 @@
 #include "fat_tools.h"
 #include "common.h"
 
-#include <mutex>
-
 size_t IOHandle_VGA::write(const char* buffer, const size_t buffer_size) {
 	IOHandle::check_ACL(Permission::Write);
 
@@ -261,7 +259,7 @@ size_t IOHandle_SYS::read(char* buffer, const size_t buffer_size) {
 }
 
 size_t IOHandle_Pipe::write(const char* buffer, const size_t buffer_size) {
-	std::lock_guard<std::mutex> lock(pipemtx);
+	IOHandle::check_ACL(Permission::Write);
 
 	size_t written = 0;
 	for (; written < buffer_size; written++) {
@@ -272,7 +270,7 @@ size_t IOHandle_Pipe::write(const char* buffer, const size_t buffer_size) {
 }
 
 size_t IOHandle_Pipe::read(char* buffer, const size_t buffer_size) {
-	std::lock_guard<std::mutex> lock(pipemtx);
+	IOHandle::check_ACL(Permission::Read);
 
 	size_t read = 0;
 	for (; read < buffer_size; read++) {

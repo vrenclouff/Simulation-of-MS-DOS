@@ -81,15 +81,10 @@ public:
 class IOHandle_Pipe : public IOHandle {
 
 private:
-	// std::shared_ptr<Circular_buffer> _circular_buffer;
-	Circular_buffer* _circular_buffer;
-
-	std::mutex pipemtx;
-	std::condition_variable condition_variable; // todo semafor
+	std::shared_ptr<Circular_buffer> _circular_buffer;
 
 public:
-	// IOHandle_Pipe(std::shared_ptr<Circular_buffer> circular_buffer) : _circular_buffer(circular_buffer) {}
-	IOHandle_Pipe(Circular_buffer* circular_buffer, const uint8_t permission) : IOHandle(permission), _circular_buffer(circular_buffer) {}
+	IOHandle_Pipe(std::shared_ptr<Circular_buffer> circular_buffer, const uint8_t permission) : IOHandle(permission), _circular_buffer(circular_buffer) {}
 
 	virtual size_t read(char* buffer, const size_t buffer_size) final override;
 	virtual size_t write(const char* buffer, const size_t buffer_size) final override;
