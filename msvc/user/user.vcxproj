@@ -23,6 +23,7 @@
     <ClInclude Include="..\..\src\api\hal.h" />
     <ClInclude Include="..\..\src\user\dir.h" />
     <ClInclude Include="..\..\src\user\echo.h" />
+    <ClInclude Include="..\..\src\user\error.h" />
     <ClInclude Include="..\..\src\user\parser.h" />
     <ClInclude Include="..\..\src\user\test.h" />
     <ClInclude Include="..\..\src\user\wc.h" />
@@ -41,6 +42,7 @@
     <ClCompile Include="..\..\src\api\api.cpp" />
     <ClCompile Include="..\..\src\user\dir.cpp" />
     <ClCompile Include="..\..\src\user\echo.cpp" />
+    <ClCompile Include="..\..\src\user\error.cpp" />
     <ClCompile Include="..\..\src\user\parser.cpp" />
     <ClCompile Include="..\..\src\user\test.cpp" />
     <ClCompile Include="..\..\src\user\wc.cpp" />

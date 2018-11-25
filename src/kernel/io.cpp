@@ -61,8 +61,6 @@ IOHandle* Open_File(std::string absolute_path, const kiv_os::NOpen_File fm, cons
 
 	const auto is_read_only = fat_tool::is_attr(static_cast<uint8_t>(attributes), kiv_os::NFile_Attributes::Read_Only);
 	const auto drive = registred_drivers[drive_volume];
-	const auto is_root = components.size() == 1;
-
 
 	if (fm == kiv_os::NOpen_File::fmOpen_Always) {
 		if (drive_volume.compare("A:") == 0) {
@@ -78,6 +76,7 @@ IOHandle* Open_File(std::string absolute_path, const kiv_os::NOpen_File fm, cons
 				// TODO error
 				return nullptr;
 			}
+			const auto is_root = components.size() == 1;
 			return new IOHandle_File(drive, files.back(), is_read_only, !is_root ? files.rbegin()[1].sectors : std::vector<uint16_t>(0));
 		}
 	}

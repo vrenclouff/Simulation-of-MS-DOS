@@ -1,6 +1,6 @@
 #include "md.h"
 #include "rtl.h"
-#include "parser.h"
+#include "error.h"
 
 size_t __stdcall md(const kiv_hal::TRegisters &regs) {
 
@@ -21,7 +21,7 @@ size_t __stdcall md(const kiv_hal::TRegisters &regs) {
 
 	if (!kiv_os_rtl::Open_File(input.c_str(), input.length(), filehandle, false, kiv_os::NFile_Attributes::Directory)) {
 		const kiv_os::NOS_Error error = kiv_os_rtl::Last_Error;
-		const std::string error_msg = get_Error_Message(error);
+		const std::string error_msg = Error_Message(error);
 		kiv_os_rtl::Write_File(std_out, error_msg.c_str(), error_msg.length(), written);
 
 		const auto error_code = static_cast<uint16_t>(error);

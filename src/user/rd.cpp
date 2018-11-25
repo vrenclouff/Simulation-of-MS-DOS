@@ -1,6 +1,6 @@
 #include "rd.h"
 #include "rtl.h"
-#include "parser.h"
+#include "error.h"
 
 size_t __stdcall rd(const kiv_hal::TRegisters &regs) {
 
@@ -19,7 +19,7 @@ size_t __stdcall rd(const kiv_hal::TRegisters &regs) {
 
 	if (!kiv_os_rtl::Delete_File(input.c_str())) {
 		const kiv_os::NOS_Error error = kiv_os_rtl::Last_Error;
-		const std::string error_msg = get_Error_Message(error);
+		const std::string error_msg = Error_Message(error);
 		kiv_os_rtl::Write_File(std_out, error_msg.c_str(), error_msg.length(), written);
 
 		const auto error_code = static_cast<uint16_t>(error);
