@@ -94,7 +94,7 @@ bool kiv_os_rtl::Close_Handle(const kiv_os::THandle file_handle) {
 	return kiv_os::Sys_Call(regs);
 }
 
-bool kiv_os_rtl::Create_Pipe(kiv_os::THandle* handlers) {
+bool kiv_os_rtl::Create_Pipe(kiv_os::THandle handlers[]) {
 	kiv_hal::TRegisters regs = Prepare_SysCall_Context(kiv_os::NOS_Service_Major::File_System, static_cast<uint8_t>(kiv_os::NOS_File_System::Create_Pipe));
 	regs.rdx.r = reinterpret_cast<decltype(regs.rdx.r)>(handlers);
 
@@ -104,7 +104,7 @@ bool kiv_os_rtl::Create_Pipe(kiv_os::THandle* handlers) {
 
 // PROCESS
 
-kiv_os::THandle kiv_os_rtl::Clone(const char* function, const char* arguments, kiv_os::THandle stdin_handle, kiv_os::THandle stdout_handle) {
+bool kiv_os_rtl::Clone(kiv_os::THandle& pid, const char* function, const char* arguments, kiv_os::THandle stdin_handle, kiv_os::THandle stdout_handle) {
 
 	kiv_hal::TRegisters regs = Prepare_SysCall_Context(kiv_os::NOS_Service_Major::Process, static_cast<uint8_t>(kiv_os::NOS_Process::Clone));
 	regs.rdx.r = reinterpret_cast<decltype(regs.rdx.r)>(function);
@@ -114,8 +114,8 @@ kiv_os::THandle kiv_os_rtl::Clone(const char* function, const char* arguments, k
 	regs.rcx.r = static_cast<uint64_t>(kiv_os::NClone::Create_Process);
 
 	const bool result = kiv_os::Sys_Call(regs);
-	kiv_os::THandle newhandle = static_cast<kiv_os::THandle>(regs.rax.r);
-	return ((kiv_os_rtl::Last_Error != kiv_os::NOS_Error::Success) ? NULL : newhandle);
+	pid = static_cast<kiv_os::THandle>(regs.rax.r);
+	return result;
 }
 
 bool kiv_os_rtl::Wait_For(kiv_os::THandle handlers[]) {

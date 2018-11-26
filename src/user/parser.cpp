@@ -43,7 +43,7 @@ bool parse_Part(std::string args, kiv_os::THandle stdin_handle, kiv_os::THandle 
 	}
 
 	kiv_os::THandle handlers[1];
-	handlers[0] = kiv_os_rtl::Clone(function.c_str(), arguments.c_str(), stdin_handle, stdout_handle);
+	kiv_os_rtl::Clone(handlers[0], function.c_str(), arguments.c_str(), stdin_handle, stdout_handle);
 
 	if (handlers[0] == NULL)
 	{

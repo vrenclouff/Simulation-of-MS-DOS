@@ -208,8 +208,8 @@ size_t __stdcall test_pipe(const kiv_hal::TRegisters & regs) {
 	kiv_os_rtl::Create_Pipe(file_handles);
 
 	kiv_os::THandle process_handles[2];
-	process_handles[0] = kiv_os_rtl::Clone("ps", "", std_in, file_handles[0]);
-	process_handles[1] = kiv_os_rtl::Clone("sort", "", file_handles[1], std_out);
+	kiv_os_rtl::Clone(process_handles[0], "ps", "", std_in, file_handles[0]);
+	kiv_os_rtl::Clone(process_handles[1], "sort", "", file_handles[1], std_out);
 
 	for (int i = 0; i < sizeof process_handles; i++) {
 		kiv_os::NOS_Error error; kiv_hal::TFlags flags;

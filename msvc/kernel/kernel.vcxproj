@@ -22,7 +22,6 @@
     <ClCompile Include="..\..\src\api\api.cpp" />
     <ClCompile Include="..\..\src\kernel\circular_buffer.cpp" />
     <ClCompile Include="..\..\src\kernel\fat.cpp" />
-    <ClCompile Include="..\..\src\kernel\fat_file.cpp" />
     <ClCompile Include="..\..\src\kernel\fat_tools.cpp" />
     <ClCompile Include="..\..\src\kernel\handles.cpp" />
     <ClCompile Include="..\..\src\kernel\io.cpp" />
@@ -31,7 +30,6 @@
     <ClCompile Include="..\..\src\kernel\kernel.cpp" />
     <ClCompile Include="..\..\src\kernel\process.cpp" />
     <ClCompile Include="..\..\src\kernel\process_manager.cpp" />
-    <ClCompile Include="..\..\src\kernel\semaphore.cpp" />
     <ClCompile Include="..\..\src\kernel\thread.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -40,7 +38,6 @@
     <ClInclude Include="..\..\src\kernel\circular_buffer.h" />
     <ClInclude Include="..\..\src\kernel\common.h" />
     <ClInclude Include="..\..\src\kernel\fat.h" />
-    <ClInclude Include="..\..\src\kernel\fat_file.h" />
     <ClInclude Include="..\..\src\kernel\fat_tools.h" />
     <ClInclude Include="..\..\src\kernel\handles.h" />
     <ClInclude Include="..\..\src\kernel\io.h" />
@@ -49,7 +46,6 @@
     <ClInclude Include="..\..\src\kernel\kernel.h" />
     <ClInclude Include="..\..\src\kernel\process.h" />
     <ClInclude Include="..\..\src\kernel\process_manager.h" />
-    <ClInclude Include="..\..\src\kernel\semaphore.h" />
     <ClInclude Include="..\..\src\kernel\thread.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

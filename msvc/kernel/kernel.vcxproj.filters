@@ -30,9 +30,6 @@
     <ClCompile Include="..\..\src\kernel\fat.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\kernel\fat_file.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\kernel\fat_tools.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -49,9 +46,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\kernel\thread.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\kernel\semaphore.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\kernel\circular_buffer.cpp">
@@ -80,9 +74,6 @@
     <ClInclude Include="..\..\src\kernel\fat.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\kernel\fat_file.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\kernel\fat_tools.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -102,9 +93,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\kernel\thread.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\kernel\semaphore.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\kernel\circular_buffer.h">

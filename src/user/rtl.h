@@ -29,9 +29,9 @@ namespace kiv_os_rtl {
 
 	bool Close_Handle(const kiv_os::THandle file_handle);
 
-	bool Create_Pipe(kiv_os::THandle* handlers);
+	bool Create_Pipe(kiv_os::THandle handlers[]);
 
-	kiv_os::THandle Clone(const char* function, const char* arguments, kiv_os::THandle stdin_handle, kiv_os::THandle stdout_handle);
+	bool Clone(kiv_os::THandle& pid, const char* function, const char* arguments, kiv_os::THandle stdin_handle, kiv_os::THandle stdout_handle);
 
 	bool Wait_For(kiv_os::THandle handlers[]);
 

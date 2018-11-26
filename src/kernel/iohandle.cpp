@@ -152,7 +152,7 @@ size_t IOHandle_File::write(const char * buffer, const size_t buffer_size) {
 		// TODO error
 	}
 
-	return buffer_size;
+	return buffer_seek;
 }
 
 size_t IOHandle_File::read(char* buffer, const size_t buffer_size) {
