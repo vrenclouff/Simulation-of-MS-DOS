@@ -1,8 +1,17 @@
 #include "shell.h"
 #include "rtl.h"
 #include "parser.h"
+#include <iostream>
+
+bool exit_signaled = false;
+
+void sigtermHandler(const kiv_hal::TRegisters &regs) {
+	exit_signaled = true;
+}
 
 size_t __stdcall shell(const kiv_hal::TRegisters &regs) {
+
+	kiv_os_rtl::Register_Signal_Handler(kiv_os::NSignal_Id::Terminate, (kiv_os::TThread_Proc)sigtermHandler);
 
 	const auto std_in = static_cast<kiv_os::THandle>(regs.rax.x);
 	const auto std_out = static_cast<kiv_os::THandle>(regs.rbx.x);
@@ -31,6 +40,11 @@ size_t __stdcall shell(const kiv_hal::TRegisters &regs) {
 			if (strcmp(buffer, exit) == 0) break;
 
 			parse(buffer, std_in, std_out, read_counter);
+
+			if (exit_signaled)
+			{
+				break;
+			}
 		}
 		else {
 			break;	//EOF
