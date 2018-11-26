@@ -41,17 +41,29 @@ size_t IOHandle_Keyboard::read(char* buffer, const size_t buffer_size) {
 		} break;
 
 		case kiv_hal::NControl_Codes::LF:  break;	//jenom pohltime, ale necteme
-		//case kiv_hal::NControl_Codes::NUL:		//chyba cteni? nebo ctrl+z -> posli signal pro ukonceni
-		case kiv_hal::NControl_Codes::CR: {	//docetli jsme az po Enter
-			char linebrak = '\n';
-			buffer[pos] = linebrak;
+		case kiv_hal::NControl_Codes::NUL: {	//chyba cteni? nebo ctrl+z -> posli signal pro ukonceni
+			char eof = '\0';
+			buffer[pos] = eof;
 			pos++;
 			registers.rax.h = static_cast<decltype(registers.rax.l)>(kiv_hal::NVGA_BIOS::Write_String);
-			registers.rdx.r = reinterpret_cast<decltype(registers.rdx.r)>(&linebrak);
+			registers.rdx.r = reinterpret_cast<decltype(registers.rdx.r)>(&eof);
 			registers.rcx.r = 1;
 			kiv_hal::Call_Interrupt_Handler(kiv_hal::NInterrupt::VGA_BIOS, registers);
 			return pos;
-		};
+			break;
+		}
+			
+		case kiv_hal::NControl_Codes::CR: {	//docetli jsme az po Enter
+			char linebreak = '\n';
+			buffer[pos] = linebreak;
+			pos++;
+			registers.rax.h = static_cast<decltype(registers.rax.l)>(kiv_hal::NVGA_BIOS::Write_String);
+			registers.rdx.r = reinterpret_cast<decltype(registers.rdx.r)>(&linebreak);
+			registers.rcx.r = 1;
+			kiv_hal::Call_Interrupt_Handler(kiv_hal::NInterrupt::VGA_BIOS, registers);
+			return pos;
+			break;
+		}
 
 		default: buffer[pos] = ch;
 			pos++;
