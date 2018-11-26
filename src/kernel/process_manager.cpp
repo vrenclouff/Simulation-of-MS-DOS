@@ -334,7 +334,7 @@ void ProcessManager::shutdown(kiv_hal::TRegisters &regs)
 {
 	// rcx NSignal_Id
 	// rdx: pointer na TThread_Proc, kde pri jeho volani context.rcx bude id signalu (0 = default handler)
-	mtx.lock();
+	std::lock_guard<std::mutex> lock(mtx);
 
 	// send sigterm
 	kiv_hal::TRegisters sigterm_regs{ 0 };
@@ -346,25 +346,6 @@ void ProcessManager::shutdown(kiv_hal::TRegisters &regs)
 			thread_entry.second->handlers[kiv_os::NSignal_Id::Terminate](sigterm_regs);
 		}
 	}
-	mtx.unlock();
-
-	// wait for threads to terminate
-	Sleep(5000);
-	mtx.lock();
-	Thread* this_thread = _getRunningThread();
-
-	// terminate running threads
-	for (auto const& process_entry : processes)
-	{
-		for (auto const& thread_entry : process_entry.second->threads)
-		{
-			if (thread_entry.second->state == ThreadState::running && thread_entry.first != this_thread->tid)
-			{
-				thread_entry.second->stop(0);
-			}
-		}
-	}
-	this_thread->stop(0);
 }
 
 std::string ProcessManager::getProcessTable()
