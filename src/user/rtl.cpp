@@ -149,9 +149,10 @@ bool kiv_os_rtl::Shutdown() {
 	return result;
 }
 
-bool kiv_os_rtl::Register_Signal_Handler() {
+bool kiv_os_rtl::Register_Signal_Handler(kiv_os::NSignal_Id signal, kiv_os::TThread_Proc handler) {
 	kiv_hal::TRegisters regs = Prepare_SysCall_Context(kiv_os::NOS_Service_Major::Process, static_cast<uint8_t>(kiv_os::NOS_Process::Register_Signal_Handler));
-
+	regs.rcx.r = static_cast<uint64_t>(signal);
+	regs.rdx.r = reinterpret_cast<uint64_t>(handler);
 	const bool result = kiv_os::Sys_Call(regs);
 	return result;
 }
