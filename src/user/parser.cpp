@@ -7,8 +7,12 @@
 #include <sstream>
 
 std::string trim(std::string& str) {
-	str.erase(0, str.find_first_not_of(' '));
-	str.erase(str.find_last_not_of(' ') + 1);
+	char space = ' ';
+	char linebreak = '\n';
+	str.erase(0, str.find_first_not_of(space));
+	str.erase(str.find_last_not_of(space) + 1);
+	str.erase(0, str.find_first_not_of(linebreak));
+	str.erase(str.find_last_not_of(linebreak) + 1);
 	return str;
 }
 
