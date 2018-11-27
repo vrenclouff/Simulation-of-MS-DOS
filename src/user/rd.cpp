@@ -5,7 +5,8 @@
 size_t __stdcall rd(const kiv_hal::TRegisters &regs) {
 
 	const auto std_out = static_cast<kiv_os::THandle>(regs.rbx.x);
-	const std::string input = std::string(reinterpret_cast<char*>(regs.rdi.r));
+
+	const auto input = std::string(reinterpret_cast<char*>(regs.rdi.r));
 
 	size_t written;
 	if (input.empty()) {

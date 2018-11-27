@@ -15,7 +15,6 @@ size_t __stdcall type(const kiv_hal::TRegisters &regs) {
 	
 	size_t read, written;
 	char buffer[2048];
-
 	if (input.empty()) {
 		std::vector<std::string> elements;
 		do {
@@ -38,7 +37,6 @@ size_t __stdcall type(const kiv_hal::TRegisters &regs) {
 			const auto error_code = static_cast<uint16_t>(error);
 
 			kiv_os_rtl::Write_File(std_out, error_msg.c_str(), error_msg.length(), written);
-		
 			kiv_os_rtl::Exit(error_code);
 			return error_code;
 		}

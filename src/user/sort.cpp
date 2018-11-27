@@ -20,14 +20,14 @@ size_t __stdcall sort(const kiv_hal::TRegisters &regs) {
 		if (!kiv_os_rtl::Read_File(std_in, buffer, sizeof buffer, read)) {
 			const kiv_os::NOS_Error error = kiv_os_rtl::Last_Error;
 			const auto error_msg = Error_Message(error);
-			kiv_os_rtl::Write_File(std_out, error_msg.data(), error_msg.length(), written);
 			const auto error_code = static_cast<uint16_t>(error);
+
+			kiv_os_rtl::Write_File(std_out, error_msg.data(), error_msg.length(), written);
 			kiv_os_rtl::Exit(error_code);
 			return error_code;
 		}
 		ss << std::string(buffer, read);
 	} while (read);
-
 
 	std::vector<std::string> elements;
 	std::string line;
