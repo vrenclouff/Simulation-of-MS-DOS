@@ -26,7 +26,7 @@ size_t __stdcall sort(const kiv_hal::TRegisters &regs) {
 			return error_code;
 		}
 		ss << std::string(buffer, read);
-	} while (!read);
+	} while (read);
 
 
 	std::vector<std::string> elements;
