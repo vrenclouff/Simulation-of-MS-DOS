@@ -19,12 +19,17 @@ size_t __stdcall echo(const kiv_hal::TRegisters &regs) {
 
 	size_t written;
 
-	if ((!first.empty() && !first.compare("on")) && (rest.empty() || !rest.compare("")))
+	if (first.empty() || !first.compare("")) {
+		std::string echo_info = "Echo is ";
+		echo_info.append(shell_echo ? "on." : "off." );
+		kiv_os_rtl::Write_File(std_out, echo_info.c_str(), echo_info.length(), written);
+	}
+	else if (!first.compare("on") && (rest.empty() || !rest.compare("")))
 	{
 		shell_echo = true;
 	}
 	
-	else if ((!first.empty() && !first.compare("off")) && (rest.empty() || !rest.compare("")))
+	else if (!first.compare("off") && (rest.empty() || !rest.compare("")))
 	{
 		shell_echo = false;
 	}

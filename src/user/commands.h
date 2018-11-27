@@ -15,7 +15,7 @@ bool cd(const std::string& param, const kiv_os::THandle in, const kiv_os::THandl
 
 static std::map<std::string, std::string> process_table = {
 	{"tasklist", "ps"},
-	{"find", "wd"},
+	{"find", "wc"},
 };
 
 static std::map<std::string, std::function<bool(const std::string& param, const kiv_os::THandle in, const kiv_os::THandle out, cmd::Error& error)>> embedded_processes = {
