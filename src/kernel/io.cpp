@@ -50,7 +50,7 @@ bool is_exist_dir(std::string path) {
 	return res && fat_tool::is_attr(files.back().entire_dir.attributes, kiv_os::NFile_Attributes::Directory);
 }
 
-IOHandle* Open_File(std::string absolute_path, const kiv_os::NOpen_File fm, const kiv_os::NFile_Attributes attributes) {
+IOHandle* Open_File(std::string absolute_path, const kiv_os::NOpen_File fm, const kiv_os::NFile_Attributes attributes, kiv_os::NOS_Error& error) {
 
 	std::vector<std::string> components;
 	to_absolute_components(components, absolute_path);
@@ -72,7 +72,7 @@ IOHandle* Open_File(std::string absolute_path, const kiv_os::NOpen_File fm, cons
 		else {
 			std::vector<kiv_fs::File_Desc> files;
 			if (!kiv_fs::find_entire_dirs(drive, files, components)) {
-				// TODO error
+				error = kiv_os::NOS_Error::IO_Error;
 				return nullptr;
 			}
 			const auto is_root = components.size() == 1;
@@ -91,13 +91,14 @@ IOHandle* Open_File(std::string absolute_path, const kiv_os::NOpen_File fm, cons
 			files.pop_back();
 			new_file.sectors.erase(new_file.sectors.begin() + 1, new_file.sectors.end());
 		} else if (files.size() != components.size() - 1) {
-			// TODO error -> cannot create a file in non-exist folder
+			error = kiv_os::NOS_Error::IO_Error;
 			return nullptr;
 		}
 		else {
 			new_file.sectors = std::vector<uint16_t>();
 			if (kiv_fs::new_entire_dir(new_file.entire_dir, components.back(), static_cast<uint8_t>(attributes))) {
-				// TODO error
+				error = kiv_os::NOS_Error::IO_Error;
+				return nullptr;
 			}
 		}
 
@@ -105,7 +106,7 @@ IOHandle* Open_File(std::string absolute_path, const kiv_os::NOpen_File fm, cons
 		files.pop_back();
 
 		if (!fat_tool::is_attr(parrent_file.entire_dir.attributes, kiv_os::NFile_Attributes::Directory)) {
-			// TODO error -> folder that we want to create new file/dir isn't exist
+			error = kiv_os::NOS_Error::IO_Error;
 			return nullptr;
 		}
 
@@ -113,19 +114,19 @@ IOHandle* Open_File(std::string absolute_path, const kiv_os::NOpen_File fm, cons
 		if (new_file.sectors.empty()) {
 			std::vector<std::div_t> fat_offsets;
 			if (!kiv_fs::find_free_sectors(fat_offsets, drive.id, START_OF_FAT, 1, drive.boot_block.bytes_per_sector)) {
-				// TODO error
+				error = kiv_os::NOS_Error::IO_Error;
 				return nullptr;
 			}
 
 			// save new directory to the FAT
 			if (!kiv_fs::save_to_fat(drive.id, fat_offsets, drive.boot_block.bytes_per_sector, kiv_fs::offset(drive.boot_block), new_file.sectors, new_file.entire_dir.first_cluster)) {
-				// TODO error
+				error = kiv_os::NOS_Error::IO_Error;
 				return nullptr;
 			}
 
 			// uloz do nadrazene slozky entire_dir pro novou slozku
 			if (!kiv_fs::save_to_dir(drive.id, parrent_file.sectors, drive.boot_block.bytes_per_sector, new_file.entire_dir, kiv_fs::Edit_Type::Add)) {
-				// TODO error
+				error = kiv_os::NOS_Error::IO_Error;
 				return nullptr;
 			}
 
@@ -133,7 +134,7 @@ IOHandle* Open_File(std::string absolute_path, const kiv_os::NOpen_File fm, cons
 				auto grandparent_file = files.back();
 				grandparent_file.entire_dir.size += sizeof kiv_fs::FATEntire_Directory;
 				if (!kiv_fs::save_to_dir(drive.id, grandparent_file.sectors, drive.boot_block.bytes_per_sector, parrent_file.entire_dir, kiv_fs::Edit_Type::Edit)) {
-					// TODO error
+					error = kiv_os::NOS_Error::IO_Error;
 					return nullptr;
 				}
 			}
@@ -146,7 +147,7 @@ IOHandle* Open_File(std::string absolute_path, const kiv_os::NOpen_File fm, cons
 	}
 }
 
-bool Remove_File(std::string absolute_path) {
+bool Remove_File(std::string absolute_path, kiv_os::NOS_Error& error) {
 
 	std::vector<std::string> components;
 	to_absolute_components(components, absolute_path);
@@ -156,8 +157,7 @@ bool Remove_File(std::string absolute_path) {
 
 	std::vector<kiv_fs::File_Desc> files;
 	if (!kiv_fs::find_entire_dirs(drive, files, components)) {
-		// TODO error
-		kiv_os::NOS_Error::File_Not_Found;
+		error = kiv_os::NOS_Error::File_Not_Found;
 		return false;
 	}
 
@@ -165,14 +165,12 @@ bool Remove_File(std::string absolute_path) {
 	files.pop_back();
 
 	if (!fat_tool::is_attr(file_to_dell.entire_dir.attributes, kiv_os::NFile_Attributes::Directory)) {
-		// TODO error -> isn't the dir
-		kiv_os::NOS_Error::File_Not_Found;
+		error = kiv_os::NOS_Error::Invalid_Argument;
 		return false;
 	}
 
 	if (file_to_dell.entire_dir.size) {
-		// TODO error -> can delete only free dirs
-		kiv_os::NOS_Error::Directory_Not_Empty;
+		error = kiv_os::NOS_Error::Directory_Not_Empty;
 		return false;
 	}
 
@@ -184,7 +182,7 @@ bool Remove_File(std::string absolute_path) {
 	files.pop_back();
 
 	if (!kiv_fs::save_to_dir(drive.id, parrent_file.sectors, drive.boot_block.bytes_per_sector, file_to_dell.entire_dir, kiv_fs::Edit_Type::Del)) {
-		// TODO error -> cannot delete entry_dir from cluster
+		error = kiv_os::NOS_Error::IO_Error;
 		return false;
 	}
 
@@ -195,7 +193,7 @@ bool Remove_File(std::string absolute_path) {
 
 		parrent_file.entire_dir.size -= sizeof kiv_fs::FATEntire_Directory;
 		if (!kiv_fs::save_to_dir(drive.id, grandparrent_file.sectors, drive.boot_block.bytes_per_sector, parrent_file.entire_dir, kiv_fs::Edit_Type::Edit)) {
-			// TODO error
+			error = kiv_os::NOS_Error::IO_Error;
 			return false;
 		}
 	}
@@ -211,9 +209,11 @@ void Handle_IO(kiv_hal::TRegisters &regs) {
 			const auto path = reinterpret_cast<char*>(regs.rdx.r);
 			const auto fm = static_cast<kiv_os::NOpen_File>(regs.rcx.l);
 			const auto attributes = static_cast<kiv_os::NFile_Attributes>(regs.rdi.i);
-			const auto source = Open_File(path, fm, attributes);
-			if (!source) {
-				// TODO error -> cannot open the file
+			kiv_os::NOS_Error error;
+			const auto source = Open_File(path, fm, attributes, error);
+			if (!Open_File(path, fm, attributes, error)) {
+				regs.flags.carry = 1;
+				regs.rax.x = static_cast<decltype(regs.rax.x)>(error);
 				break;
 			}
 			regs.rax.x = Convert_Native_Handle(static_cast<HANDLE>(source));
@@ -233,12 +233,17 @@ void Handle_IO(kiv_hal::TRegisters &regs) {
 		case kiv_os::NOS_File_System::Delete_File: {
 			auto path = std::string(reinterpret_cast<char*>(regs.rdx.r));
 			const auto process = process_manager->getRunningProcess();
-			regs.flags.carry = !Remove_File(to_absolute_path(process->working_dir, path));
+			kiv_os::NOS_Error error;
+			regs.flags.carry = !Remove_File(to_absolute_path(process->working_dir, path), error);
+			regs.rax.x = static_cast<decltype(regs.rax.x)>(error);
 
 		} break;
 
 		case kiv_os::NOS_File_System::Close_Handle: {
 			const auto source = static_cast<IOHandle*>(Resolve_kiv_os_Handle(regs.rdx.x));
+			if (!source) {
+				regs.rax.x = static_cast<decltype(regs.rax.x)>(kiv_os::NOS_Error::Unknown_Error);
+			}
 			regs.flags.carry |= !Remove_Handle(regs.rdx.x);
 			delete source;
 		} break;
@@ -269,8 +274,6 @@ void Handle_IO(kiv_hal::TRegisters &regs) {
 
 		case kiv_os::NOS_File_System::Seek: {
 			const auto source = static_cast<IOHandle*>(Resolve_kiv_os_Handle(regs.rdx.x));
-				
-
 		} break;
 
 		case kiv_os::NOS_File_System::Create_Pipe: {
