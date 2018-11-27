@@ -96,8 +96,7 @@ IOHandle* Open_File(std::string absolute_path, const kiv_os::NOpen_File fm, cons
 		}
 		else {
 			new_file.sectors = std::vector<uint16_t>();
-			if (kiv_fs::new_entire_dir(new_file.entire_dir, components.back(), static_cast<uint8_t>(attributes))) {
-				error = kiv_os::NOS_Error::IO_Error;
+			if (!kiv_fs::new_entire_dir(new_file.entire_dir, components.back(), static_cast<uint8_t>(attributes), error)) {
 				return nullptr;
 			}
 		}

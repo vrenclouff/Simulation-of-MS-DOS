@@ -21,7 +21,7 @@ size_t __stdcall ps(const kiv_hal::TRegisters &regs) {
 
 	char content[1024];
 	kiv_os_rtl::Read_File(filehandle, content, sizeof(content), read);
-	content[read++] = 0;
+	content[read] = 0;
 	kiv_os_rtl::Write_File(std_out, content, read, written);
 
 	kiv_os_rtl::Exit(0);

@@ -4,7 +4,7 @@
 #include "fat_tools.h"
 #include "common.h"
 
-size_t IOHandle_VGA::write(const char* buffer, const size_t buffer_size) {
+size_t IOHandle_VGA::write(char* buffer, const size_t buffer_size) {
 	IOHandle::check_ACL(Permission::Write);
 
 	kiv_hal::TRegisters regs;
@@ -78,7 +78,7 @@ size_t IOHandle_Keyboard::read(char* buffer, const size_t buffer_size) {
 	return pos;
 }
 
-size_t IOHandle_File::write(const char * buffer, const size_t buffer_size) {
+size_t IOHandle_File::write(char * buffer, const size_t buffer_size) {
 	IOHandle::check_ACL(Permission::Write);
 
 	const auto& boot_block = _drive.boot_block;
@@ -279,11 +279,15 @@ size_t IOHandle_SYS::read(char* buffer, const size_t buffer_size) {
 	}
 }
 
-size_t IOHandle_Pipe::write(const char* buffer, const size_t buffer_size) {
+size_t IOHandle_Pipe::write(char* buffer, const size_t buffer_size) {
 	IOHandle::check_ACL(Permission::Write);
 
+	if (buffer[buffer_size] != 0) {
+		buffer[buffer_size] = 0;
+	}
+
 	size_t written = 0;
-	for (; written < buffer_size; written++) {
+	for (; written < buffer_size + 1; written++) {
 		_circular_buffer->write(buffer[written]);
 	}
 	
