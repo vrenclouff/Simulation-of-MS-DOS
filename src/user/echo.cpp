@@ -17,8 +17,6 @@ size_t __stdcall echo(const kiv_hal::TRegisters &regs) {
 	std::getline(is, first, ' ');
 	std::getline(is, rest);
 
-	size_t written;
-
 	if (first.empty() || !first.compare("")) {
 		std::string echo_info = "Echo is ";
 		echo_info.append(shell_echo ? "on." : "off." );
