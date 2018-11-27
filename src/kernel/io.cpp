@@ -210,7 +210,7 @@ void Handle_IO(kiv_hal::TRegisters &regs) {
 			const auto attributes = static_cast<kiv_os::NFile_Attributes>(regs.rdi.i);
 			kiv_os::NOS_Error error;
 			const auto source = Open_File(path, fm, attributes, error);
-			if (!Open_File(path, fm, attributes, error)) {
+			if (!source) {
 				regs.flags.carry = 1;
 				regs.rax.x = static_cast<decltype(regs.rax.x)>(error);
 				break;

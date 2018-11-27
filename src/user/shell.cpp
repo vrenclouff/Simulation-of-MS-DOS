@@ -21,9 +21,7 @@ size_t __stdcall shell(const kiv_hal::TRegisters &regs) {
 	size_t read, written;
 
 	do {
-
-		if (shell_echo)
-		{
+		if (shell_echo) {
 			char prompt[100];
 			kiv_os_rtl::Get_Working_Dir(prompt, sizeof(prompt), read);
 			kiv_os_rtl::Write_File(std_out, prompt, read, written);
@@ -36,7 +34,7 @@ size_t __stdcall shell(const kiv_hal::TRegisters &regs) {
 			buffer[--read] = 0;
 
 			if (strcmp(buffer, EXIT) == 0) break;
-
+			
 			cmd::Error error;
 			if (!parse_cmd(std::string(buffer, read), std_in, std_out, error)) {
 				kiv_os_rtl::Write_File(std_out, error.what.data(), error.what.size(), written);
