@@ -7,6 +7,7 @@
 #include <iterator>
 #include <string>
 #include <array>
+#include "commands.h"
 
 #define REDIRECT	">"
 #define PIPE		"|"
@@ -62,7 +63,10 @@ bool parse_cmd(const std::string& cmd_line, const kiv_os::THandle std_in, const 
 		// create the program
 		kiv_os::THandle pid;
 		const auto program_name = normalize_process_name(program.name);
-		if (!kiv_os_rtl::Clone(pid, program_name.data(), program.param.data(), in, out)) {
+
+		if (embedded_processes.find(program_name) != embedded_processes.end()) {
+			return embedded_processes[program_name](program.param, in, out, error);
+		} else if (!kiv_os_rtl::Clone(pid, program_name.data(), program.param.data(), in, out)) {
 			error = { "Invalid command.\n" };
 			return false;
 		}
@@ -83,4 +87,14 @@ bool parse_cmd(const std::string& cmd_line, const kiv_os::THandle std_in, const 
 	}
 
 	return true;
+}
+
+bool cd(const std::string& param, const kiv_os::THandle in, const kiv_os::THandle out, cmd::Error& error) {
+
+	if (!kiv_os_rtl::Set_Working_Dir(param.data())) {
+		error = { Error_Message(kiv_os_rtl::Last_Error) };
+		return false;
+	}
+
+	return false;
 }
