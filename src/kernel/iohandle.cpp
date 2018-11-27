@@ -304,5 +304,5 @@ size_t IOHandle_Pipe::read(char* buffer, const size_t buffer_size) {
 }
 
 void IOHandle_Pipe::close() {
-	_circular_buffer->is_EOF = true;
+	_circular_buffer->close();
 }

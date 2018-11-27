@@ -18,6 +18,7 @@ private:
 	bool empty() const;
 
 public:
+	void close();
 	bool is_EOF = false;
 	size_t write(const char item);
 	int read();
