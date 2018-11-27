@@ -15,7 +15,6 @@ size_t __stdcall dir(const kiv_hal::TRegisters &regs) {
 
 	size_t read, wrote;
 	std::string path = input;
-
 	if (input.empty()) {
 		char buffer[100];
 		kiv_os_rtl::Get_Working_Dir(buffer, sizeof(buffer), read);
@@ -25,19 +24,26 @@ size_t __stdcall dir(const kiv_hal::TRegisters &regs) {
 	kiv_os::THandle dirhandle;
 	if (!kiv_os_rtl::Open_File(path.data(), path.size(), dirhandle, true, kiv_os::NFile_Attributes::Read_Only)) {
 		const kiv_os::NOS_Error error = kiv_os_rtl::Last_Error;
-		const std::string error_msg = Error_Message(error);
-		kiv_os_rtl::Write_File(std_out, error_msg.c_str(), error_msg.length(), wrote);
-
+		const auto error_msg = Error_Message(error);
 		const auto error_code = static_cast<uint16_t>(error);
+
+		kiv_os_rtl::Write_File(std_out, error_msg.c_str(), error_msg.length(), wrote);
 		kiv_os_rtl::Exit(error_code);
 		return error_code;
 	}
 
 	std::stringstream ss;
-
 	char buffer[MAX_ENTRY_ITEMS * sizeof(kiv_os::TDir_Entry)];
 	do {
-		kiv_os_rtl::Read_File(dirhandle, buffer, sizeof(buffer), read);
+		if (!kiv_os_rtl::Read_File(dirhandle, buffer, sizeof(buffer), read)) {
+			const kiv_os::NOS_Error error = kiv_os_rtl::Last_Error;
+			const auto error_msg = Error_Message(error);
+			const auto error_code = static_cast<uint16_t>(error);
+
+			kiv_os_rtl::Write_File(std_out, error_msg.c_str(), error_msg.length(), wrote);
+			kiv_os_rtl::Exit(error_code);
+			return error_code;
+		}
 
 		if (!read) break;
 

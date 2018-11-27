@@ -75,21 +75,15 @@ bool parse_cmd(const std::string& cmd_line, const kiv_os::THandle std_in, const 
 		pids.push_back(pid);
 	}
 
-	size_t pid_index = 0;
-	size_t pids_size = pids.size();
+	auto pipe_itr = pipes.begin();
 	for (const auto& pid : pids) {
 		kiv_os::THandle th[] = { pid };
 		kiv_os_rtl::Wait_For(th);
-		// close read pipe handle
-		if (pid_index > 0) {
-			kiv_os_rtl::Close_Handle(pipes[pid_index - 1][0]);
-		}
-		// clse write pipe handle
-		if (pid_index != pids_size - 1) {
-			kiv_os_rtl::Close_Handle(pipes[pid_index][1]);
+		if (pipe_itr != pipes.end()) {
+			kiv_os_rtl::Close_Handle((*pipe_itr)[0]);
+			pipe_itr++;
 		}
 		kiv_os_rtl::Read_Exit_Code(pid);
-		pid_index++;
 	}
 
 	return true;

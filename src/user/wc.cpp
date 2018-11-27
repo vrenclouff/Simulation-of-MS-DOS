@@ -8,9 +8,14 @@
 #include <vector>
 
 size_t __stdcall wc(const kiv_hal::TRegisters &regs) {
+<<<<<<< 786f51573db6148b09ca4d8e11a92e6f43d601d3
 	std::string input = std::string(reinterpret_cast<char*>(regs.rdi.r));
 	const auto std_out = static_cast<kiv_os::THandle>(regs.rbx.x);
 	const auto std_in = static_cast<kiv_os::THandle>(regs.rax.x);
+=======
+
+	const auto input = std::string(reinterpret_cast<char*>(regs.rdi.r));
+>>>>>>> code refactor
 
 	std::istringstream is(input);
 	std::string first;
