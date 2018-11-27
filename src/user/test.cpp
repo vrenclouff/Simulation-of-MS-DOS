@@ -211,14 +211,15 @@ size_t __stdcall test_pipe(const kiv_hal::TRegisters & regs) {
 	kiv_os_rtl::Clone(process_handles[0], "dir", "", std_in, file_handles[0]);
 	kiv_os_rtl::Clone(process_handles[1], "sort", "", file_handles[1], std_out);
 
-	for (int i = 0; i < sizeof process_handles; i++) {
-		kiv_os::NOS_Error error; kiv_hal::TFlags flags;
-		kiv_os::THandle handle_completed = waitFor(&process_handles[i], 1, error, flags);
-		kiv_os_rtl::Close_Handle(file_handles[0]);
-		readExitCode(handle_completed, error, flags);
-	}
 
+	kiv_os::NOS_Error error; kiv_hal::TFlags flags;
+	kiv_os::THandle handle_completed = waitFor(&process_handles[0], 1, error, flags);
+	kiv_os_rtl::Close_Handle(file_handles[0]);
+	readExitCode(handle_completed, error, flags);
+
+	handle_completed = waitFor(&process_handles[1], 1, error, flags);
 	kiv_os_rtl::Close_Handle(file_handles[1]);
+	readExitCode(handle_completed, error, flags);
 
 	exitCall(0);
 	return 0;
