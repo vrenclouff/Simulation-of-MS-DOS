@@ -22,7 +22,6 @@ size_t __stdcall dir(const kiv_hal::TRegisters &regs) {
 		path = std::string(buffer, read);
 	}
 
-
 	kiv_os::THandle dirhandle;
 	if (!kiv_os_rtl::Open_File(path.data(), path.size(), dirhandle, true, kiv_os::NFile_Attributes::Read_Only)) {
 		const kiv_os::NOS_Error error = kiv_os_rtl::Last_Error;
@@ -36,8 +35,6 @@ size_t __stdcall dir(const kiv_hal::TRegisters &regs) {
 
 	std::stringstream ss;
 
-	ss << "RO\tHIDDEN\tSYSTEM\tVOLUME\tIS DIR\tARCHIVE\tFILENAME\n";
-
 	char buffer[MAX_ENTRY_ITEMS * sizeof(kiv_os::TDir_Entry)];
 	do {
 		kiv_os_rtl::Read_File(dirhandle, buffer, sizeof(buffer), read);
@@ -47,27 +44,16 @@ size_t __stdcall dir(const kiv_hal::TRegisters &regs) {
 		for (size_t beg = 0; beg < read; beg += sizeof(kiv_os::TDir_Entry)) {
 
 			const auto dir = reinterpret_cast<kiv_os::TDir_Entry*>(buffer + beg);
-			const auto file_attributes = static_cast<kiv_os::NFile_Attributes>(dir->file_attributes);
-
 			const auto filename = std::string(dir->file_name, sizeof kiv_os::TDir_Entry::file_name);
-			const auto read_only = std::to_string(dir->file_attributes & static_cast<uint8_t>(kiv_os::NFile_Attributes::Read_Only));
-			const auto hidden = std::to_string(dir->file_attributes & static_cast<uint8_t>(kiv_os::NFile_Attributes::Hidden));
-			const auto system_file = std::to_string(dir->file_attributes & static_cast<uint8_t>(kiv_os::NFile_Attributes::System_File));
-			const auto volume_id = std::to_string(dir->file_attributes & static_cast<uint8_t>(kiv_os::NFile_Attributes::Volume_ID));
-			const auto is_dir = std::to_string(dir->file_attributes & static_cast<uint8_t>(kiv_os::NFile_Attributes::Directory));
-			const auto archive = std::to_string(dir->file_attributes & static_cast<uint8_t>(kiv_os::NFile_Attributes::Archive));
+			const auto is_dir = dir->file_attributes & static_cast<uint8_t>(kiv_os::NFile_Attributes::Directory);
+			const auto read_only = dir->file_attributes & static_cast<uint8_t>(kiv_os::NFile_Attributes::Read_Only);
 
 			ss
-				<< read_only << "\t"
-				<< hidden << "\t"
-				<< system_file << "\t"
-				<< volume_id << "\t"
-				<< is_dir << "\t"
-				<< archive << "\t"
-				<< filename << "\n"
+				<< filename << "\t"
+				<< (is_dir ? "<DIR>" : "<FILE>") << "\t"
+				<< (read_only ? "R" : "R/W") << "\n"
 			;
 		}
-
 		const auto text = ss.str();
 		kiv_os_rtl::Write_File(std_out, text.c_str(), text.size(), wrote);
 

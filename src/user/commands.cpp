@@ -63,10 +63,10 @@ bool parse_cmd(const std::string& cmd_line, const kiv_os::THandle std_in, const 
 		// create the program
 		kiv_os::THandle pid;
 		const auto program_name = normalize_process_name(program.name);
-
+		const auto program_params = program.param.empty() ? program.param : program.param.substr(0, program.param.size() - 1);
 		if (embedded_processes.find(program_name) != embedded_processes.end()) {
-			return embedded_processes[program_name](program.param, in, out, error);
-		} else if (!kiv_os_rtl::Clone(pid, program_name.data(), program.param.data(), in, out)) {
+			return embedded_processes[program_name](program_params, in, out, error);
+		} else if (!kiv_os_rtl::Clone(pid, program_name.data(), program_params.data(), in, out)) {
 			error = { "Invalid command.\n" };
 			return false;
 		}
@@ -75,19 +75,17 @@ bool parse_cmd(const std::string& cmd_line, const kiv_os::THandle std_in, const 
 		pids.push_back(pid);
 	}
 
-	int pid_index = 0;
-	int pids_size = pids.size();
+	size_t pid_index = 0;
+	size_t pids_size = pids.size();
 	for (const auto& pid : pids) {
 		kiv_os::THandle th[] = { pid };
 		kiv_os_rtl::Wait_For(th);
 		// close read pipe handle
-		if (pid_index > 0)
-		{
+		if (pid_index > 0) {
 			kiv_os_rtl::Close_Handle(pipes[pid_index - 1][0]);
 		}
-		// close write pipe handle
-		if (pid_index != pids_size - 1)
-		{
+		// clse write pipe handle
+		if (pid_index != pids_size - 1) {
 			kiv_os_rtl::Close_Handle(pipes[pid_index][1]);
 		}
 		kiv_os_rtl::Read_Exit_Code(pid);

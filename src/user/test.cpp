@@ -208,7 +208,7 @@ size_t __stdcall test_pipe(const kiv_hal::TRegisters & regs) {
 	kiv_os_rtl::Create_Pipe(file_handles);
 
 	kiv_os::THandle process_handles[2];
-	kiv_os_rtl::Clone(process_handles[0], "dir", "", std_in, file_handles[0]);
+	kiv_os_rtl::Clone(process_handles[0], "ps", "", std_in, file_handles[0]);
 	kiv_os_rtl::Clone(process_handles[1], "sort", "", file_handles[1], std_out);
 
 

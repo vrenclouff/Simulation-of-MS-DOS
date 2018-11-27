@@ -36,11 +36,10 @@ size_t __stdcall sort(const kiv_hal::TRegisters &regs) {
 	}
 
 	std::sort(elements.begin(), elements.end());
-
-	for (std::string item : elements) {
-		kiv_os_rtl::Write_File(std_out, item.c_str(), item.length(), written);
-		kiv_os_rtl::Write_File(std_out, "\n", 1, written);
-	}
+	std::stringstream sorted_lines;
+	std::copy(elements.begin(), elements.end(), std::ostream_iterator<std::string>(sorted_lines, "\n"));
+	const auto res = sorted_lines.str();
+	kiv_os_rtl::Write_File(std_out, res.c_str(), res.length(), written);
 
 	kiv_os_rtl::Exit(0);
 	return 0;

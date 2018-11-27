@@ -276,10 +276,10 @@ size_t IOHandle_Pipe::write(char* buffer, const size_t buffer_size) {
 	IOHandle::check_ACL(Permission::Write);
 
 	size_t written = 0;
-	for (; written < buffer_size + 1; written++) {
+	for (; written < buffer_size; written++) {
 		_circular_buffer->write(buffer[written]);
 	}
-	
+
 	return written;
 }
 

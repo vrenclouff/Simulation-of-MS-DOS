@@ -27,17 +27,17 @@ size_t Circular_buffer::write(const char item) {
 	return 0;
 }
 
-void Circular_buffer::close()
-{
+void Circular_buffer::close() {
 	std::lock_guard<std::mutex> locker(_mutex);
 	is_EOF = true;
+	_cond.notify_all();
 }
 
 int Circular_buffer::read() {
 	std::unique_lock<std::mutex> locker(_mutex);
-	_cond.wait(locker, [&]() {return size() > 0 || (is_EOF && (size() == 0)); });
+	_cond.wait(locker, [&]() {return size() > 0 || is_EOF; });
 
-	if (is_EOF) return -1;
+	if (is_EOF && empty()) return -1;
 
 	auto val = buffer[end];
 	full = false;
