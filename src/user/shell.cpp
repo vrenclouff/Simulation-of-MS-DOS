@@ -5,6 +5,7 @@
 #define EXIT	"exit"
 
 bool exit_signaled = false;
+bool shell_echo = true;
 void SIGTERM_Handler(const kiv_hal::TRegisters &regs) {
 	exit_signaled = true;
 }
@@ -18,6 +19,7 @@ size_t __stdcall shell(const kiv_hal::TRegisters &regs) {
 
 	char buffer[256];
 	size_t read, written;
+
 	do {
 		{
 			char prompt[100];
@@ -32,6 +34,12 @@ size_t __stdcall shell(const kiv_hal::TRegisters &regs) {
 			buffer[--read] = 0;
 
 			if (strcmp(buffer, EXIT) == 0) break;
+
+			if (shell_echo)
+			{
+				kiv_os_rtl::Write_File(std_out, buffer, read, written);
+				kiv_os_rtl::Write_File(std_out, "\n", 1, written);
+			}
 
 			cmd::Error error;
 			if (!parse_cmd(std::string(buffer, read), std_in, std_out, error)) {
