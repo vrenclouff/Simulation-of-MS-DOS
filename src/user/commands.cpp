@@ -30,7 +30,7 @@ bool parse_cmd(const std::string& cmd_line, const kiv_os::THandle std_in, const 
 		if (item.compare(PIPE) == 0) { is_was_fnc = false; continue; }
 		if (item.compare(REDIRECT) == 0) { is_redirect = true; continue; }
 		if (is_redirect) { to_file = item; break; }
-		if (is_was_fnc) { programs.back().param.append(item); continue; }
+		if (is_was_fnc) { programs.back().param.append(item).append(" "); continue; }
 		programs.push_back({ item, "" });
 		is_was_fnc = true;
 	}
@@ -85,7 +85,7 @@ bool parse_cmd(const std::string& cmd_line, const kiv_os::THandle std_in, const 
 		{
 			kiv_os_rtl::Close_Handle(pipes[pid_index - 1][0]);
 		}
-		// clse write pipe handle
+		// close write pipe handle
 		if (pid_index != pids_size - 1)
 		{
 			kiv_os_rtl::Close_Handle(pipes[pid_index][1]);
