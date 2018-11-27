@@ -13,8 +13,9 @@
 
 namespace fs = std::filesystem;
 
-std::map<std::string, kiv_fs::Drive_Desc> registred_drivers;
 
+std::map<std::string, kiv_fs::Drive_Desc> registred_drivers;
+std::vector<kiv_os::THandle> pipes;
 
 STDHandle Register_STD() {
 	const auto  in = Convert_Native_Handle(static_cast<HANDLE>(new IOHandle_Keyboard()));
@@ -239,9 +240,13 @@ void Handle_IO(kiv_hal::TRegisters &regs) {
 		} break;
 
 		case kiv_os::NOS_File_System::Close_Handle: {
-			const auto source = static_cast<IOHandle*>(Resolve_kiv_os_Handle(regs.rdx.x));
+			const auto handle = regs.rdx.x;
+			const auto source = static_cast<IOHandle*>(Resolve_kiv_os_Handle(handle));
 			if (!source) {
 				regs.rax.x = static_cast<decltype(regs.rax.x)>(kiv_os::NOS_Error::Unknown_Error);
+			}
+			if (std::find(pipes.begin(), pipes.end(), handle) != pipes.end()) {
+				source->close();
 			}
 			regs.flags.carry |= !Remove_Handle(regs.rdx.x);
 			delete source;
@@ -278,7 +283,9 @@ void Handle_IO(kiv_hal::TRegisters &regs) {
 		case kiv_os::NOS_File_System::Create_Pipe: {
 			kiv_os::THandle* handle_ptr = reinterpret_cast<kiv_os::THandle*>(regs.rdx.r);
 			std::shared_ptr<Circular_buffer> pipe = std::make_shared<Circular_buffer>();
-			*(handle_ptr)	  = Convert_Native_Handle(static_cast<HANDLE>(new IOHandle_Pipe(pipe, Permission::Write)));
+			auto pipe_to_write = Convert_Native_Handle(static_cast<HANDLE>(new IOHandle_Pipe(pipe, Permission::Write)));
+			pipes.push_back(pipe_to_write);
+			*(handle_ptr) = pipe_to_write;
 			*(handle_ptr + 1) = Convert_Native_Handle(static_cast<HANDLE>(new IOHandle_Pipe(pipe, Permission::Read)));
 		} break;
 	}

@@ -27,9 +27,11 @@ size_t Circular_buffer::write(const char item) {
 	return 0;
 }
 
-char Circular_buffer::read() {
+int Circular_buffer::read() {
 	std::unique_lock<std::mutex> locker(_mutex);
-	_cond.wait(locker, [&](){return !empty(); });
+	_cond.wait(locker, [&]() {return size() > 0 && !is_EOF; });
+
+	if (is_EOF) return -1;
 
 	auto val = buffer[end];
 	full = false;

@@ -24,7 +24,7 @@ public:
 	IOHandle(const uint8_t permission) : _permission(permission) {}
 	virtual size_t read(char* buffer, const size_t buffer_size)  { return 0; }
 	virtual size_t write(char* buffer, const size_t buffer_size) { return 0; }
-
+	virtual void close() {}
 	void check_ACL(Permission acl) {
 		if (!(_permission & acl)) {
 			throw kiv_os::NOS_Error::Permission_Denied;
@@ -88,7 +88,7 @@ public:
 
 	virtual size_t read(char* buffer, const size_t buffer_size) final override;
 	virtual size_t write(char* buffer, const size_t buffer_size) final override;
-
+	virtual void close() final override;
 };
 
 static const std::map<std::string, IOHandle*> SYS_HANDLERS = {

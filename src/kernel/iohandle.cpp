@@ -282,10 +282,6 @@ size_t IOHandle_SYS::read(char* buffer, const size_t buffer_size) {
 size_t IOHandle_Pipe::write(char* buffer, const size_t buffer_size) {
 	IOHandle::check_ACL(Permission::Write);
 
-	if (buffer[buffer_size] != 0) {
-		buffer[buffer_size] = 0;
-	}
-
 	size_t written = 0;
 	for (; written < buffer_size + 1; written++) {
 		_circular_buffer->write(buffer[written]);
@@ -299,9 +295,14 @@ size_t IOHandle_Pipe::read(char* buffer, const size_t buffer_size) {
 
 	size_t read = 0;
 	for (; read < buffer_size; read++) {
-		buffer[read] = _circular_buffer->read();
-		if (buffer[read] == 0) break;
+		auto val = _circular_buffer->read();
+		if (val == -1) break;
+		buffer[read] = val;
 	}
 
 	return read;
+}
+
+void IOHandle_Pipe::close() {
+	_circular_buffer->is_EOF = true;
 }
