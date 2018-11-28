@@ -40,13 +40,14 @@ size_t __stdcall type(const kiv_hal::TRegisters &regs) {
 			return error_code;
 		}
 
+		std::stringstream ss;
 		do {
 			kiv_os_rtl::Read_File(filehandle, buffer, sizeof buffer, read);
-			kiv_os_rtl::Write_File(std_out, buffer, read, written);
+			ss << std::string(buffer, read);
 		} while (read);
 
-		kiv_os_rtl::Write_File(std_out, "\n", 1, written);
-
+		const auto output = ss.str().append("\n");
+		kiv_os_rtl::Write_File(std_out, output.data(), output.size(), written);
 		kiv_os_rtl::Close_Handle(filehandle);
 	}
 	

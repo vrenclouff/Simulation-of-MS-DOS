@@ -43,7 +43,6 @@ size_t IOHandle_Keyboard::read(char* buffer, const size_t buffer_size) {
 		case kiv_hal::NControl_Codes::LF:  break;	//jenom pohltime, ale necteme
 		case kiv_hal::NControl_Codes::NUL: {	//chyba cteni? nebo ctrl+z -> posli signal pro ukonceni
 			return 0;
-			break;
 		}
 			
 		case kiv_hal::NControl_Codes::CR: {	//docetli jsme az po Enter

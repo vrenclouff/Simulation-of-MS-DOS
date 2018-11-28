@@ -35,7 +35,22 @@ size_t __stdcall dir(const kiv_hal::TRegisters &regs) {
 	std::stringstream ss;
 	char buffer[MAX_ENTRY_ITEMS * sizeof(kiv_os::TDir_Entry)];
 	do {
-		if (!kiv_os_rtl::Read_File(dirhandle, buffer, sizeof(buffer), read)) {
+		if (kiv_os_rtl::Read_File(dirhandle, buffer, sizeof(buffer), read)) {
+
+			for (size_t beg = 0; beg < read; beg += sizeof(kiv_os::TDir_Entry)) {
+				const auto dir = reinterpret_cast<kiv_os::TDir_Entry*>(buffer + beg);
+
+				const auto filename = std::string(dir->file_name, sizeof kiv_os::TDir_Entry::file_name);
+				const auto is_dir = dir->file_attributes & static_cast<uint8_t>(kiv_os::NFile_Attributes::Directory);
+				const auto read_only = dir->file_attributes & static_cast<uint8_t>(kiv_os::NFile_Attributes::Read_Only);
+
+				ss
+					<< filename << "\t"
+					<< (is_dir ? "<DIR>" : "<FILE>") << "\t"
+					<< (read_only ? "R" : "R/W") << "\n";
+			}
+		}
+		else {
 			const kiv_os::NOS_Error error = kiv_os_rtl::Last_Error;
 			const auto error_msg = Error_Message(error);
 			const auto error_code = static_cast<uint16_t>(error);
@@ -44,28 +59,12 @@ size_t __stdcall dir(const kiv_hal::TRegisters &regs) {
 			kiv_os_rtl::Exit(error_code);
 			return error_code;
 		}
-
-		if (!read) break;
-
-		for (size_t beg = 0; beg < read; beg += sizeof(kiv_os::TDir_Entry)) {
-
-			const auto dir = reinterpret_cast<kiv_os::TDir_Entry*>(buffer + beg);
-			const auto filename = std::string(dir->file_name, sizeof kiv_os::TDir_Entry::file_name);
-			const auto is_dir = dir->file_attributes & static_cast<uint8_t>(kiv_os::NFile_Attributes::Directory);
-			const auto read_only = dir->file_attributes & static_cast<uint8_t>(kiv_os::NFile_Attributes::Read_Only);
-
-			ss
-				<< filename << "\t"
-				<< (is_dir ? "<DIR>" : "<FILE>") << "\t"
-				<< (read_only ? "R" : "R/W") << "\n"
-			;
-		}
-		const auto text = ss.str();
-		kiv_os_rtl::Write_File(std_out, text.c_str(), text.size(), wrote);
-
-	} while (1);
-
+	} while (read);
 	kiv_os_rtl::Close_Handle(dirhandle);
+
+	const auto text = ss.str();
+	kiv_os_rtl::Write_File(std_out, text.data(), text.size(), wrote);
+
 	kiv_os_rtl::Exit(0);
 
 	return 0;

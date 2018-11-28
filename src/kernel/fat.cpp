@@ -288,7 +288,7 @@ bool kiv_fs::find_entire_dirs(const kiv_fs::Drive_Desc drive, std::vector<kiv_fs
 	auto sectors = root_sectors;
 	kiv_fs::FATEntire_Directory actual_entry;
 	do {
-
+		founded = false;
 		const auto finded_element = fat_tool::parse_entire_name(components.front());
 		components.erase(components.begin());
 
