@@ -19,14 +19,13 @@ size_t __stdcall type(const kiv_hal::TRegisters &regs) {
 		std::vector<std::string> elements;
 		do {
 			if (kiv_os_rtl::Read_File(std_in, buffer, sizeof buffer, read)) {
-				kiv_os_rtl::Write_File(std_out, "\n", 1, written);
 				buffer[read] = 0;
 				elements.push_back(buffer);
 			}
 		} while (read);
 
 		for (const auto& item : elements) {
-			std::cout << item << std::endl;
+			std::cout << item;
 		}
 	}
 	else {
