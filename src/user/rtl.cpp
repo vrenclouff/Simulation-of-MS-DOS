@@ -118,10 +118,11 @@ bool kiv_os_rtl::Clone(kiv_os::THandle& pid, const char* function, const char* a
 	return result;
 }
 
-bool kiv_os_rtl::Wait_For(kiv_os::THandle handlers[]) {
+bool kiv_os_rtl::Wait_For(kiv_os::THandle handle) {
 	kiv_hal::TRegisters regs = Prepare_SysCall_Context(kiv_os::NOS_Service_Major::Process, static_cast<uint8_t>(kiv_os::NOS_Process::Wait_For));
-	regs.rdx.r = reinterpret_cast<decltype(regs.rdx.r)>(handlers);
-	regs.rcx.r = static_cast<decltype(regs.rdx.r)>(sizeof(handlers)/sizeof(kiv_os::THandle*));
+	regs.rdx.r = reinterpret_cast<decltype(regs.rdx.r)>(&handle);
+	//regs.rcx.r = static_cast<decltype(regs.rdx.r)>(handlers_count);
+	regs.rcx.r = 1;
 
 	const bool result = kiv_os::Sys_Call(regs);
 	return result;

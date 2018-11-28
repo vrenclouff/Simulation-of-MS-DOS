@@ -67,7 +67,7 @@ size_t __stdcall rgen(const kiv_hal::TRegisters &regs) {
 		kiv_os_rtl::Write_File(std_out, fltout, strlen(fltout), written);
 	}
 
-	kiv_os_rtl::Wait_For(&handler);
+	kiv_os_rtl::Wait_For(handler);
 	kiv_os_rtl::Read_Exit_Code(handler);
 
 	kiv_os_rtl::Exit(0);

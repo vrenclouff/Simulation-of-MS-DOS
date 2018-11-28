@@ -33,7 +33,7 @@ namespace kiv_os_rtl {
 
 	bool Clone(kiv_os::THandle& pid, const char* function, const char* arguments, kiv_os::THandle stdin_handle, kiv_os::THandle stdout_handle);
 
-	bool Wait_For(kiv_os::THandle handlers[]);
+	bool Wait_For(kiv_os::THandle handle);
 
 	bool Exit(uint16_t exitcode);
 

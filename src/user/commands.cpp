@@ -86,8 +86,7 @@ bool parse_cmd(const std::string& cmd_line, const kiv_os::THandle std_in, const 
 
 	auto pipe_itr = pipes.begin();
 	for (const auto& pid : pids) {
-		kiv_os::THandle th[] = { pid };
-		kiv_os_rtl::Wait_For(th);
+		kiv_os_rtl::Wait_For(pid);
 		if (pipe_itr != pipes.end()) {
 			kiv_os_rtl::Close_Handle((*pipe_itr)[0]);
 			pipe_itr++;
