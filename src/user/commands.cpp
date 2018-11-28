@@ -9,8 +9,9 @@
 #include <array>
 #include "commands.h"
 
-#define REDIRECT	">"
-#define PIPE		"|"
+#define REDIRECT_OUT	">"
+#define REDIRECT_IN		"<"
+#define PIPE			"|"
 
 std::string normalize_process_name(const std::string& process_name) {
 	if (process_table.find(process_name) != process_table.end()) {
@@ -24,12 +25,13 @@ bool parse_cmd(const std::string& cmd_line, const kiv_os::THandle std_in, const 
 	std::vector<Command> programs;
 	std::string to_file;
 	std::istringstream iss(cmd_line);
-	bool is_was_fnc = false, is_redirect = false;
+	bool is_was_fnc = false, is_redirect_out = false, is_redirect_in = false;
 	for (auto str = std::istream_iterator<std::string>(iss); str != std::istream_iterator<std::string>(); str++) {
 		const auto& item = *str;
 		if (item.compare(PIPE) == 0) { is_was_fnc = false; continue; }
-		if (item.compare(REDIRECT) == 0) { is_redirect = true; continue; }
-		if (is_redirect) { to_file = item; break; }
+		if (item.compare(REDIRECT_OUT) == 0) { is_redirect_out = true; continue; }
+		if (item.compare(REDIRECT_IN)  == 0) { is_redirect_in  = true; continue; }
+		if (is_redirect_out || is_redirect_in) { to_file = item; break; }
 		if (is_was_fnc) { programs.back().param.append(item).append(" "); continue; }
 		programs.push_back({ item, "" });
 		is_was_fnc = true;
@@ -44,10 +46,17 @@ bool parse_cmd(const std::string& cmd_line, const kiv_os::THandle std_in, const 
 		const auto& program = *program_itr;
 		if (program_itr == programs.end() - 1 && !to_file.empty()) {
 			// open the file for the redirection
-			if (!kiv_os_rtl::Open_File(to_file.data(), to_file.size(), out, false, static_cast<kiv_os::NFile_Attributes>(0))) {
+			kiv_os::THandle file_handle;
+			if (!kiv_os_rtl::Open_File(to_file.data(), to_file.size(), file_handle, false, static_cast<kiv_os::NFile_Attributes>(0))) {
 				error = { Error_Message(kiv_os_rtl::Last_Error) };
 				return false;
 			}
+			if (is_redirect_out) {
+				out = file_handle;
+			}
+			else {
+				in = file_handle;
+			} 
 		}
 		if ((program_itr + 1) != programs.end()) {
 			// create the pipe
