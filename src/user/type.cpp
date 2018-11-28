@@ -24,9 +24,11 @@ size_t __stdcall type(const kiv_hal::TRegisters &regs) {
 			}
 		} while (read);
 
-		for (const auto& item : elements) {
-			std::cout << item;
-		}
+		std::stringstream lines;
+		std::copy(elements.begin(), elements.end(), std::ostream_iterator<std::string>(lines, ""));
+		const auto res = lines.str();
+		kiv_os_rtl::Write_File(std_out, res.c_str(), res.length(), written);
+
 	}
 	else {
 		kiv_os::THandle filehandle;
