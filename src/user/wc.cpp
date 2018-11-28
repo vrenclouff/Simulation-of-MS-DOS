@@ -12,54 +12,54 @@ size_t __stdcall wc(const kiv_hal::TRegisters &regs) {
 	const auto std_out = static_cast<kiv_os::THandle>(regs.rbx.x);
 	const auto std_in = static_cast<kiv_os::THandle>(regs.rax.x);
 
-	const auto input = std::string(reinterpret_cast<char*>(regs.rdi.r));
+	std::string first, second, arg;
 
-	std::istringstream is(input);
-	std::string first;
-	std::string second;
-	std::string arg;
-	char space = ' ';
+	std::istringstream input_stream(reinterpret_cast<char*>(regs.rdi.r));
+	auto input_itr = std::istream_iterator<std::string>(input_stream);
 
-	std::getline(is, first, space);
-	std::getline(is, second, space);
-	std::getline(is, arg);
-
-	size_t written;
-	size_t read;
-	const std::string linebreak = "\n";
-
-	if (first.compare("\\v") || second.compare("\\c\"\"") || !arg.empty())
-	{
-		const std::string incorrect_Use = "The syntax of the command is incorrect.\n";
-		kiv_os_rtl::Write_File(std_out, incorrect_Use.c_str(), incorrect_Use.length(), written);
-		kiv_os_rtl::Exit(1);
-		return 1;
+	first = *input_itr++;
+	second = *input_itr++;
+	for (; input_itr != std::istream_iterator<std::string>(); input_itr++) {
+		arg.append(*input_itr);
 	}
 
+	size_t written, read;
+	
+	if (first.compare("/c") != 0 || second.compare("/v\"\"") != 0 || !arg.empty()) {
+		const kiv_os::NOS_Error error = kiv_os::NOS_Error::Invalid_Argument;
+		const auto error_msg = Error_Message(error);
+		const auto error_code = static_cast<uint16_t>(error);
+
+		kiv_os_rtl::Write_File(std_out, error_msg.data(), error_msg.length(), written);
+		kiv_os_rtl::Exit(error_code);
+		return error_code;
+	}
+	
 	char buffer[1024];
 	std::stringstream stream;
 	do {
-		if (!kiv_os_rtl::Read_File(std_in, buffer, sizeof buffer, read)) {
+		if (kiv_os_rtl::Read_File(std_in, buffer, sizeof buffer, read)) {
+			stream << std::string(buffer, read);
+		}
+		else {
 			const kiv_os::NOS_Error error = kiv_os_rtl::Last_Error;
 			const auto error_msg = Error_Message(error);
-			kiv_os_rtl::Write_File(std_out, error_msg.data(), error_msg.length(), written);
 			const auto error_code = static_cast<uint16_t>(error);
+
+			kiv_os_rtl::Write_File(std_out, error_msg.data(), error_msg.length(), written);
 			kiv_os_rtl::Exit(error_code);
 			return error_code;
 		}
-		stream << std::string(buffer, read);
 	} while (read);
 	
-	std::istream_iterator<std::string> begin(stream);
-	std::istream_iterator<std::string> end;
+	std::vector<std::string> elements;
+	std::string line;
+	while (std::getline(stream, line)) {
+		elements.push_back(line);
+	}
 
-	std::vector<std::string> elements(begin, end);
-
-	std::string wordcount = std::to_string(elements.size());
-	std::string output = wordcount;
-
-	kiv_os_rtl::Write_File(std_out, output.c_str(), output.length(), written);
-	kiv_os_rtl::Write_File(std_out, linebreak.c_str(), linebreak.length(), written);
+	const auto nm_of_lines = std::to_string(elements.size()).append("\n");
+	kiv_os_rtl::Write_File(std_out, nm_of_lines.data(), nm_of_lines.size(), written);
 
 	kiv_os_rtl::Exit(0);
 	return 0;
