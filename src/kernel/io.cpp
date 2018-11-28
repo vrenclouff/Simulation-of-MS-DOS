@@ -223,12 +223,16 @@ void Handle_IO(kiv_hal::TRegisters &regs) {
 
 		case kiv_os::NOS_File_System::Read_File: {
 			const auto source = static_cast<IOHandle*>(Resolve_kiv_os_Handle(regs.rdx.x));
-			regs.rax.r = source->read(reinterpret_cast<char*>(regs.rdi.r), regs.rcx.r);
+			auto buffer = reinterpret_cast<char*>(regs.rdi.r);
+			const auto buffer_size = regs.rcx.r;
+			regs.rax.r = source->read(buffer, buffer_size);
 		} break;
 
 		case kiv_os::NOS_File_System::Write_File: {
 			const auto source = static_cast<IOHandle*>(Resolve_kiv_os_Handle(regs.rdx.x));
-			regs.rax.r = source->write(reinterpret_cast<char*>(regs.rdi.r), regs.rcx.r);
+			auto buffer = reinterpret_cast<char*>(regs.rdi.r);
+			const auto buffer_size = regs.rcx.r;
+			regs.rax.r = source->write(buffer, buffer_size);
 			regs.flags.carry |= (regs.rax.r == 0 ? 1 : 0);
 		} break;
 
