@@ -71,6 +71,7 @@ size_t IOHandle_Keyboard::read(char* buffer, const size_t buffer_size) {
 }
 
 size_t IOHandle_File::write(char * buffer, const size_t buffer_size) {
+	std::lock_guard<std::mutex> locker(_io_mutex);
 	IOHandle::check_ACL(Permission::Write);
 
 	const auto& boot_block = _drive.boot_block;
@@ -148,6 +149,7 @@ size_t IOHandle_File::write(char * buffer, const size_t buffer_size) {
 }
 
 size_t IOHandle_File::read(char* buffer, const size_t buffer_size) {
+	std::lock_guard<std::mutex> locker(_io_mutex);
 	IOHandle::check_ACL(Permission::Read);
 
 	const auto bytes_per_sector = _drive.boot_block.bytes_per_sector;
@@ -264,6 +266,7 @@ size_t procfs(char* buffer, const size_t buffer_size) {
 
 size_t IOHandle_SYS::read(char* buffer, const size_t buffer_size) {
 	IOHandle::check_ACL(Permission::Read);
+	std::lock_guard<std::mutex> locker(_io_mutex);
 
 	switch (_type) {
 		case SYS_Type::PROCFS: return procfs(buffer, buffer_size);
@@ -273,6 +276,7 @@ size_t IOHandle_SYS::read(char* buffer, const size_t buffer_size) {
 
 size_t IOHandle_Pipe::write(char* buffer, const size_t buffer_size) {
 	IOHandle::check_ACL(Permission::Write);
+	std::lock_guard<std::mutex> locker(_io_mutex);
 
 	size_t written = 0;
 	for (; written < buffer_size; written++) {
@@ -284,6 +288,7 @@ size_t IOHandle_Pipe::write(char* buffer, const size_t buffer_size) {
 
 size_t IOHandle_Pipe::read(char* buffer, const size_t buffer_size) {
 	IOHandle::check_ACL(Permission::Read);
+	std::lock_guard<std::mutex> locker(_io_mutex);
 
 	size_t read = 0;
 	for (; read < buffer_size; read++) {

@@ -13,7 +13,7 @@
 
 namespace fs = std::filesystem;
 
-
+std::mutex _io_mutex;
 std::map<std::string, kiv_fs::Drive_Desc> registred_drivers;
 std::vector<kiv_os::THandle> pipes;
 
@@ -52,6 +52,7 @@ bool is_exist_dir(std::string path) {
 }
 
 IOHandle* Open_File(std::string absolute_path, const kiv_os::NOpen_File fm, const kiv_os::NFile_Attributes attributes, kiv_os::NOS_Error& error) {
+	std::lock_guard<std::mutex> locker(_io_mutex);
 
 	std::vector<std::string> components;
 	to_absolute_components(components, absolute_path);
@@ -148,6 +149,7 @@ IOHandle* Open_File(std::string absolute_path, const kiv_os::NOpen_File fm, cons
 }
 
 bool Remove_File(std::string absolute_path, kiv_os::NOS_Error& error) {
+	std::lock_guard<std::mutex> locker(_io_mutex);
 
 	std::vector<std::string> components;
 	to_absolute_components(components, absolute_path);

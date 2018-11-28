@@ -19,6 +19,8 @@ enum Permission : uint8_t {
 class IOHandle {
 private:
 	const uint8_t _permission ;
+protected:
+	std::mutex _io_mutex;
 public:
 	IOHandle() : _permission(Permission::Read) {}
 	IOHandle(const uint8_t permission) : _permission(permission) {}
