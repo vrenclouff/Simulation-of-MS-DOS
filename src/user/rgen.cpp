@@ -7,8 +7,18 @@
 #include <cfloat>
 #include <limits>
 
-void wait_For_Ctrlz(const kiv_hal::TRegisters &regs) {
+bool rgen_exit_signaled = false;
 
+void rgen_Sigterm_Handler(const kiv_hal::TRegisters &regs) {
+	rgen_exit_signaled = true;
+}
+
+void ctrlZ_Sigterm_Handler(const kiv_hal::TRegisters &regs) {
+	kiv_os_rtl::Exit(0);
+}
+
+void wait_For_Ctrlz(const kiv_hal::TRegisters &regs) {
+	kiv_os_rtl::Register_Signal_Handler(kiv_os::NSignal_Id::Terminate, reinterpret_cast<kiv_os::TThread_Proc>(ctrlZ_Sigterm_Handler));
 	const auto std_in = static_cast<kiv_os::THandle>(regs.rax.x);
 	bool* generating = reinterpret_cast<bool*>(regs.rdi.r);
 
@@ -24,6 +34,8 @@ void wait_For_Ctrlz(const kiv_hal::TRegisters &regs) {
 }
 
 size_t __stdcall rgen(const kiv_hal::TRegisters &regs) {
+
+	kiv_os_rtl::Register_Signal_Handler(kiv_os::NSignal_Id::Terminate, reinterpret_cast<kiv_os::TThread_Proc>(rgen_Sigterm_Handler));
 
 	const auto std_in = static_cast<kiv_os::THandle>(regs.rax.x);
 	const auto std_out = static_cast<kiv_os::THandle>(regs.rbx.x);
@@ -49,7 +61,7 @@ size_t __stdcall rgen(const kiv_hal::TRegisters &regs) {
 	std::mt19937 generator(rd());
 
 	char fltout[sizeof(float) * 8];
-	while (generating) {
+	while (generating && !rgen_exit_signaled) {
 		float rndflt = std::generate_canonical<float, std::numeric_limits<float>::digits>(generator);
 		sprintf_s(fltout, "%f\n", rndflt);
 		kiv_os_rtl::Write_File(std_out, fltout, strlen(fltout), written);

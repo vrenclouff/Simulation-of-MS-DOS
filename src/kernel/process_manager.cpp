@@ -11,9 +11,19 @@
 
 // ---PRIVATE METHODS---
 
-Process* ProcessManager::_getRunningProcess()
+size_t ProcessManager::_getRunningTid()
 {
 	size_t thread_id = std::hash<std::thread::id>()(std::this_thread::get_id());
+	if (overriden_running_thread)
+	{
+		thread_id = overriden_running_thread->tid;
+	}
+	return thread_id;
+}
+
+Process* ProcessManager::_getRunningProcess()
+{
+	size_t thread_id = _getRunningTid();
 	// check if thread is main thread
 	if (processes.find(thread_id) != processes.end())
 	{
@@ -25,7 +35,7 @@ Process* ProcessManager::_getRunningProcess()
 
 Thread* ProcessManager::_getRunningThread()
 {
-	size_t thread_id = std::hash<std::thread::id>()(std::this_thread::get_id());
+	size_t thread_id = _getRunningTid();
 	return getThreadByTid(thread_id);
 }
 
@@ -81,13 +91,13 @@ void ProcessManager::removeProcess(kiv_os::THandle handle)
 
 Process* ProcessManager::getRunningProcess()
 {
-	std::lock_guard<std::mutex> lock(mtx);
+	std::lock_guard<std::recursive_mutex> lock(mtx);
 	return _getRunningProcess();
 }
 
 Thread* ProcessManager::getRunningThread()
 {
-	std::lock_guard<std::mutex> lock(mtx);
+	std::lock_guard<std::recursive_mutex> lock(mtx);
 	return _getRunningThread();
 }
 
@@ -131,7 +141,7 @@ void ProcessManager::handleClone(kiv_hal::TRegisters &regs)
 
 void ProcessManager::createProcess(kiv_hal::TRegisters &regs, bool first_process)
 {
-	std::lock_guard<std::mutex> lock(mtx);
+	std::lock_guard<std::recursive_mutex> lock(mtx);
 	regs.flags.carry = 0;
 	char* funcName = reinterpret_cast<char*>(regs.rdx.r);
 	std::string funcNameStr(funcName);
@@ -180,7 +190,7 @@ void ProcessManager::createProcess(kiv_hal::TRegisters &regs, bool first_process
 
 void ProcessManager::createThread(kiv_hal::TRegisters &regs)
 {	
-	std::lock_guard<std::mutex> lock(mtx);
+	std::lock_guard<std::recursive_mutex> lock(mtx);
 	regs.flags.carry = 0;
 	kiv_os::TThread_Proc programAddress = (kiv_os::TThread_Proc) regs.rdx.r;
 
@@ -260,7 +270,7 @@ void ProcessManager::handleExit(kiv_hal::TRegisters &regs)
 	mtx.lock();
 	uint16_t exitCode = static_cast<uint16_t>(regs.rcx.x);
 	Process* thisProcess = _getRunningProcess();
-	size_t thread_id = std::hash<std::thread::id>()(std::this_thread::get_id());
+	size_t thread_id = _getRunningTid();
 	mtx.unlock();
 	thisProcess->stopThread(exitCode, thread_id);
 }
@@ -269,7 +279,7 @@ void ProcessManager::handleReadExitCode(kiv_hal::TRegisters &regs)
 {
 	// dx = process / thread handle
 	// OUT: cx = exitcode
-	std::lock_guard<std::mutex> lock(mtx);
+	std::lock_guard<std::recursive_mutex> lock(mtx);
 	kiv_os::THandle target_handle = static_cast<uint16_t>(regs.rdx.x);
 	regs.flags.carry = 0;
 	if (handles.count(target_handle) == 0)
@@ -306,7 +316,7 @@ void ProcessManager::registerSignalHandler(kiv_hal::TRegisters &regs)
 {
 	// rcx NSignal_Id
 	// rdx: pointer na TThread_Proc, kde pri jeho volani context.rcx bude id signalu (0 = default handler)
-	std::lock_guard<std::mutex> lock(mtx);
+	std::lock_guard<std::recursive_mutex> lock(mtx);
 	regs.flags.carry = 0;
 	kiv_os::NSignal_Id signal = static_cast<kiv_os::NSignal_Id>(regs.rcx.r);
 	if (signal != kiv_os::NSignal_Id::Terminate)
@@ -334,7 +344,7 @@ void ProcessManager::shutdown(kiv_hal::TRegisters &regs)
 {
 	// rcx NSignal_Id
 	// rdx: pointer na TThread_Proc, kde pri jeho volani context.rcx bude id signalu (0 = default handler)
-	std::lock_guard<std::mutex> lock(mtx);
+	std::lock_guard<std::recursive_mutex> lock(mtx);
 
 	// send sigterm
 	kiv_hal::TRegisters sigterm_regs{ 0 };
@@ -343,14 +353,16 @@ void ProcessManager::shutdown(kiv_hal::TRegisters &regs)
 	{
 		for (auto const& thread_entry : process_entry.second->threads)
 		{
+			overriden_running_thread = thread_entry.second;
 			thread_entry.second->handlers[kiv_os::NSignal_Id::Terminate](sigterm_regs);
+			overriden_running_thread = nullptr;
 		}
 	}
 }
 
 std::string ProcessManager::getProcessTable()
 {
-	std::lock_guard<std::mutex> lock(mtx);
+	std::lock_guard<std::recursive_mutex> lock(mtx);
 	std::ostringstream result;
 	//result << "PID\tPPID\tSTATUS\tCOMMAND" << std::endl;
 	for (auto const& process_entry : processes) {

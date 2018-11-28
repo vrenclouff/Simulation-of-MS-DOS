@@ -7,10 +7,12 @@
 class ProcessManager
 {
 private:
-	std::mutex mtx; // mutex for creating new process
+	std::recursive_mutex mtx; // mutex for creating new process
 	std::map<size_t, Process*> processes;
 	std::map<kiv_os::THandle, size_t> handles; // tid mapped to THandle
+	Thread* overriden_running_thread = nullptr;
 	kiv_os::THandle last_handle = 0;
+	size_t _getRunningTid();
 	Process* _getRunningProcess();
 	Thread* _getRunningThread();
 	Thread* getThreadByTid(size_t tid);
