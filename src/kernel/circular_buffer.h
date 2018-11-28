@@ -11,7 +11,7 @@ private:
 	std::mutex _mutex;
 	std::condition_variable _cond;
 
-	char buffer[BUFFER_SIZE];
+	char buffer[BUFFER_SIZE] = { 0 };
 	size_t start = 0, end = 0;
 	bool full = false;
 

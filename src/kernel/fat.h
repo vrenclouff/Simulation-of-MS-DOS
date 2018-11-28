@@ -58,7 +58,7 @@ namespace kiv_fs {
 	};
 
 	struct File_Desc {
-		kiv_fs::FATEntire_Directory entire_dir;
+		kiv_fs::FATEntire_Directory entire_dir = { 0 };
 		std::vector<uint16_t> sectors;
 	};
 

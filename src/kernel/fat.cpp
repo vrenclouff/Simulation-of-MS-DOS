@@ -204,8 +204,8 @@ void kiv_fs::remove_sectors_in_fat(const kiv_fs::FATEntire_Directory& entire_dir
 	dap.lba_index = fat_offset.quot;
 	kiv_hal::Call_Interrupt_Handler(kiv_hal::NInterrupt::Disk_IO, regs);
 
-	next_fake_sector = fat[fat_offset.rem] | fat[fat_offset.rem + 1] << 8;
-	fat[fat_offset.rem] = fat[fat_offset.rem + 1] = kiv_fs::FAT_Attributes::Free;
+	next_fake_sector = (uint16_t)fat.at((size_t)fat_offset.rem) | (uint16_t)fat.at((size_t)fat_offset.rem + 1) << 8;
+	fat[(size_t)fat_offset.rem] = fat.at((size_t)fat_offset.rem + 1) = kiv_fs::FAT_Attributes::Free;
 
 	while (next_fake_sector != kiv_fs::FAT_Attributes::End) {
 
@@ -260,7 +260,7 @@ std::vector<uint16_t> sectors_for_entire_dir(const kiv_fs::FATEntire_Directory& 
 			next_fat_offset = fat_offset;
 		}
 
-		next_fake_sector = fat[fat_offset.rem] | fat[fat_offset.rem + 1] << 8;
+		next_fake_sector = fat[(size_t)fat_offset.rem] |fat[(size_t)fat_offset.rem + 1] << 8;
 		fake_sector = next_fake_sector;
 
 	} while (next_fake_sector != kiv_fs::FAT_Attributes::End);
@@ -364,7 +364,7 @@ bool kiv_fs::find_free_sectors(std::vector<std::div_t>& fat_offsets, const uint8
 
 			fat_offset.rem = 0;
 		}
-		uint16_t fat_cell = fat.at(fat_offset.rem) | fat.at(fat_offset.rem + 1) << 8;
+		uint16_t fat_cell = (uint16_t)fat.at((size_t)fat_offset.rem) | (uint16_t)fat.at((size_t)fat_offset.rem + 1) << 8;
 		if (fat_cell == kiv_fs::FAT_Attributes::Free) {
 			fat_offsets.push_back(fat_offset);
 		}
@@ -445,7 +445,7 @@ bool kiv_fs::save_to_dir(const uint8_t drive_id, const std::vector<uint16_t> sec
 bool kiv_fs::save_to_fat(const uint8_t drive_id, const std::vector<std::div_t> fat_offsets, const size_t bytes_per_sector, const uint16_t offset, std::vector<uint16_t>& sectors, uint16_t& first_sector) {
 
 	auto find_sector = [&](const std::div_t& ofst) {
-		return uint16_t(((((ofst.quot - 1) * bytes_per_sector) + ofst.rem) / MULTIPLY_CONST));
+		return uint16_t((((((size_t)ofst.quot - 1) * bytes_per_sector) + ofst.rem) / MULTIPLY_CONST));
 	};
 
 	auto actual_fat = fat_offsets.front();
@@ -482,10 +482,10 @@ bool kiv_fs::save_to_fat(const uint8_t drive_id, const std::vector<std::div_t> f
 		sectors.push_back(fake_sector + offset);
 		auto index = actual_fat.rem;
 		fat[index] = fake_sector & 0xff;
-		fat[index + 1] = (fake_sector & 0xff00) >> 8;
+		fat.at((size_t)index + 1) = (fake_sector & 0xff00) >> 8;
 		actual_fat = *next_fat;
 	}
-	fat[actual_fat.rem] = fat[actual_fat.rem + 1] = kiv_fs::FAT_Attributes::End >> 8;
+	fat.at((size_t)actual_fat.rem) = fat.at((size_t)actual_fat.rem + 1) = kiv_fs::FAT_Attributes::End >> 8;
 
 	regs.rax.h = static_cast<decltype(regs.rax.h)>(kiv_hal::NDisk_IO::Write_Sectors);
 	kiv_hal::Call_Interrupt_Handler(kiv_hal::NInterrupt::Disk_IO, regs);

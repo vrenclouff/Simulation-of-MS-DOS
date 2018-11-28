@@ -114,7 +114,7 @@ size_t IOHandle_File::write(char * buffer, const size_t buffer_size) {
 		_file.sectors.push_back(sector);
 
 		if (buffer_size - buffer_seek < bytes_per_sector) {
-			data.resize(size_in_blocks * bytes_per_sector);
+			data.resize((size_t)size_in_blocks * (size_t)bytes_per_sector);
 		}
 
 		dap.sectors = static_cast<void*>(data.data() + buffer_seek);

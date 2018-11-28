@@ -8,10 +8,7 @@ void defaultTerminateHandle(const kiv_hal::TRegisters &context)
 }
 
 Process::Process(std::string userfunc_name, size_t parent_pid) :
-	userfunc_name(userfunc_name), parent_pid(parent_pid)
-{
-	state = ProcessState::prepared;
-}
+	userfunc_name(userfunc_name), parent_pid(parent_pid), state(ProcessState::prepared), handle(0), parent_handle(0), pid(0) {}
 
 size_t Process::startThread(kiv_hal::TRegisters child_context, kiv_os::TThread_Proc address)
 {
