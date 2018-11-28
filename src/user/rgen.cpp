@@ -26,6 +26,10 @@ void wait_For_Ctrlz(const kiv_hal::TRegisters &regs) {
 	size_t read = 1;
 	while (read) {
 		kiv_os_rtl::Read_File(std_in, buffer, sizeof buffer, read);
+		if (buffer[0] == 4)
+		{
+			break;
+		}
 	}
 
 	*generating = false;

@@ -29,6 +29,7 @@ size_t __stdcall shell(const kiv_hal::TRegisters &regs) {
 		}
 
 		if (kiv_os_rtl::Read_File(std_in, buffer, sizeof buffer, read)) {
+			if (read == 0) break;
 			if (read == 1) continue;
 
 			buffer[--read] = 0;

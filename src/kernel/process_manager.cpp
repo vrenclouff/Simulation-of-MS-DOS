@@ -226,8 +226,8 @@ void ProcessManager::handleWaitFor(kiv_hal::TRegisters &regs)
 	size_t handles_size = static_cast<size_t>(regs.rcx.r);
 	std::vector<Thread*> waiting_for(handles_size);
 
-	std::unique_lock<std::mutex> lk(Thread::endMtx);
 	mtx.lock();
+	std::unique_lock<std::mutex> lk(Thread::endMtx);
 	for (int i = 0; i < handles_size; i++)
 	{
 		if (handles.count(registered_handles[i]) == 0)
