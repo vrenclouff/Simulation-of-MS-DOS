@@ -227,7 +227,6 @@ void ProcessManager::handleWaitFor(kiv_hal::TRegisters &regs)
 	std::vector<Thread*> waiting_for(handles_size);
 
 
-	std::unique_lock<std::recursive_mutex> lock(mtx);
 	std::unique_lock<std::mutex> lk(Thread::endMtx);
 	for (int i = 0; i < handles_size; i++)
 	{
@@ -236,7 +235,6 @@ void ProcessManager::handleWaitFor(kiv_hal::TRegisters &regs)
 			regs.flags.carry = 1;
 			regs.rax.x = static_cast<uint16_t>(kiv_os::NOS_Error::Invalid_Argument);
 			lk.unlock();
-			lock.unlock();
 			return;
 		}
 		size_t tid = handles[registered_handles[i]];
@@ -245,11 +243,9 @@ void ProcessManager::handleWaitFor(kiv_hal::TRegisters &regs)
 		{
 			regs.rax.r = static_cast<uint64_t>(registered_handles[i]);
 			lk.unlock();
-			lock.unlock();
 			return;
 		}
 	}
-	lock.unlock();
 
 	while (true)
 	{
