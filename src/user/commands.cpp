@@ -94,6 +94,10 @@ bool parse_cmd(const std::string& cmd_line, const kiv_os::THandle std_in, const 
 		kiv_os_rtl::Read_Exit_Code(pid);
 	}
 
+	for (const auto& pipe : pipes) {
+		kiv_os_rtl::Close_Handle(pipe[1]);
+	}
+
 	return true;
 }
 

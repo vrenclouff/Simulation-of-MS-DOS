@@ -157,7 +157,7 @@ void ProcessManager::createProcess(kiv_hal::TRegisters &regs, bool first_process
 	size_t parent_pid = 0;
 	kiv_os::THandle parent_handle = 0;
 	kiv_os::THandle stdin_handle = regs.rbx.e >> 16;
-	kiv_os::THandle stdout_handle = regs.rbx.e & 0x00ff;
+	kiv_os::THandle stdout_handle = regs.rbx.e & 0xFFFF;
 	std::string dir;
 
 	if (!first_process)

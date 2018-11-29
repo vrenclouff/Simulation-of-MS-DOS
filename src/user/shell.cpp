@@ -4,15 +4,15 @@
 
 #define EXIT	"exit"
 
-bool exit_signaled = false;
-bool shell_echo = true;
-void SIGTERM_Handler(const kiv_hal::TRegisters &regs) {
-	exit_signaled = true;
+std::atomic_bool is_sigterm_shell = false;
+std::atomic_bool shell_echo = true;
+void SIGTERM_Handler_shell(const kiv_hal::TRegisters &regs) {
+	is_sigterm_shell = true;
 }
 
 size_t __stdcall shell(const kiv_hal::TRegisters &regs) {
 
-	kiv_os_rtl::Register_Signal_Handler(kiv_os::NSignal_Id::Terminate, reinterpret_cast<kiv_os::TThread_Proc>(SIGTERM_Handler));
+	kiv_os_rtl::Register_Signal_Handler(kiv_os::NSignal_Id::Terminate, reinterpret_cast<kiv_os::TThread_Proc>(SIGTERM_Handler_shell));
 
 	const auto std_in = static_cast<kiv_os::THandle>(regs.rax.x);
 	const auto std_out = static_cast<kiv_os::THandle>(regs.rbx.x);
@@ -41,7 +41,7 @@ size_t __stdcall shell(const kiv_hal::TRegisters &regs) {
 				kiv_os_rtl::Write_File(std_out, error.what.data(), error.what.size(), written);
 			}
 
-			if (exit_signaled) break;
+			if (is_sigterm_shell) break;
 		}
 		else {
 			break;	//EOF
