@@ -267,11 +267,11 @@ void ProcessManager::handleWaitFor(kiv_hal::TRegisters &regs)
 void ProcessManager::handleExit(kiv_hal::TRegisters &regs)
 {
 	// CX = exit code
-	mtx.lock();
+	std::unique_lock <std::recursive_mutex> lock(mtx);
 	uint16_t exitCode = static_cast<uint16_t>(regs.rcx.x);
 	Process* thisProcess = _getRunningProcess();
 	size_t thread_id = _getRunningTid();
-	mtx.unlock();
+	lock.unlock();
 	thisProcess->stopThread(exitCode, thread_id);
 }
 
