@@ -218,6 +218,7 @@ void Handle_IO(kiv_hal::TRegisters &regs) {
 				regs.rax.x = static_cast<decltype(regs.rax.x)>(error);
 				break;
 			}
+			regs.flags.carry = 0;
 			regs.rax.x = Convert_Native_Handle(static_cast<HANDLE>(source));
 		} break;
 
@@ -226,6 +227,7 @@ void Handle_IO(kiv_hal::TRegisters &regs) {
 			auto buffer = reinterpret_cast<char*>(regs.rdi.r);
 			const auto buffer_size = regs.rcx.r;
 			regs.rax.r = source->read(buffer, buffer_size);
+			regs.flags.carry = 0;
 		} break;
 
 		case kiv_os::NOS_File_System::Write_File: {
@@ -250,6 +252,7 @@ void Handle_IO(kiv_hal::TRegisters &regs) {
 			const auto source = static_cast<IOHandle*>(Resolve_kiv_os_Handle(handle));
 			if (!source) {
 				regs.rax.x = static_cast<decltype(regs.rax.x)>(kiv_os::NOS_Error::Unknown_Error);
+				regs.flags.carry = 1;
 			}
 			if (std::find(pipes.begin(), pipes.end(), handle) != pipes.end()) {
 				source->close();
@@ -266,6 +269,7 @@ void Handle_IO(kiv_hal::TRegisters &regs) {
 			const size_t size = buffer_size <= working_dir.size() ? buffer_size : working_dir.size();
 			std::copy(&working_dir[0], &working_dir[0] + size, path_buffer);
 			regs.rax.r = size;
+			regs.flags.carry = 0;
 		} break;
 
 		case kiv_os::NOS_File_System::Set_Working_Dir: {
@@ -275,6 +279,7 @@ void Handle_IO(kiv_hal::TRegisters &regs) {
 
 			if (is_exist_dir(full_path)) {
 				process->working_dir = full_path;
+				regs.flags.carry = 0;
 			}
 			else {
 				regs.flags.carry = 1;
@@ -293,6 +298,7 @@ void Handle_IO(kiv_hal::TRegisters &regs) {
 			pipes.push_back(pipe_to_write);
 			*(handle_ptr) = pipe_to_write;
 			*(handle_ptr + 1) = Convert_Native_Handle(static_cast<HANDLE>(new IOHandle_Pipe(pipe, Permission::Read)));
+			regs.flags.carry = 0;
 		} break;
 	}
 }
