@@ -7,13 +7,10 @@
 #include <iterator>
 #include <string>
 #include <array>
-#include <mutex>
 
 #define REDIRECT_OUT	">"
 #define REDIRECT_IN		"<"
 #define PIPE			"|"
-
-std::mutex CMD_Guard;
 
 std::string normalize_process_name(const std::string& process_name) {
 	if (process_table.find(process_name) != process_table.end()) {
@@ -23,8 +20,6 @@ std::string normalize_process_name(const std::string& process_name) {
 }
 
 bool parse_cmd(const std::string& cmd_line, const kiv_os::THandle std_in, const kiv_os::THandle std_out, cmd::Error& error) {
-	std::lock_guard<std::mutex> guard(CMD_Guard);
-
 	const struct Command { std::string name; std::string param; };
 	std::vector<Command> programs;
 	std::vector<std::array<kiv_os::THandle, 2>> pipes;
