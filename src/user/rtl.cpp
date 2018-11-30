@@ -14,6 +14,7 @@ kiv_hal::TRegisters Prepare_SysCall_Context(kiv_os::NOS_Service_Major major, uin
 	kiv_hal::TRegisters regs;
 	regs.rax.h = static_cast<decltype(regs.rax.h)>(major);
 	regs.rax.l = minor;
+	regs.flags.carry = 0;
 	return regs;
 }
 

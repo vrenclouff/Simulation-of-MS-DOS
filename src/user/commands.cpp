@@ -7,11 +7,13 @@
 #include <iterator>
 #include <string>
 #include <array>
-#include "commands.h"
+#include <mutex>
 
 #define REDIRECT_OUT	">"
 #define REDIRECT_IN		"<"
 #define PIPE			"|"
+
+std::mutex CMD_Guard;
 
 std::string normalize_process_name(const std::string& process_name) {
 	if (process_table.find(process_name) != process_table.end()) {
@@ -21,8 +23,15 @@ std::string normalize_process_name(const std::string& process_name) {
 }
 
 bool parse_cmd(const std::string& cmd_line, const kiv_os::THandle std_in, const kiv_os::THandle std_out, cmd::Error& error) {
+	std::lock_guard<std::mutex> guard(CMD_Guard);
+
 	const struct Command { std::string name; std::string param; };
 	std::vector<Command> programs;
+	std::vector<std::array<kiv_os::THandle, 2>> pipes;
+	std::vector<kiv_os::THandle> pids;
+	bool is_redirection = false;
+	kiv_os::THandle file_handle;
+
 	std::string to_file;
 	std::istringstream iss(cmd_line);
 	bool is_was_fnc = false, is_redirect_out = false, is_redirect_in = false;
@@ -30,7 +39,7 @@ bool parse_cmd(const std::string& cmd_line, const kiv_os::THandle std_in, const 
 		const auto& item = *str;
 		if (item.compare(PIPE) == 0) { is_was_fnc = false; continue; }
 		if (item.compare(REDIRECT_OUT) == 0) { is_redirect_out = true; continue; }
-		if (item.compare(REDIRECT_IN)  == 0) { is_redirect_in  = true; continue; }
+		if (item.compare(REDIRECT_IN) == 0) { is_redirect_in = true; continue; }
 		if (is_redirect_out || is_redirect_in) { to_file = item; break; }
 		if (is_was_fnc) { programs.back().param.append(item).append(" "); continue; }
 		programs.push_back({ item, "" });
@@ -40,13 +49,10 @@ bool parse_cmd(const std::string& cmd_line, const kiv_os::THandle std_in, const 
 	auto in = std_in;
 	auto out = std_out;
 
-	std::vector<std::array<kiv_os::THandle, 2>> pipes;
-	std::vector<kiv_os::THandle> pids;
 	for (auto program_itr = programs.begin(); program_itr != programs.end(); program_itr++) {
 		const auto& program = *program_itr;
 		if (program_itr == programs.end() - 1 && !to_file.empty()) {
 			// open the file for the redirection
-			kiv_os::THandle file_handle;
 			if (!kiv_os_rtl::Open_File(to_file.data(), to_file.size(), file_handle, false, static_cast<kiv_os::NFile_Attributes>(0))) {
 				error = { Error_Message(kiv_os_rtl::Last_Error) };
 				return false;
@@ -56,7 +62,8 @@ bool parse_cmd(const std::string& cmd_line, const kiv_os::THandle std_in, const 
 			}
 			else {
 				in = file_handle;
-			} 
+			}
+			is_redirection = true;
 		}
 		if ((program_itr + 1) != programs.end()) {
 			// create the pipe
@@ -73,9 +80,11 @@ bool parse_cmd(const std::string& cmd_line, const kiv_os::THandle std_in, const 
 		kiv_os::THandle pid;
 		const auto program_name = normalize_process_name(program.name);
 		const auto program_params = program.param.empty() ? program.param : program.param.substr(0, program.param.size() - 1);
+
 		if (embedded_processes.find(program_name) != embedded_processes.end()) {
 			return embedded_processes[program_name](program_params, in, out, error);
-		} else if (!kiv_os_rtl::Clone(pid, program_name.data(), program_params.data(), in, out)) {
+		}
+		else if (!kiv_os_rtl::Clone(pid, program_name.data(), program_params.data(), in, out)) {
 			error = { "Invalid command.\n" };
 			return false;
 		}
@@ -96,6 +105,10 @@ bool parse_cmd(const std::string& cmd_line, const kiv_os::THandle std_in, const 
 
 	for (const auto& pipe : pipes) {
 		kiv_os_rtl::Close_Handle(pipe[1]);
+	}
+
+	if (is_redirection) {
+		kiv_os_rtl::Close_Handle(file_handle);
 	}
 
 	return true;

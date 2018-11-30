@@ -74,6 +74,10 @@ size_t IOHandle_File::write(char * buffer, const size_t buffer_size) {
 	std::lock_guard<std::mutex> locker(_io_mutex);
 	IOHandle::check_ACL(Permission::Write);
 
+	// TODO 
+	auto disk_status = kiv_hal::NDisk_Status::No_Error;
+	auto error = kiv_os::NOS_Error::Success;
+
 	const auto& boot_block = _drive.boot_block;
 	const auto bytes_per_sector = _drive.boot_block.bytes_per_sector;
 	const auto offset = kiv_fs::offset(boot_block);
@@ -91,8 +95,8 @@ size_t IOHandle_File::write(char * buffer, const size_t buffer_size) {
 	last_offset.rem += 2;
 
 	if (size_in_blocks > allocated_space.size()) {
-		if (!kiv_fs::find_free_sectors(allocated_space, _drive.id, last_offset, size_in_blocks, _drive.boot_block.bytes_per_sector)) {
-			// TODO error -> no space for a file
+		if (!kiv_fs::find_free_sectors(allocated_space, _drive.id, last_offset, size_in_blocks, _drive.boot_block.bytes_per_sector, disk_status)) {
+			error = kiv_os::NOS_Error::Not_Enough_Disk_Space;
 			return 0;
 		}
 	}
@@ -103,6 +107,7 @@ size_t IOHandle_File::write(char * buffer, const size_t buffer_size) {
 	regs.rdx.l = _drive.id;
 	regs.rdi.r = reinterpret_cast<decltype(regs.rdi.r)>(&dap);
 	regs.rax.h = static_cast<decltype(regs.rax.h)>(kiv_hal::NDisk_IO::Write_Sectors);
+	regs.flags.carry = 0;
 
 	auto find_sector = [&](const std::div_t& ofst) {
 		return ((((ofst.quot - 1) * bytes_per_sector) + ofst.rem) / MULTIPLY_CONST);
@@ -122,6 +127,11 @@ size_t IOHandle_File::write(char * buffer, const size_t buffer_size) {
 		dap.lba_index = sector;
 		kiv_hal::Call_Interrupt_Handler(kiv_hal::NInterrupt::Disk_IO, regs);
 
+		if (regs.flags.carry) {
+			disk_status = static_cast<kiv_hal::NDisk_Status>(regs.rax.x);
+			return 0;
+		}
+
 		buffer_seek += bytes_per_sector;
 	}
 
@@ -130,19 +140,16 @@ size_t IOHandle_File::write(char * buffer, const size_t buffer_size) {
 	uint16_t first_sector;
 	std::vector<uint16_t> sectors;
 
-	if (!kiv_fs::save_to_fat(_drive.id, allocated_space, bytes_per_sector, offset, sectors, first_sector)) {
-		// TODO error
-		return false;
-	}
-
-	if (first_sector != _file.entire_dir.first_cluster) {
-		// TODO 
+	if (!kiv_fs::save_to_fat(_drive.id, allocated_space, bytes_per_sector, offset, sectors, first_sector, disk_status)) {
+		error = kiv_os::NOS_Error::IO_Error;
+		return 0;
 	}
 
 	_file.entire_dir.size += static_cast<uint32_t>(seek);
 
-	if (!kiv_fs::save_to_dir(_drive.id, _parrent_sectors, bytes_per_sector, _file.entire_dir, kiv_fs::Edit_Type::Edit)) {
-		// TODO error
+	if (!kiv_fs::save_to_dir(_drive.id, _parrent_sectors, bytes_per_sector, _file.entire_dir, kiv_fs::Edit_Type::Edit, disk_status)) {
+		error = kiv_os::NOS_Error::IO_Error;
+		return 0;
 	}
 
 	return buffer_size;
@@ -151,6 +158,10 @@ size_t IOHandle_File::write(char * buffer, const size_t buffer_size) {
 size_t IOHandle_File::read(char* buffer, const size_t buffer_size) {
 	std::lock_guard<std::mutex> locker(_io_mutex);
 	IOHandle::check_ACL(Permission::Read);
+
+	// TODO 
+	auto disk_status = kiv_hal::NDisk_Status::No_Error;
+	auto error = kiv_os::NOS_Error::Success;
 
 	const auto bytes_per_sector = _drive.boot_block.bytes_per_sector;
 
@@ -166,6 +177,7 @@ size_t IOHandle_File::read(char* buffer, const size_t buffer_size) {
 	regs.rdx.l = _drive.id;
 	regs.rax.h = static_cast<decltype(regs.rax.h)>(kiv_hal::NDisk_IO::Read_Sectors);
 	regs.rdi.r = reinterpret_cast<decltype(regs.rdi.r)>(&dap);
+	regs.flags.carry = 0;
 
 	if (fat_tool::is_attr(entire_dir.attributes, kiv_os::NFile_Attributes::Directory)) {
 
@@ -182,6 +194,11 @@ size_t IOHandle_File::read(char* buffer, const size_t buffer_size) {
 			dap.lba_index = *sector;
 
 			kiv_hal::Call_Interrupt_Handler(kiv_hal::NInterrupt::Disk_IO, regs);
+			
+			if (regs.flags.carry) {
+				disk_status = static_cast<kiv_hal::NDisk_Status>(regs.rax.x);
+				return 0;
+			}
 
 			std::vector<kiv_fs::FATEntire_Directory> entire_dirs;
 			kiv_fs::entire_directory(entire_dirs, bytes_per_sector, arr.data());
@@ -239,6 +256,11 @@ size_t IOHandle_File::read(char* buffer, const size_t buffer_size) {
 			if (free_space <= 0) break;
 
 			kiv_hal::Call_Interrupt_Handler(kiv_hal::NInterrupt::Disk_IO, regs);
+			
+			if (regs.flags.carry) {
+				disk_status = static_cast<kiv_hal::NDisk_Status>(regs.rax.x);
+				return 0;
+			}
 
 			const auto miss_to_copy = entire_dir.size - read_bytes;
 

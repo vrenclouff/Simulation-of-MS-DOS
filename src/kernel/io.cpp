@@ -63,6 +63,7 @@ IOHandle* Open_File(std::string absolute_path, const kiv_os::NOpen_File fm, cons
 	const auto is_read_only = fat_tool::is_attr(static_cast<uint8_t>(attributes), kiv_os::NFile_Attributes::Read_Only);
 	const auto drive = registred_drivers[drive_volume];
 
+	auto disk_status = kiv_hal::NDisk_Status::No_Error;
 	if (fm == kiv_os::NOpen_File::fmOpen_Always) {
 		if (drive_volume.compare("A:") == 0) {
 			std::string sys;
@@ -114,19 +115,19 @@ IOHandle* Open_File(std::string absolute_path, const kiv_os::NOpen_File fm, cons
 		// find free sector for the new directory
 		if (new_file.sectors.empty()) {
 			std::vector<std::div_t> fat_offsets;
-			if (!kiv_fs::find_free_sectors(fat_offsets, drive.id, START_OF_FAT, 1, drive.boot_block.bytes_per_sector)) {
+			if (!kiv_fs::find_free_sectors(fat_offsets, drive.id, START_OF_FAT, 1, drive.boot_block.bytes_per_sector, disk_status)) {
 				error = kiv_os::NOS_Error::IO_Error;
 				return nullptr;
 			}
 
 			// save new directory to the FAT
-			if (!kiv_fs::save_to_fat(drive.id, fat_offsets, drive.boot_block.bytes_per_sector, kiv_fs::offset(drive.boot_block), new_file.sectors, new_file.entire_dir.first_cluster)) {
+			if (!kiv_fs::save_to_fat(drive.id, fat_offsets, drive.boot_block.bytes_per_sector, kiv_fs::offset(drive.boot_block), new_file.sectors, new_file.entire_dir.first_cluster, disk_status)) {
 				error = kiv_os::NOS_Error::IO_Error;
 				return nullptr;
 			}
 
 			// uloz do nadrazene slozky entire_dir pro novou slozku
-			if (!kiv_fs::save_to_dir(drive.id, parrent_file.sectors, drive.boot_block.bytes_per_sector, new_file.entire_dir, kiv_fs::Edit_Type::Add)) {
+			if (!kiv_fs::save_to_dir(drive.id, parrent_file.sectors, drive.boot_block.bytes_per_sector, new_file.entire_dir, kiv_fs::Edit_Type::Add, disk_status)) {
 				error = kiv_os::NOS_Error::IO_Error;
 				return nullptr;
 			}
@@ -134,7 +135,7 @@ IOHandle* Open_File(std::string absolute_path, const kiv_os::NOpen_File fm, cons
 			if (!files.empty()) {
 				auto grandparent_file = files.back();
 				grandparent_file.entire_dir.size += sizeof kiv_fs::FATEntire_Directory;
-				if (!kiv_fs::save_to_dir(drive.id, grandparent_file.sectors, drive.boot_block.bytes_per_sector, parrent_file.entire_dir, kiv_fs::Edit_Type::Edit)) {
+				if (!kiv_fs::save_to_dir(drive.id, grandparent_file.sectors, drive.boot_block.bytes_per_sector, parrent_file.entire_dir, kiv_fs::Edit_Type::Edit, disk_status)) {
 					error = kiv_os::NOS_Error::IO_Error;
 					return nullptr;
 				}
@@ -156,6 +157,7 @@ bool Remove_File(std::string absolute_path, kiv_os::NOS_Error& error) {
 
 	const auto drive = registred_drivers[components.front()];
 	components.erase(components.begin());
+	auto disk_status = kiv_hal::NDisk_Status::No_Error;
 
 	std::vector<kiv_fs::File_Desc> files;
 	if (!kiv_fs::find_entire_dirs(drive, files, components)) {
@@ -177,13 +179,18 @@ bool Remove_File(std::string absolute_path, kiv_os::NOS_Error& error) {
 	}
 
 	// free space in FAT
-	kiv_fs::remove_sectors_in_fat(file_to_dell.entire_dir, drive.boot_block.bytes_per_sector, drive.id);
+	kiv_fs::remove_sectors_in_fat(file_to_dell.entire_dir, drive.boot_block.bytes_per_sector, drive.id, disk_status);
+
+	if (disk_status != kiv_hal::NDisk_Status::No_Error) {
+		error = kiv_os::NOS_Error::IO_Error;
+		return false;
+	}
 
 	// find parrent to remove Entry_dir
 	auto parrent_file = files.back();
 	files.pop_back();
 
-	if (!kiv_fs::save_to_dir(drive.id, parrent_file.sectors, drive.boot_block.bytes_per_sector, file_to_dell.entire_dir, kiv_fs::Edit_Type::Del)) {
+	if (!kiv_fs::save_to_dir(drive.id, parrent_file.sectors, drive.boot_block.bytes_per_sector, file_to_dell.entire_dir, kiv_fs::Edit_Type::Del, disk_status)) {
 		error = kiv_os::NOS_Error::IO_Error;
 		return false;
 	}
@@ -194,7 +201,7 @@ bool Remove_File(std::string absolute_path, kiv_os::NOS_Error& error) {
 		files.pop_back();
 
 		parrent_file.entire_dir.size -= sizeof kiv_fs::FATEntire_Directory;
-		if (!kiv_fs::save_to_dir(drive.id, grandparrent_file.sectors, drive.boot_block.bytes_per_sector, parrent_file.entire_dir, kiv_fs::Edit_Type::Edit)) {
+		if (!kiv_fs::save_to_dir(drive.id, grandparrent_file.sectors, drive.boot_block.bytes_per_sector, parrent_file.entire_dir, kiv_fs::Edit_Type::Edit, disk_status)) {
 			error = kiv_os::NOS_Error::IO_Error;
 			return false;
 		}
@@ -218,15 +225,19 @@ void Handle_IO(kiv_hal::TRegisters &regs) {
 				regs.rax.x = static_cast<decltype(regs.rax.x)>(error);
 				break;
 			}
+			const auto handle = Convert_Native_Handle(static_cast<HANDLE>(source));
+
+			regs.rax.x = handle;
 			regs.flags.carry = 0;
-			regs.rax.x = Convert_Native_Handle(static_cast<HANDLE>(source));
 		} break;
 
 		case kiv_os::NOS_File_System::Read_File: {
 			const auto source = static_cast<IOHandle*>(Resolve_kiv_os_Handle(regs.rdx.x));
 			auto buffer = reinterpret_cast<char*>(regs.rdi.r);
 			const auto buffer_size = regs.rcx.r;
-			regs.rax.r = source->read(buffer, buffer_size);
+			const auto read = source->read(buffer, buffer_size);
+
+			regs.rax.r = read;
 			regs.flags.carry = 0;
 		} break;
 
@@ -234,16 +245,19 @@ void Handle_IO(kiv_hal::TRegisters &regs) {
 			const auto source = static_cast<IOHandle*>(Resolve_kiv_os_Handle(regs.rdx.x));
 			auto buffer = reinterpret_cast<char*>(regs.rdi.r);
 			const auto buffer_size = regs.rcx.r;
-			regs.rax.r = source->write(buffer, buffer_size);
-			regs.flags.carry |= (regs.rax.r == 0 ? 1 : 0);
+			const auto written = source->write(buffer, buffer_size);
+
+			regs.rax.r = written;
+			regs.flags.carry |= (written == 0 ? 1 : 0);
 		} break;
 
 		case kiv_os::NOS_File_System::Delete_File: {
 			auto path = std::string(reinterpret_cast<char*>(regs.rdx.r));
 			const auto process = process_manager->getRunningProcess();
 			kiv_os::NOS_Error error;
-			regs.flags.carry = !Remove_File(to_absolute_path(process->working_dir, path), error);
-			regs.rax.x = static_cast<decltype(regs.rax.x)>(error);
+			const auto success = Remove_File(to_absolute_path(process->working_dir, path), error);
+
+			regs.flags.carry = success ? 0 : 1;
 
 		} break;
 
@@ -254,11 +268,20 @@ void Handle_IO(kiv_hal::TRegisters &regs) {
 				regs.rax.x = static_cast<decltype(regs.rax.x)>(kiv_os::NOS_Error::Unknown_Error);
 				regs.flags.carry = 1;
 			}
+
+			std::lock_guard<std::mutex> locker(_io_mutex);
 			if (std::find(pipes.begin(), pipes.end(), handle) != pipes.end()) {
 				source->close();
 			}
-			regs.flags.carry |= !Remove_Handle(regs.rdx.x);
-			delete source;
+			const auto success = Remove_Handle(regs.rdx.x);
+
+			if (success) {
+				delete source;
+				regs.flags.carry = 0;
+			}
+			else {
+				regs.flags.carry = 1;
+			}
 		} break;
 
 		case kiv_os::NOS_File_System::Get_Working_Dir: {
@@ -268,6 +291,7 @@ void Handle_IO(kiv_hal::TRegisters &regs) {
 			const auto working_dir = std::string_view(process->working_dir);
 			const size_t size = buffer_size <= working_dir.size() ? buffer_size : working_dir.size();
 			std::copy(&working_dir[0], &working_dir[0] + size, path_buffer);
+
 			regs.rax.r = size;
 			regs.flags.carry = 0;
 		} break;
@@ -282,8 +306,8 @@ void Handle_IO(kiv_hal::TRegisters &regs) {
 				regs.flags.carry = 0;
 			}
 			else {
-				regs.flags.carry = 1;
 				regs.rax.x = static_cast<decltype(regs.rax.x)>(kiv_os::NOS_Error::File_Not_Found);
+				regs.flags.carry = 1;
 			}
 		} break;
 
@@ -298,40 +322,20 @@ void Handle_IO(kiv_hal::TRegisters &regs) {
 			pipes.push_back(pipe_to_write);
 			*(handle_ptr) = pipe_to_write;
 			*(handle_ptr + 1) = Convert_Native_Handle(static_cast<HANDLE>(new IOHandle_Pipe(pipe, Permission::Read)));
+
 			regs.flags.carry = 0;
 		} break;
 	}
 }
 
 std::string io::main_drive() {
+	std::lock_guard<std::mutex> locker(_io_mutex);
 	return registred_drivers.begin()->first;
 }
 
 bool io::register_drive(const std::string volume, const uint8_t id, const kiv_fs::FATBoot_Block& book_block) {
+	std::lock_guard<std::mutex> locker(_io_mutex);
 	if (registred_drivers.find(volume) != registred_drivers.end()) { return false; }
 	registred_drivers[volume] = { id, book_block };
 	return true;
 }
-
-
-/* Nasledujici dve vetve jsou ukazka, ze starsiho zadani, ktere ukazuji, jak mate mapovat Windows HANDLE na kiv_os handle a zpet, vcetne jejich alokace a uvolneni
-
-	case kiv_os::scCreate_File: {
-		HANDLE result = CreateFileA((char*)regs.rdx.r, GENERIC_READ | GENERIC_WRITE, (DWORD)regs.rcx.r, 0, OPEN_EXISTING, 0, 0);
-		//zde je treba podle Rxc doresit shared_read, shared_write, OPEN_EXISING, etc. podle potreby
-		regs.flags.carry = result == INVALID_HANDLE_VALUE;
-		if (!regs.flags.carry) regs.rax.x = Convert_Native_Handle(result);
-		else regs.rax.r = GetLastError();
-	}
-								break;	//scCreateFile
-
-	case kiv_os::scClose_Handle: {
-			HANDLE hnd = Resolve_kiv_os_Handle(regs.rdx.x);
-			regs.flags.carry = !CloseHandle(hnd);
-			if (!regs.flags.carry) Remove_Handle(regs.rdx.x);
-				else regs.rax.r = GetLastError();
-		}
-
-		break;	//CloseFile
-
-*/

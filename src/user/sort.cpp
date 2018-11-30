@@ -17,7 +17,10 @@ size_t __stdcall sort(const kiv_hal::TRegisters &regs) {
 	size_t read, written;
 	std::stringstream ss;
 	do {
-		if (!kiv_os_rtl::Read_File(std_in, buffer, sizeof buffer, read)) {
+		if (kiv_os_rtl::Read_File(std_in, buffer, sizeof buffer, read)) {
+			ss << std::string(buffer, read);
+		}
+		else {
 			const kiv_os::NOS_Error error = kiv_os_rtl::Last_Error;
 			const auto error_msg = Error_Message(error);
 			const auto error_code = static_cast<uint16_t>(error);
@@ -26,7 +29,6 @@ size_t __stdcall sort(const kiv_hal::TRegisters &regs) {
 			kiv_os_rtl::Exit(error_code);
 			return error_code;
 		}
-		ss << std::string(buffer, read);
 	} while (read);
 
 	std::vector<std::string> elements;
@@ -34,12 +36,16 @@ size_t __stdcall sort(const kiv_hal::TRegisters &regs) {
 	while (std::getline(ss, line)) {
 		elements.push_back(line);
 	}
-
 	std::sort(elements.begin(), elements.end());
-	std::stringstream sorted_lines;
-	std::copy(elements.begin(), elements.end(), std::ostream_iterator<std::string>(sorted_lines, "\n"));
-	const auto res = sorted_lines.str();
-	kiv_os_rtl::Write_File(std_out, res.c_str(), res.length(), written);
+
+	size_t offset = 0;
+	for (const auto& line : elements) {
+		std::copy(&line[0], &line[0] + line.size(), buffer + offset);
+		offset += line.size();
+		buffer[offset++] = '\n';
+	}
+
+	kiv_os_rtl::Write_File(std_out, buffer, offset, written);
 
 	kiv_os_rtl::Exit(0);
 	return 0;

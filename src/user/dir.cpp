@@ -4,6 +4,7 @@
 
 #include <vector>
 #include <sstream>
+#include <mutex>
 
 #define MAX_ENTRY_ITEMS	 16
 
@@ -31,23 +32,30 @@ size_t __stdcall dir(const kiv_hal::TRegisters &regs) {
 		kiv_os_rtl::Exit(error_code);
 		return error_code;
 	}
-
-	std::stringstream ss;
 	char buffer[MAX_ENTRY_ITEMS * sizeof(kiv_os::TDir_Entry)];
+	char formatted_buffer[512]; size_t seek = 0;
 	do {
 		if (kiv_os_rtl::Read_File(dirhandle, buffer, sizeof(buffer), read)) {
 
 			for (size_t beg = 0; beg < read; beg += sizeof(kiv_os::TDir_Entry)) {
 				const auto dir = reinterpret_cast<kiv_os::TDir_Entry*>(buffer + beg);
 
-				const auto filename = std::string(dir->file_name, sizeof kiv_os::TDir_Entry::file_name);
-				const auto is_dir = dir->file_attributes & static_cast<uint8_t>(kiv_os::NFile_Attributes::Directory);
-				const auto read_only = dir->file_attributes & static_cast<uint8_t>(kiv_os::NFile_Attributes::Read_Only);
+				std::copy(dir->file_name, dir->file_name + sizeof kiv_os::TDir_Entry::file_name, formatted_buffer + seek);
+				seek += sizeof kiv_os::TDir_Entry::file_name;
 
-				ss
-					<< filename << "\t"
-					<< (is_dir ? "<DIR>" : "<FILE>") << "\t"
-					<< (read_only ? "R" : "R/W") << "\n";
+				formatted_buffer[seek++] = '\t';
+
+				const auto type = dir->file_attributes & static_cast<uint8_t>(kiv_os::NFile_Attributes::Directory) ? "<DIR>" : "<FILE>";
+				std::copy(type, type + strlen(type), formatted_buffer + seek);
+				seek += strlen(type);
+
+				formatted_buffer[seek++] = '\t';
+
+				const auto access = dir->file_attributes & static_cast<uint8_t>(kiv_os::NFile_Attributes::Read_Only) ? "R" : "R/W";
+				std::copy(access, access + strlen(access), formatted_buffer + seek);
+				seek += strlen(access);
+
+				formatted_buffer[seek++] = '\n';
 			}
 		}
 		else {
@@ -62,8 +70,7 @@ size_t __stdcall dir(const kiv_hal::TRegisters &regs) {
 	} while (read);
 	kiv_os_rtl::Close_Handle(dirhandle);
 
-	const auto text = ss.str();
-	kiv_os_rtl::Write_File(std_out, text.data(), text.size(), wrote);
+	kiv_os_rtl::Write_File(std_out, formatted_buffer, seek, wrote);
 
 	kiv_os_rtl::Exit(0);
 

@@ -29,10 +29,9 @@ size_t __stdcall md(const kiv_hal::TRegisters &regs) {
 		kiv_os_rtl::Exit(error_code);
 		return error_code;
 	}
+	kiv_os_rtl::Close_Handle(filehandle);
 
 	kiv_os_rtl::Write_File(std_out, "\n", 1, written);
-
-	kiv_os_rtl::Close_Handle(filehandle);
 
 	kiv_os_rtl::Exit(0);	
 	return 0;
