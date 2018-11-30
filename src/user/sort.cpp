@@ -39,9 +39,9 @@ size_t __stdcall sort(const kiv_hal::TRegisters &regs) {
 	std::sort(elements.begin(), elements.end());
 
 	size_t offset = 0;
-	for (const auto& line : elements) {
-		std::copy(&line[0], &line[0] + line.size(), buffer + offset);
-		offset += line.size();
+	for (const auto& elm : elements) {
+		std::copy(&elm[0], &elm[0] + elm.size(), buffer + offset);
+		offset += elm.size();
 		buffer[offset++] = '\n';
 	}
 
