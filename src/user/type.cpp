@@ -16,7 +16,7 @@ size_t __stdcall type(const kiv_hal::TRegisters &regs) {
 	size_t read, written;
 	char buffer[2048];
 
-	//if (*input) {
+	if (input[0]) {
 		kiv_os::THandle filehandle;
 		if (kiv_os_rtl::Open_File(input, strlen(input), filehandle, true, kiv_os::NFile_Attributes::Read_Only)) {
 			do {
@@ -36,7 +36,6 @@ size_t __stdcall type(const kiv_hal::TRegisters &regs) {
 			kiv_os_rtl::Exit(error_code);
 			return error_code;
 		}
-	/*
 	}
 	else {
 		std::vector<std::string> elements;
@@ -52,7 +51,7 @@ size_t __stdcall type(const kiv_hal::TRegisters &regs) {
 		const auto res = lines.str();
 		kiv_os_rtl::Write_File(std_out, res.c_str(), res.length(), written);
 	}
-	*/
+
 	kiv_os_rtl::Exit(0);
 	return 0;
 }

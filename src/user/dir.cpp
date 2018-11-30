@@ -12,7 +12,7 @@ size_t __stdcall dir(const kiv_hal::TRegisters &regs) {
 
 	size_t read, wrote;
 	char promot[100];
-	if (!(*input)) {
+	if (input[0] == 0) {
 		kiv_os_rtl::Get_Working_Dir(promot, sizeof promot, read);
 	}
 	else {

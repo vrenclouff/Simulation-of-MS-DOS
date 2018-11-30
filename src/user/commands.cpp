@@ -79,12 +79,12 @@ bool parse_cmd(const std::string& cmd_line, const kiv_os::THandle std_in, const 
 		// create the program
 		kiv_os::THandle pid;
 		const auto program_name = normalize_process_name(program.name);
-		const auto program_params = program.param.empty() ? program.param : program.param.substr(0, program.param.size() - 1);
+		const auto program_params = program.param.empty() ? program.param : std::string(program.param.substr(0, program.param.size() - 1));
 
 		if (embedded_processes.find(program_name) != embedded_processes.end()) {
 			return embedded_processes[program_name](program_params, in, out, error);
 		}
-		else if (!kiv_os_rtl::Clone(pid, program_name.c_str(), program_params.c_str(), in, out)) {
+		else if (!kiv_os_rtl::Clone(pid, program_name.data(), program_params.data(), in, out)) {
 			error = { Error_Message(kiv_os_rtl::Last_Error) };
 			return false;
 		}
