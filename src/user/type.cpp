@@ -2,9 +2,6 @@
 #include "rtl.h"
 #include "error.h"
 
-#include <filesystem>
-#include <iostream>
-#include <sstream>
 
 size_t __stdcall type(const kiv_hal::TRegisters &regs) {
 
@@ -16,7 +13,7 @@ size_t __stdcall type(const kiv_hal::TRegisters &regs) {
 	size_t read, written;
 	char buffer[2048];
 
-	//if (input[0]) {
+	if (input[0]) {
 		kiv_os::THandle filehandle;
 		if (kiv_os_rtl::Open_File(input, strlen(input), filehandle, true, kiv_os::NFile_Attributes::Read_Only)) {
 			do {
@@ -36,8 +33,8 @@ size_t __stdcall type(const kiv_hal::TRegisters &regs) {
 			kiv_os_rtl::Exit(error_code);
 			return error_code;
 		}
-	/*
 	}
+	/*
 	else {
 		std::vector<std::string> elements;
 		do {
