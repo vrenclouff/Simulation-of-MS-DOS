@@ -34,6 +34,15 @@ size_t __stdcall type(const kiv_hal::TRegisters &regs) {
 			return error_code;
 		}
 	}
+	else {
+		const kiv_os::NOS_Error error = kiv_os::NOS_Error::Invalid_Argument;
+		const auto error_msg = Error_Message(error);
+		const auto error_code = static_cast<uint16_t>(error);
+
+		kiv_os_rtl::Write_File(std_out, error_msg.c_str(), error_msg.length(), written);
+		kiv_os_rtl::Exit(error_code);
+		return error_code;
+	}
 	/*
 	else {
 		std::vector<std::string> elements;
