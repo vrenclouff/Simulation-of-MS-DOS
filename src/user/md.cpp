@@ -10,7 +10,7 @@ size_t __stdcall md(const kiv_hal::TRegisters &regs) {
 
 	size_t written;
 
-	if (*input) {
+	//if (*input) {
 		kiv_os::THandle filehandle;
 		if (kiv_os_rtl::Open_File(input, strlen(input), filehandle, false, kiv_os::NFile_Attributes::Directory)) {
 			kiv_os_rtl::Close_Handle(filehandle);
@@ -24,6 +24,7 @@ size_t __stdcall md(const kiv_hal::TRegisters &regs) {
 			kiv_os_rtl::Exit(error_code);
 			return error_code;
 		}
+	/*
 	}
 	else {
 		const auto error = kiv_os::NOS_Error::Invalid_Argument;
@@ -34,6 +35,7 @@ size_t __stdcall md(const kiv_hal::TRegisters &regs) {
 		kiv_os_rtl::Exit(error_code);
 		return error_code;
 	}
+	*/
 
 	kiv_os_rtl::Exit(0);	
 	return 0;
