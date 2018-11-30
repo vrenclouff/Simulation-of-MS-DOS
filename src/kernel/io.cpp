@@ -288,7 +288,7 @@ void Handle_IO(kiv_hal::TRegisters &regs) {
 			auto path_buffer = reinterpret_cast<char*>(regs.rdx.r);
 			const auto buffer_size = regs.rcx.r;
 			const auto process = process_manager->getRunningProcess();
-			const auto working_dir = std::string_view(process->working_dir);
+			const auto working_dir = std::string(process->working_dir);
 			const size_t size = buffer_size <= working_dir.size() ? buffer_size : working_dir.size();
 			std::copy(&working_dir[0], &working_dir[0] + size, path_buffer);
 

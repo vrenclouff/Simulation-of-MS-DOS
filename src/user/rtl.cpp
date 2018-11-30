@@ -62,7 +62,7 @@ bool kiv_os_rtl::Set_Working_Dir(const char *dir) {
 bool kiv_os_rtl::Open_File(const char *buffer, const size_t buffer_size, kiv_os::THandle &file_handle, const bool exist, const kiv_os::NFile_Attributes attributes) {
 
 	std::string str_path = std::string(buffer, buffer_size);
-	if (std::filesystem::u8path(buffer).is_relative()) {
+	if (std::filesystem::u8path(str_path).is_relative()) {
 		char absolute_path[100];
 		size_t counter;
 		Get_Working_Dir(absolute_path, sizeof(absolute_path), counter);

@@ -6,9 +6,10 @@
 
 size_t __stdcall echo(const kiv_hal::TRegisters &regs) {
 
-	auto input = std::string(reinterpret_cast<char*>(regs.rdi.r));
 	const auto std_out = static_cast<kiv_os::THandle>(regs.rbx.x);
 	
+	auto input = std::string(reinterpret_cast<char*>(regs.rdi.r));
+
 	size_t written;
 	if (input.empty()) {
 		std::string echo_info = "Echo is ";

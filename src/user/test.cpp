@@ -183,7 +183,7 @@ void test_thread(const kiv_hal::TRegisters &regs)
 size_t __stdcall test_write_to_file(const kiv_hal::TRegisters &regs)
 {
 	
-	const auto filename = std::string_view("test.txt");
+	const auto filename = std::string("test.txt");
 
 	kiv_os::THandle file_handle; size_t wrote;
 	kiv_os_rtl::Open_File(filename.data(), filename.size(), file_handle, false, static_cast<kiv_os::NFile_Attributes>(0));

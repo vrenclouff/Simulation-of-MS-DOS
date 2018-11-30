@@ -3,7 +3,7 @@
 #include <mutex>
 #include <condition_variable>
 
-#define BUFFER_SIZE 3000
+#define BUFFER_SIZE 30000
 
 class Circular_buffer {
 

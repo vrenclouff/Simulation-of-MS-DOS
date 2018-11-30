@@ -84,8 +84,8 @@ bool parse_cmd(const std::string& cmd_line, const kiv_os::THandle std_in, const 
 		if (embedded_processes.find(program_name) != embedded_processes.end()) {
 			return embedded_processes[program_name](program_params, in, out, error);
 		}
-		else if (!kiv_os_rtl::Clone(pid, program_name.data(), program_params.data(), in, out)) {
-			error = { "Invalid command.\n" };
+		else if (!kiv_os_rtl::Clone(pid, program_name.c_str(), program_params.c_str(), in, out)) {
+			error = { Error_Message(kiv_os_rtl::Last_Error) };
 			return false;
 		}
 		in = !pipes.empty() ? pipes.back()[1] : std_in;

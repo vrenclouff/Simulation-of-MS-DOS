@@ -11,28 +11,14 @@ size_t __stdcall type(const kiv_hal::TRegisters &regs) {
 	const auto std_out = static_cast<kiv_os::THandle>(regs.rbx.x);
 	const auto std_in = static_cast<kiv_os::THandle>(regs.rax.x);
 
-	const auto input = std::string(reinterpret_cast<char*>(regs.rdi.r)); 
+	const auto input = reinterpret_cast<char*>(regs.rdi.r);
 	
 	size_t read, written;
 	char buffer[2048];
-	if (input.empty()) {
-		std::vector<std::string> elements;
-		do {
-			if (kiv_os_rtl::Read_File(std_in, buffer, sizeof buffer, read)) {
-				buffer[read] = 0;
-				elements.push_back(buffer);
-			}
-		} while (read);
 
-		std::stringstream lines;
-		std::copy(elements.begin(), elements.end(), std::ostream_iterator<std::string>(lines, ""));
-		const auto res = lines.str();
-		kiv_os_rtl::Write_File(std_out, res.c_str(), res.length(), written);
-
-	}
-	else {
+	if (*input) {
 		kiv_os::THandle filehandle;
-		if (kiv_os_rtl::Open_File(input.data(), input.size(), filehandle, true, kiv_os::NFile_Attributes::Read_Only)) {
+		if (kiv_os_rtl::Open_File(input, strlen(input), filehandle, true, kiv_os::NFile_Attributes::Read_Only)) {
 			do {
 				kiv_os_rtl::Read_File(filehandle, buffer, sizeof buffer, read);
 				if (read == 0) break;
@@ -51,7 +37,21 @@ size_t __stdcall type(const kiv_hal::TRegisters &regs) {
 			return error_code;
 		}
 	}
-	
+	else {
+		std::vector<std::string> elements;
+		do {
+			if (kiv_os_rtl::Read_File(std_in, buffer, sizeof buffer, read)) {
+				buffer[read] = 0;
+				elements.push_back(buffer);
+			}
+		} while (read);
+
+		std::stringstream lines;
+		std::copy(elements.begin(), elements.end(), std::ostream_iterator<std::string>(lines, ""));
+		const auto res = lines.str();
+		kiv_os_rtl::Write_File(std_out, res.c_str(), res.length(), written);
+	}
+
 	kiv_os_rtl::Exit(0);
 	return 0;
 }
