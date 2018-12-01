@@ -26,6 +26,7 @@ bool parse_cmd(const std::string& cmd_line, const kiv_os::THandle std_in, const 
 	std::vector<kiv_os::THandle> pids;
 	bool is_redirection = false;
 	kiv_os::THandle file_handle;
+	std::vector<std::string> program_params;
 
 	std::string to_file;
 	std::istringstream iss(cmd_line);
@@ -74,12 +75,12 @@ bool parse_cmd(const std::string& cmd_line, const kiv_os::THandle std_in, const 
 		// create the program
 		kiv_os::THandle pid;
 		const auto program_name = normalize_process_name(program.name);
-		const auto program_params = program.param.empty() ? program.param : program.param.substr(0, program.param.size() - 1);
+		program_params.push_back(program.param.empty() ? program.param : program.param.substr(0, program.param.size() - 1));
 
 		if (embedded_processes.find(program_name) != embedded_processes.end()) {
-			return embedded_processes[program_name](program_params, in, out, error);
+			return embedded_processes[program_name](program_params.back(), in, out, error);
 		}
-		else if (!kiv_os_rtl::Clone(pid, program_name.data(), program_params.data(), in, out)) {
+		else if (!kiv_os_rtl::Clone(pid, program_name.data(), program_params.back().data(), in, out)) {
 			error = { Error_Message(kiv_os_rtl::Last_Error) };
 			return false;
 		}
