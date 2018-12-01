@@ -42,6 +42,8 @@ void to_absolute_components(std::vector<std::string>& components, std::string pa
 }
 
 bool is_exist_dir(std::string path) {
+	std::lock_guard<std::mutex> locker(_io_mutex);
+
 	std::vector<std::string> components;
 	to_absolute_components(components, path);
 	kiv_fs::Drive_Desc drive = registred_drivers[components.front()];
@@ -49,6 +51,12 @@ bool is_exist_dir(std::string path) {
 	std::vector<kiv_fs::File_Desc> files;
 	const auto res = kiv_fs::find_entire_dirs(drive, files, components);
 	return res && fat_tool::is_attr(files.back().entire_dir.attributes, kiv_os::NFile_Attributes::Directory);
+}
+
+bool is_pipe(const kiv_os::THandle handle) {
+	std::lock_guard<std::mutex> locker(_io_mutex);
+
+	return std::find(pipes.begin(), pipes.end(), handle) != pipes.end();
 }
 
 IOHandle* Open_File(std::string absolute_path, const kiv_os::NOpen_File fm, const kiv_os::NFile_Attributes attributes, kiv_os::NOS_Error& error) {
@@ -269,11 +277,10 @@ void Handle_IO(kiv_hal::TRegisters &regs) {
 				regs.flags.carry = 1;
 			}
 
-			std::lock_guard<std::mutex> locker(_io_mutex);
-			if (std::find(pipes.begin(), pipes.end(), handle) != pipes.end()) {
+			if (is_pipe(handle)) {
 				source->close();
 			}
-			const auto success = Remove_Handle(regs.rdx.x);
+			const auto success = Remove_Handle(handle);
 
 			if (success) {
 				delete source;

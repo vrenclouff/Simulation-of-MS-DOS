@@ -71,8 +71,8 @@ size_t IOHandle_Keyboard::read(char* buffer, const size_t buffer_size) {
 }
 
 size_t IOHandle_File::write(char * buffer, const size_t buffer_size) {
-	std::lock_guard<std::mutex> locker(_io_mutex);
 	IOHandle::check_ACL(Permission::Write);
+	std::lock_guard<std::mutex> locker(_io_mutex);
 
 	// TODO 
 	auto disk_status = kiv_hal::NDisk_Status::No_Error;
@@ -156,8 +156,8 @@ size_t IOHandle_File::write(char * buffer, const size_t buffer_size) {
 }
 
 size_t IOHandle_File::read(char* buffer, const size_t buffer_size) {
-	std::lock_guard<std::mutex> locker(_io_mutex);
 	IOHandle::check_ACL(Permission::Read);
+	std::lock_guard<std::mutex> locker(_io_mutex);
 
 	// TODO 
 	auto disk_status = kiv_hal::NDisk_Status::No_Error;

@@ -48,33 +48,23 @@ void __stdcall Bootstrap_Loader(kiv_hal::TRegisters &context) {
 		kiv_hal::Call_Interrupt_Handler(kiv_hal::NInterrupt::Disk_IO, regs);
 
 		if (!regs.flags.carry) {
-			auto print_str = [](const char* str) {
-				kiv_hal::TRegisters regs;
-				regs.rax.l = static_cast<uint8_t>(kiv_os::NOS_File_System::Write_File);
-				regs.rdi.r = reinterpret_cast<decltype(regs.rdi.r)>(str);
-				regs.rcx.r = strlen(str);
-				Handle_IO(regs);
-			};
-
-			auto hard_drive = [&regs](unsigned char* data, uint16_t sector, kiv_hal::NDisk_IO operation) {
-				kiv_hal::TDisk_Address_Packet dap;
-				dap.sectors = static_cast<void*>(data);
-				dap.count = 1;
-				dap.lba_index = sector;
-				regs.rax.h = static_cast<decltype(regs.rax.h)>(operation);
-				regs.rdi.r = reinterpret_cast<decltype(regs.rdi.r)>(&dap);
-				kiv_hal::Call_Interrupt_Handler(kiv_hal::NInterrupt::Disk_IO, regs);
-			};
-
+			std::vector<unsigned char> arr(params.bytes_per_sector);
+			kiv_hal::TDisk_Address_Packet dap;
+			dap.sectors = static_cast<void*>(arr.data());
+			dap.count = 1;
+			dap.lba_index = 0;
+			regs.rdi.r = reinterpret_cast<decltype(regs.rdi.r)>(&dap);
 
 			// Loading the first sector (Boot Block)
-			std::vector<unsigned char> arr(params.bytes_per_sector);
-			hard_drive(arr.data(), 0, kiv_hal::NDisk_IO::Read_Sectors);
+			regs.rax.h = static_cast<decltype(regs.rax.h)>(kiv_hal::NDisk_IO::Read_Sectors);
+			kiv_hal::Call_Interrupt_Handler(kiv_hal::NInterrupt::Disk_IO, regs);
 
 			// Check if the driver is formatted
 			if (!kiv_fs::is_formatted(arr.data())) {
 				kiv_fs::format_disk(kiv_fs::FAT_Version::FAT16, arr.data(), params);
-				hard_drive(arr.data(), 0, kiv_hal::NDisk_IO::Write_Sectors);
+
+				regs.rax.h = static_cast<decltype(regs.rax.h)>(kiv_hal::NDisk_IO::Write_Sectors);
+				kiv_hal::Call_Interrupt_Handler(kiv_hal::NInterrupt::Disk_IO, regs);
 			}
 
 			// Resave boot block to struct
@@ -82,8 +72,7 @@ void __stdcall Bootstrap_Loader(kiv_hal::TRegisters &context) {
 			kiv_fs::boot_block(boot_block, params.bytes_per_sector, arr.data());
 
 			char volume[2] = { drive_name++, ':'};
-			std::string drive_volume = std::string(volume, sizeof(volume));
-			if (io::register_drive(drive_volume, regs.rdx.l, boot_block)) {
+			if (io::register_drive(std::string(volume, sizeof(volume)), regs.rdx.l, boot_block)) {
 				// TODO exception -> can't register disk drive
 			}
 		}
@@ -108,6 +97,14 @@ void __stdcall Bootstrap_Loader(kiv_hal::TRegisters &context) {
 	regs.rdx.r = reinterpret_cast<decltype(regs.rdx.r)>(&shell_handle);
 	regs.rcx.r = 1;
 	process_manager->handleWaitFor(regs);
+
+	regs.rax.l = static_cast<uint8_t>(kiv_os::NOS_File_System::Close_Handle);
+	regs.rdx.x = std_handle.in;
+	Handle_IO(regs);
+
+	regs.rdx.x = std_handle.out;
+	Handle_IO(regs);
+
 	Shutdown_Kernel();
 }
 
