@@ -12,10 +12,12 @@ size_t __stdcall wc(const kiv_hal::TRegisters &regs) {
 	const auto std_out = static_cast<kiv_os::THandle>(regs.rbx.x);
 	const auto std_in = static_cast<kiv_os::THandle>(regs.rax.x);
 
+	const auto input = reinterpret_cast<const char*>(regs.rdi.r);
+
 	std::string first, second, arg;
 
-	std::istringstream input_stream(reinterpret_cast<char*>(regs.rdi.r));
-	auto input_itr = std::istream_iterator<std::string>(input_stream);
+	std::istringstream ss(input);
+	auto input_itr = std::istream_iterator<std::string>(ss);
 
 	first = *input_itr++;
 	second = *input_itr++;

@@ -8,17 +8,16 @@ size_t __stdcall type(const kiv_hal::TRegisters &regs) {
 	const auto std_out = static_cast<kiv_os::THandle>(regs.rbx.x);
 	const auto std_in = static_cast<kiv_os::THandle>(regs.rax.x);
 
-	const auto input = reinterpret_cast<char*>(regs.rdi.r);
+	const auto input = reinterpret_cast<const char*>(regs.rdi.r);
 	
 	size_t read, written;
 	char buffer[2048];
 
-	if (input[0]) {
+	if (*input) {
 		kiv_os::THandle filehandle;
 		if (kiv_os_rtl::Open_File(input, strlen(input), filehandle, true, kiv_os::NFile_Attributes::Read_Only)) {
 			do {
 				kiv_os_rtl::Read_File(filehandle, buffer, sizeof buffer, read);
-				if (read == 0) break;
 				kiv_os_rtl::Write_File(std_out, buffer, read, written);
 			} while (read);
 			kiv_os_rtl::Close_Handle(filehandle);

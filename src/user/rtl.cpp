@@ -32,6 +32,11 @@ bool kiv_os_rtl::Read_File(const kiv_os::THandle file_handle, char* const buffer
 }
 
 bool kiv_os_rtl::Write_File(const kiv_os::THandle file_handle, const char *buffer, const size_t buffer_size, size_t &written) {
+
+	if (buffer_size == 0) {
+		return true;
+	}
+
 	kiv_hal::TRegisters regs = Prepare_SysCall_Context(kiv_os::NOS_Service_Major::File_System, static_cast<uint8_t>(kiv_os::NOS_File_System::Write_File));
 	regs.rdx.x = static_cast<decltype(regs.rdx.x)>(file_handle);
 	regs.rdi.r = reinterpret_cast<decltype(regs.rdi.r)>(buffer);
@@ -122,7 +127,6 @@ bool kiv_os_rtl::Clone(kiv_os::THandle& pid, const char* function, const char* a
 bool kiv_os_rtl::Wait_For(kiv_os::THandle handle) {
 	kiv_hal::TRegisters regs = Prepare_SysCall_Context(kiv_os::NOS_Service_Major::Process, static_cast<uint8_t>(kiv_os::NOS_Process::Wait_For));
 	regs.rdx.r = reinterpret_cast<decltype(regs.rdx.r)>(&handle);
-	//regs.rcx.r = static_cast<decltype(regs.rdx.r)>(handlers_count);
 	regs.rcx.r = 1;
 
 	const bool result = kiv_os::Sys_Call(regs);

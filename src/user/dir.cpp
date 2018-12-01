@@ -8,11 +8,11 @@ size_t __stdcall dir(const kiv_hal::TRegisters &regs) {
 
 	const auto std_out = static_cast<kiv_os::THandle>(regs.rbx.x);
 
-	const auto input = reinterpret_cast<char*>(regs.rdi.r);
+	const auto input = reinterpret_cast<const char*>(regs.rdi.r);
 
 	size_t read, wrote;
 	char promot[100];
-	if (input[0] == 0) {
+	if (!(*input)) {
 		kiv_os_rtl::Get_Working_Dir(promot, sizeof promot, read);
 	}
 	else {

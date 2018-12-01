@@ -11,10 +11,11 @@ size_t __stdcall ps(const kiv_hal::TRegisters &regs) {
 	char buffer[1024];
 	size_t read, written;
 	kiv_os::THandle filehandle;
+
 	if (kiv_os_rtl::Open_File(input, strlen(input), filehandle, true, kiv_os::NFile_Attributes::Read_Only)) {
 		kiv_os_rtl::Read_File(filehandle, buffer, sizeof buffer, read);
-		buffer[read] = 0;
 		kiv_os_rtl::Write_File(std_out, buffer, read, written);
+		kiv_os_rtl::Close_Handle(filehandle);
 	}
 	else {
 		const kiv_os::NOS_Error error = kiv_os_rtl::Last_Error;

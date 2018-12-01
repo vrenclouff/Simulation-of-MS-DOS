@@ -11,10 +11,16 @@ enum class SYS_Type : uint8_t {
 	PROCFS = 1,
 };
 
+
 enum Permission : uint8_t {
 	Read = 1,
 	Write = 2,
 };
+
+static const std::map<std::string, SYS_Type> SYS_TABLE = {
+	{"/procfs", SYS_Type::PROCFS}
+};
+
 
 class IOHandle {
 private:
@@ -91,8 +97,4 @@ public:
 	virtual size_t read(char* buffer, const size_t buffer_size) final override;
 	virtual size_t write(char* buffer, const size_t buffer_size) final override;
 	virtual void close() final override;
-};
-
-static const std::map<std::string, IOHandle*> SYS_HANDLERS = {
-	{"/procfs", new IOHandle_SYS(SYS_Type::PROCFS)}
 };

@@ -10,7 +10,7 @@ size_t __stdcall md(const kiv_hal::TRegisters &regs) {
 
 	size_t written;
 
-	if (input[0]) {
+	if (*input) {
 		kiv_os::THandle filehandle;
 		if (kiv_os_rtl::Open_File(input, strlen(input), filehandle, false, kiv_os::NFile_Attributes::Directory)) {
 			kiv_os_rtl::Close_Handle(filehandle);

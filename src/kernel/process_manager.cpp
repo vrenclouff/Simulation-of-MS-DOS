@@ -361,7 +361,7 @@ std::string ProcessManager::getProcessTable()
 {
 	std::lock_guard<std::recursive_mutex> lock(mtx);
 	std::ostringstream result;
-	//result << "PID\tPPID\tSTATUS\tCOMMAND" << std::endl;
+
 	for (auto const& process_entry : processes) {
 		const auto process = process_entry.second;
 

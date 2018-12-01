@@ -44,10 +44,10 @@ size_t __stdcall rgen(const kiv_hal::TRegisters &regs) {
 	const auto std_in = static_cast<kiv_os::THandle>(regs.rax.x);
 	const auto std_out = static_cast<kiv_os::THandle>(regs.rbx.x);
 
-	const auto input = std::string(reinterpret_cast<char*>(regs.rdi.r));
+	const auto input = reinterpret_cast<const char*>(regs.rdi.r);
 
 	size_t written;
-	if (!input.empty()) {
+	if (*input) {
 		const kiv_os::NOS_Error error = kiv_os::NOS_Error::Invalid_Argument;
 		const auto error_msg = Error_Message(error);
 		const auto error_code = static_cast<uint16_t>(error);
@@ -58,8 +58,7 @@ size_t __stdcall rgen(const kiv_hal::TRegisters &regs) {
 	}
 
 	bool generating = true;
-
-	kiv_os::THandle handler = kiv_os_rtl::Create_Thread(&wait_For_Ctrlz, &generating, std_in, std_out);
+	const auto handler = kiv_os_rtl::Create_Thread(&wait_For_Ctrlz, &generating, std_in, std_out);
 
 	std::random_device rd;
 	std::mt19937 generator(rd());

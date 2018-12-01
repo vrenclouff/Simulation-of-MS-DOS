@@ -14,7 +14,7 @@
 
 std::string normalize_process_name(const std::string& process_name) {
 	if (process_table.find(process_name) != process_table.end()) {
-		return process_table[process_name];
+ 		return process_table[process_name];
 	}
 	return process_name;
 }
@@ -74,7 +74,7 @@ bool parse_cmd(const std::string& cmd_line, const kiv_os::THandle std_in, const 
 		// create the program
 		kiv_os::THandle pid;
 		const auto program_name = normalize_process_name(program.name);
-		const auto program_params = program.param.empty() ? program.param : std::string(program.param.substr(0, program.param.size() - 1));
+		const auto program_params = program.param.empty() ? program.param : program.param.substr(0, program.param.size() - 1);
 
 		if (embedded_processes.find(program_name) != embedded_processes.end()) {
 			return embedded_processes[program_name](program_params, in, out, error);

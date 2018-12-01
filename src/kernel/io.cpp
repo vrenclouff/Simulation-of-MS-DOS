@@ -70,7 +70,7 @@ IOHandle* Open_File(std::string absolute_path, const kiv_os::NOpen_File fm, cons
 			for (const auto& cmp : components) {
 				sys += cmp;
 			}
-			return SYS_HANDLERS.at(sys);
+			return new IOHandle_SYS(SYS_TABLE.at(sys));
 		}
 		else {
 			std::vector<kiv_fs::File_Desc> files;
