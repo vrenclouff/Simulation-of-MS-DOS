@@ -7,6 +7,7 @@
 #include <mutex>
 #include <condition_variable>
 #include "thread.h"
+#include <memory>
 
 enum class ProcessState
 {
@@ -27,7 +28,7 @@ public:
 	ProcessState state;
 	std::string userfunc_name;
 	std::string working_dir;
-	std::map<size_t, Thread*> threads;
+	std::map<size_t, std::unique_ptr<Thread>> threads;
 
 	Process(std::string userfunc_name, size_t parent_pid);
 	size_t startThread(kiv_hal::TRegisters thread_context, kiv_os::TThread_Proc address);

@@ -3,12 +3,13 @@
 #include <thread>
 #include <mutex>
 #include "process.h"
+#include <memory>
 
 class ProcessManager
 {
 private:
 	std::recursive_mutex mtx; // mutex for creating new process
-	std::map<size_t, Process*> processes;
+	std::map<size_t, std::unique_ptr<Process>> processes;
 	std::map<kiv_os::THandle, size_t> handles; // tid mapped to THandle
 	Thread* overriden_running_thread = nullptr;
 	kiv_os::THandle last_handle = 0;

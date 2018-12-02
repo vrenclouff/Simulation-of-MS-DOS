@@ -12,16 +12,17 @@ Process::Process(std::string userfunc_name, size_t parent_pid) :
 
 size_t Process::startThread(kiv_hal::TRegisters child_context, kiv_os::TThread_Proc address)
 {
-	Thread *thread = new Thread(address, child_context);
+	std::unique_ptr<Thread> thread = std::make_unique<Thread>(address, child_context);
 	thread->handlers[kiv_os::NSignal_Id::Terminate] = reinterpret_cast<kiv_os::TThread_Proc>(defaultTerminateHandle);
 	thread->start();
-	threads[thread->tid] = thread;
+	size_t temp_tid = thread->tid;
+	threads.insert(std::pair<size_t, std::unique_ptr<Thread>>(temp_tid, std::move(thread)));
 	if (state == ProcessState::prepared)
 	{
 		state = ProcessState::running;
-		pid = thread->tid;
+		pid = temp_tid;
 	}
-	return thread->tid;
+	return temp_tid;
 }
 
 void Process::stopThread(uint16_t code, size_t tid)
@@ -31,10 +32,9 @@ void Process::stopThread(uint16_t code, size_t tid)
 
 void Process::cleanThread(size_t tid)
 {
-	Thread* thread_to_clean = threads[tid];
-	threads.erase(tid);
+	Thread* thread_to_clean = threads[tid].get();
 	WaitForSingleObject(thread_to_clean->thread_obj->native_handle(), INFINITE);
-	delete thread_to_clean;
+	threads.erase(tid);
 	if (threads.size() == 0)
 	{
 		state = ProcessState::stopped;

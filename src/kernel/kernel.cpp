@@ -17,6 +17,7 @@ void Initialize_Kernel() {
 }
 
 void Shutdown_Kernel() {
+	delete process_manager;
 	FreeLibrary(User_Programs);
 }
 
