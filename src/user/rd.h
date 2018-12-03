@@ -2,4 +2,7 @@
 
 #include "..\api\api.h"
 
+/*
+	maze zadany adresar
+*/
 extern "C" size_t __stdcall rd(const kiv_hal::TRegisters &regs);
