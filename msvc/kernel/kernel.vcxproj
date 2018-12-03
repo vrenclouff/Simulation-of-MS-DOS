@@ -21,8 +21,10 @@
   <ItemGroup>
     <ClCompile Include="..\..\src\api\api.cpp" />
     <ClCompile Include="..\..\src\kernel\circular_buffer.cpp" />
+    <ClCompile Include="..\..\src\kernel\drive.cpp" />
     <ClCompile Include="..\..\src\kernel\fat.cpp" />
     <ClCompile Include="..\..\src\kernel\fat_tools.cpp" />
+    <ClCompile Include="..\..\src\kernel\fs_tools.cpp" />
     <ClCompile Include="..\..\src\kernel\handles.cpp" />
     <ClCompile Include="..\..\src\kernel\io.cpp" />
     <ClCompile Include="..\..\src\kernel\iohandle.cpp" />
@@ -37,8 +39,10 @@
     <ClInclude Include="..\..\src\api\hal.h" />
     <ClInclude Include="..\..\src\kernel\circular_buffer.h" />
     <ClInclude Include="..\..\src\kernel\common.h" />
+    <ClInclude Include="..\..\src\kernel\drive.h" />
     <ClInclude Include="..\..\src\kernel\fat.h" />
     <ClInclude Include="..\..\src\kernel\fat_tools.h" />
+    <ClInclude Include="..\..\src\kernel\fs_tools.h" />
     <ClInclude Include="..\..\src\kernel\handles.h" />
     <ClInclude Include="..\..\src\kernel\io.h" />
     <ClInclude Include="..\..\src\kernel\iohandle.h" />
