@@ -11,6 +11,16 @@
 std::mutex Pipe_Guard;
 std::vector<kiv_os::THandle> pipes;
 
+void Set_Error(const bool failed, kiv_hal::TRegisters &regs, kiv_os::NOS_Error error) {
+	if (failed) {
+		regs.flags.carry = true;
+		regs.rax.x = static_cast<decltype(regs.rax.x)>(error);
+	}
+	else {
+		regs.flags.carry = false;
+	}
+}
+
 STDHandle Register_STD() {
 	const auto  in = Convert_Native_Handle(static_cast<HANDLE>(new IOHandle_Keyboard()));
 	const auto out = Convert_Native_Handle(static_cast<HANDLE>(new IOHandle_VGA()));
@@ -33,68 +43,60 @@ void Open_File(kiv_hal::TRegisters &regs) {
 	const auto path = reinterpret_cast<char*>(regs.rdx.r);
 	const auto fm = static_cast<kiv_os::NOpen_File>(regs.rcx.l);
 	const auto attributes = static_cast<kiv_os::NFile_Attributes>(regs.rdi.i);
-	kiv_os::NOS_Error error;
-	const auto source = io::Open_File(path, fm, attributes, error);
-	if (!source) {
-		regs.flags.carry = 1;
-		regs.rax.x = static_cast<decltype(regs.rax.x)>(error);
-		return;
-	}
-	const auto handle = Convert_Native_Handle(static_cast<HANDLE>(source));
 
-	regs.rax.x = handle;
-	regs.flags.carry = 0;
+	kiv_os::NOS_Error error = kiv_os::NOS_Error::Success;
+	const auto source = io::Open_File(path, fm, attributes, error);
+
+	Set_Error(!source, regs, error);
+	if (regs.flags.carry) return;
+
+	regs.rax.x = Convert_Native_Handle(static_cast<HANDLE>(source));;
 }
 
 void Read_File(kiv_hal::TRegisters &regs) {
 	const auto source = static_cast<IOHandle*>(Resolve_kiv_os_Handle(regs.rdx.x));
 	auto buffer = reinterpret_cast<char*>(regs.rdi.r);
 	const auto buffer_size = regs.rcx.r;
-	const auto read = source->read(buffer, buffer_size);
 
-	regs.rax.r = read;
-	regs.flags.carry = 0;
+	kiv_os::NOS_Error error = kiv_os::NOS_Error::Success;
+	regs.rax.r = source->read(buffer, buffer_size, error);
+
+	Set_Error(error != kiv_os::NOS_Error::Success , regs, error);
 }
 
 void Write_File(kiv_hal::TRegisters &regs) {
 	const auto source = static_cast<IOHandle*>(Resolve_kiv_os_Handle(regs.rdx.x));
 	auto buffer = reinterpret_cast<char*>(regs.rdi.r);
 	const auto buffer_size = regs.rcx.r;
-	const auto written = source->write(buffer, buffer_size);
 
-	regs.rax.r = written;
-	regs.flags.carry |= (written == 0 ? 1 : 0);
+	kiv_os::NOS_Error error = kiv_os::NOS_Error::Success;
+	regs.rax.r = source->write(buffer, buffer_size, error);
+
+	Set_Error(regs.rax.r == 0, regs, error);
 }
 
 void Delete_File(kiv_hal::TRegisters &regs) {
 	auto path = std::string(reinterpret_cast<char*>(regs.rdx.r));
 	const auto process = process_manager->getRunningProcess();
-	kiv_os::NOS_Error error;
+
+	kiv_os::NOS_Error error = kiv_os::NOS_Error::Success;
 	const auto success = io::Remove_File(fs_tool::to_absolute_path(process->working_dir, path), error);
 
-	regs.flags.carry = success ? 0 : 1;
+	Set_Error(success, regs, error);
 }
 
 void Close_Handle(kiv_hal::TRegisters &regs) {
 	const auto handle = regs.rdx.x;
 	const auto source = static_cast<IOHandle*>(Resolve_kiv_os_Handle(handle));
-	if (!source) {
-		regs.rax.x = static_cast<decltype(regs.rax.x)>(kiv_os::NOS_Error::Unknown_Error);
-		regs.flags.carry = 1;
-	}
 
 	if (is_pipe(handle)) {
 		source->close();
 	}
 	const auto success = Remove_Handle(handle);
 
-	if (success) {
-		delete source;
-		regs.flags.carry = 0;
-	}
-	else {
-		regs.flags.carry = 1;
-	}
+	Set_Error(!success, regs, kiv_os::NOS_Error::Unknown_Error);
+
+	if (success) {delete source;}
 }
 
 void Get_Working_Dir(kiv_hal::TRegisters &regs) {
@@ -113,15 +115,12 @@ void Set_Working_Dir(kiv_hal::TRegisters &regs) {
 	const auto path = std::string(reinterpret_cast<char*>(regs.rdx.r));
 	const auto process = process_manager->getRunningProcess();
 	const auto full_path = fs_tool::to_absolute_path(process->working_dir, path);
+	const auto is_exist = io::is_exist_dir(full_path);
 
-	if (io::is_exist_dir(full_path)) {
-		process->working_dir = full_path;
-		regs.flags.carry = 0;
-	}
-	else {
-		regs.rax.x = static_cast<decltype(regs.rax.x)>(kiv_os::NOS_Error::File_Not_Found);
-		regs.flags.carry = 1;
-	}
+	Set_Error(!is_exist, regs, kiv_os::NOS_Error::File_Not_Found);
+	if (regs.flags.carry) return;
+
+	process->working_dir = full_path;
 }
 
 void Seek(kiv_hal::TRegisters &regs) {

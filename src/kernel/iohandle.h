@@ -31,21 +31,19 @@ public:
 	virtual ~IOHandle() {}
 	IOHandle() : _permission(Permission::Read) {}
 	IOHandle(const uint8_t permission) : _permission(permission) {}
-	virtual size_t read(char* buffer, const size_t buffer_size) { return 0; }
-	virtual size_t write(char* buffer, const size_t buffer_size) { return 0; }
+	virtual size_t read(char* buffer, const size_t buffer_size, kiv_os::NOS_Error& error) { return 0; }
+	virtual size_t write(char* buffer, const size_t buffer_size, kiv_os::NOS_Error& error) { return 0; }
 	virtual void close() {}
-	void check_ACL(Permission acl) {
-		if (!(_permission & acl)) {
-			throw kiv_os::NOS_Error::Permission_Denied;
-		}
+	bool check_ACL(Permission acl) {
+		return (_permission & acl) != 0;
 	}
 };
 
 class IOHandle_Keyboard : public IOHandle {
 public:
 	IOHandle_Keyboard() : IOHandle(Permission::Read) {}
-	virtual size_t read(char* buffer, const size_t buffer_size) final override;
-	virtual size_t write(char* buffer, const size_t buffer_size) final override {
+	virtual size_t read(char* buffer, const size_t buffer_size, kiv_os::NOS_Error& error) final override;
+	virtual size_t write(char* buffer, const size_t buffer_size, kiv_os::NOS_Error& error) final override {
 		IOHandle::check_ACL(Permission::Write); return 0;
 	}
 };
@@ -53,10 +51,10 @@ public:
 class IOHandle_VGA : public IOHandle {
 public:
 	IOHandle_VGA() : IOHandle(Permission::Write) {}
-	virtual size_t read(char* buffer, const size_t buffer_size) final override {
+	virtual size_t read(char* buffer, const size_t buffer_size, kiv_os::NOS_Error& error) final override {
 		IOHandle::check_ACL(Permission::Read); return 0;
 	}
-	virtual size_t write(char* buffer, const size_t buffer_size) final override;
+	virtual size_t write(char* buffer, const size_t buffer_size, kiv_os::NOS_Error& error) final override;
 };
 
 class IOHandle_File : public IOHandle {
@@ -69,8 +67,8 @@ private:
 public:
 	IOHandle_File(const kiv_fs::Drive_Desc drive, const kiv_fs::File_Desc file, const uint8_t permission) :
 		IOHandle(permission), _drive(drive), _file(file) {}
-	virtual size_t read(char* buffer, const size_t buffer_size) final override;
-	virtual size_t write(char* buffer, const size_t buffer_size) final override;
+	virtual size_t read(char* buffer, const size_t buffer_size, kiv_os::NOS_Error& error) final override;
+	virtual size_t write(char* buffer, const size_t buffer_size, kiv_os::NOS_Error& error) final override;
 };
 
 class IOHandle_SYS : public IOHandle {
@@ -80,8 +78,8 @@ private:
 
 public:
 	IOHandle_SYS(const SYS_Type type) : _type(type) {}
-	virtual size_t read(char* buffer, const size_t buffer_size) final override;
-	virtual size_t write(char* buffer, const size_t buffer_size) final override {
+	virtual size_t read(char* buffer, const size_t buffer_size, kiv_os::NOS_Error& error) final override;
+	virtual size_t write(char* buffer, const size_t buffer_size, kiv_os::NOS_Error& error) final override {
 		IOHandle::check_ACL(Permission::Write); return 0;
 	}
 };
@@ -94,7 +92,7 @@ private:
 public:
 	IOHandle_Pipe(std::shared_ptr<Circular_buffer> circular_buffer, const uint8_t permission) : IOHandle(permission), _circular_buffer(circular_buffer) {}
 
-	virtual size_t read(char* buffer, const size_t buffer_size) final override;
-	virtual size_t write(char* buffer, const size_t buffer_size) final override;
+	virtual size_t read(char* buffer, const size_t buffer_size, kiv_os::NOS_Error& error) final override;
+	virtual size_t write(char* buffer, const size_t buffer_size, kiv_os::NOS_Error& error) final override;
 	virtual void close() final override;
 };

@@ -4,8 +4,11 @@
 #include "fat_tools.h"
 #include "common.h"
 
-size_t IOHandle_VGA::write(char* buffer, const size_t buffer_size) {
-	IOHandle::check_ACL(Permission::Write);
+size_t IOHandle_VGA::write(char* buffer, const size_t buffer_size, kiv_os::NOS_Error& error) {
+	if (!IOHandle::check_ACL(Permission::Write)) {
+		error = kiv_os::NOS_Error::Permission_Denied;
+		return 0;
+	}
 
 	kiv_hal::TRegisters regs;
 	regs.rax.h = static_cast<decltype(regs.rax.h)>(kiv_hal::NVGA_BIOS::Write_String);
@@ -15,8 +18,11 @@ size_t IOHandle_VGA::write(char* buffer, const size_t buffer_size) {
 	return regs.rcx.x;
 }
 
-size_t IOHandle_Keyboard::read(char* buffer, const size_t buffer_size) {
-	IOHandle::check_ACL(Permission::Read);
+size_t IOHandle_Keyboard::read(char* buffer, const size_t buffer_size, kiv_os::NOS_Error& error) {
+	if (!IOHandle::check_ACL(Permission::Read)) {
+		error = kiv_os::NOS_Error::Permission_Denied;
+		return 0;
+	}
 
 	kiv_hal::TRegisters registers;
 
@@ -70,13 +76,15 @@ size_t IOHandle_Keyboard::read(char* buffer, const size_t buffer_size) {
 	return pos;
 }
 
-size_t IOHandle_File::write(char * buffer, const size_t buffer_size) {
-	IOHandle::check_ACL(Permission::Write);
+size_t IOHandle_File::write(char * buffer, const size_t buffer_size, kiv_os::NOS_Error& error) {
+	if(!IOHandle::check_ACL(Permission::Write)) {
+		error = kiv_os::NOS_Error::Permission_Denied;
+		return 0;
+	}
+
 	std::lock_guard<std::mutex> locker(_io_mutex);
 
-	// TODO 
 	auto disk_status = kiv_hal::NDisk_Status::No_Error;
-	auto error = kiv_os::NOS_Error::Success;
 
 	const auto& boot_block = _drive.boot_block;
 	const auto bytes_per_sector = _drive.boot_block.bytes_per_sector;
@@ -147,25 +155,18 @@ size_t IOHandle_File::write(char * buffer, const size_t buffer_size) {
 		}
 	}
 
-	/*
-	_file.entire_dir.size += static_cast<uint32_t>(seek);
-
-	if (!kiv_fs::save_to_dir(_drive.id, _parrent_sectors, bytes_per_sector, _file.entire_dir, kiv_fs::Edit_Type::Edit, disk_status)) {
-		error = kiv_os::NOS_Error::IO_Error;
-		return 0;
-	}
-	*/
-
 	return buffer_size;
 }
 
-size_t IOHandle_File::read(char* buffer, const size_t buffer_size) {
-	IOHandle::check_ACL(Permission::Read);
+size_t IOHandle_File::read(char* buffer, const size_t buffer_size, kiv_os::NOS_Error& error) {
+	if (!IOHandle::check_ACL(Permission::Read)) {
+		error = kiv_os::NOS_Error::Permission_Denied;
+		return 0;
+	}
+
 	std::lock_guard<std::mutex> locker(_io_mutex);
 
-	// TODO 
 	auto disk_status = kiv_hal::NDisk_Status::No_Error;
-	auto error = kiv_os::NOS_Error::Success;
 
 	const auto bytes_per_sector = _drive.boot_block.bytes_per_sector;
 
@@ -290,8 +291,12 @@ size_t procfs(char* buffer, const size_t buffer_size) {
 	return size;
 }
 
-size_t IOHandle_SYS::read(char* buffer, const size_t buffer_size) {
-	IOHandle::check_ACL(Permission::Read);
+size_t IOHandle_SYS::read(char* buffer, const size_t buffer_size, kiv_os::NOS_Error& error) {
+	if (!IOHandle::check_ACL(Permission::Read)) {
+		error = kiv_os::NOS_Error::Permission_Denied;
+		return 0;
+	}
+
 	std::lock_guard<std::mutex> locker(_io_mutex);
 
 	switch (_type) {
@@ -300,8 +305,12 @@ size_t IOHandle_SYS::read(char* buffer, const size_t buffer_size) {
 	}
 }
 
-size_t IOHandle_Pipe::write(char* buffer, const size_t buffer_size) {
-	IOHandle::check_ACL(Permission::Write);
+size_t IOHandle_Pipe::write(char* buffer, const size_t buffer_size, kiv_os::NOS_Error& error) {
+	if (!IOHandle::check_ACL(Permission::Write)) {
+		error = kiv_os::NOS_Error::Permission_Denied;
+		return 0;
+	}
+
 	std::lock_guard<std::mutex> locker(_io_mutex);
 
 	size_t written = 0;
@@ -312,8 +321,12 @@ size_t IOHandle_Pipe::write(char* buffer, const size_t buffer_size) {
 	return written;
 }
 
-size_t IOHandle_Pipe::read(char* buffer, const size_t buffer_size) {
-	IOHandle::check_ACL(Permission::Read);
+size_t IOHandle_Pipe::read(char* buffer, const size_t buffer_size, kiv_os::NOS_Error& error) {
+	if (!IOHandle::check_ACL(Permission::Read)) {
+		error = kiv_os::NOS_Error::Permission_Denied;
+		return 0;
+	}
+
 	std::lock_guard<std::mutex> locker(_io_mutex);
 
 	size_t read = 0;

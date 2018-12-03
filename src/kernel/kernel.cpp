@@ -106,16 +106,6 @@ void __stdcall Bootstrap_Loader(kiv_hal::TRegisters &context) {
 	Shutdown_Kernel();
 }
 
-
-void Set_Error(const bool failed, kiv_hal::TRegisters &regs) {
-	if (failed) {
-		regs.flags.carry = true;
-		regs.rax.r = GetLastError();
-	}
-	else
-		regs.flags.carry = false;
-}
-
 void Call_User_Function(char* funcname, kiv_hal::TRegisters regs) {
 	kiv_os::TThread_Proc to_call = (kiv_os::TThread_Proc)GetProcAddress(User_Programs, funcname);
 	if (to_call) {
