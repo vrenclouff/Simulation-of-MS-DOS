@@ -1,5 +1,3 @@
-//#define CRT
-//#define VLD
 
 #include <Windows.h>
 #include <iostream>
@@ -7,17 +5,6 @@
 #include "../api/hal.h"
 #include "idt.h"
 #include "keyboard.h"
-
-#ifdef VLD
-#include "C:\\Program Files (x86)\\Visual Leak Detector\\include\\vld.h"
-#pragma comment(lib, "C:\\Program Files (x86)\\Visual Leak Detector\\lib\\Win64\\vld.lib")
-extern "C" char __ImageBase;
-#endif
-
-#ifdef CRT
-#define MYDEBUG_NEW   new( _NORMAL_BLOCK, __FILE__, __LINE__)
-#define new MYDEBUG_NEW
-#endif
 
 
 bool Setup_HW() {
@@ -40,20 +27,6 @@ bool Setup_HW() {
 
 int __cdecl main() {
 
-#ifdef VLD
-	VLDEnable();
-#endif
-#ifdef CRT
-	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF | _CRTDBG_CHECK_ALWAYS_DF);
-
-	_CrtSetReportMode(_CRT_WARN, _CRTDBG_MODE_FILE);
-	_CrtSetReportFile(_CRT_WARN, _CRTDBG_FILE_STDOUT);
-	_CrtSetReportMode(_CRT_ERROR, _CRTDBG_MODE_FILE);
-	_CrtSetReportFile(_CRT_ERROR, _CRTDBG_FILE_STDOUT);
-	_CrtSetReportMode(_CRT_ASSERT, _CRTDBG_MODE_FILE);
-	_CrtSetReportFile(_CRT_ASSERT, _CRTDBG_FILE_STDOUT);
-#endif
-
 	if (!Setup_HW()) return 1;
 
 	//HW je nastaven, zavedeme simulovany operacni system
@@ -71,14 +44,6 @@ int __cdecl main() {
 	//a az simulovany OS skonci, uvolnime zdroje z pameti
 	FreeLibrary(kernel);
 	TlsFree(kiv_hal::Expected_Tls_IDT_Index);
-
-#ifdef VLD
-	VLDReportLeaks();
-#endif
-#ifdef CRT
-	_CrtDumpMemoryLeaks();
-	//_CrtMemDumpAllObjectsSince(NULL);
-#endif
 
 	return 0;
 }

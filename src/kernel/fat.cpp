@@ -257,6 +257,10 @@ std::vector<uint16_t> sectors_for_entire_dir(const kiv_fs::FATEntire_Directory& 
 		next_fake_sector = fat[(size_t)fat_offset.rem] |fat[(size_t)fat_offset.rem + 1] << 8;
 		fake_sector = next_fake_sector;
 
+		if (next_fake_sector == 0) {
+			return std::vector<uint16_t>();
+		}
+
 	} while (next_fake_sector != kiv_fs::FAT_Attributes::End);
 
 	return sectors;
@@ -402,20 +406,17 @@ bool kiv_fs::save_to_dir(const uint8_t drive_id, const std::vector<uint16_t> sec
 		return true;
 	}
 
-	std::vector<char> fat(bytes_per_sector);
+	std::vector<unsigned char> dir(bytes_per_sector);
 	kiv_hal::TDisk_Address_Packet dap;
-	dap.sectors = static_cast<void*>(fat.data());
 	dap.count = 1;
+	dap.sectors = static_cast<void*>(dir.data());
 
 	kiv_hal::TRegisters regs;
 	regs.rdx.l = drive_id;
-	regs.rax.h = static_cast<decltype(regs.rax.h)>(kiv_hal::NDisk_IO::Read_Sectors);
 	regs.rdi.r = reinterpret_cast<decltype(regs.rdi.r)>(&dap);
 	regs.flags.carry = 0;
 
 	const auto max_dir_entries_per_block = static_cast<uint8_t>(bytes_per_sector / sizeof(kiv_fs::FATEntire_Directory));
-	std::vector<unsigned char> dir(bytes_per_sector);
-	dap.sectors = static_cast<void*>(dir.data());
 
 	auto findEntire = [&](const kiv_fs::FATEntire_Directory& dir) {
 		return dir.first_cluster == entire_dir.first_cluster;
@@ -444,7 +445,10 @@ bool kiv_fs::save_to_dir(const uint8_t drive_id, const std::vector<uint16_t> sec
 					dir_entries.erase(std::remove_if(dir_entries.begin(), dir_entries.end(), findEntire));
 				} break;
 				case kiv_fs::Edit_Type::Edit: {
-					*std::find_if(dir_entries.begin(), dir_entries.end(), findEntire) = entire_dir;
+					auto dir_entries_itr = std::find_if(dir_entries.begin(), dir_entries.end(), findEntire);
+					if (dir_entries_itr != dir_entries.end()) {
+						*dir_entries_itr = entire_dir;
+					}
 				} break;
 			}
 			

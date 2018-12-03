@@ -25,6 +25,10 @@ public:
 	kiv_hal::TRegisters context;
 
 	Thread(kiv_os::TThread_Proc func_addr, kiv_hal::TRegisters thread_context);
+	~Thread() {
+		handlers.clear();
+	}
+
 	void start();
 	void stop(uint16_t exitCode);
 	static std::condition_variable endCond; // condition for process end

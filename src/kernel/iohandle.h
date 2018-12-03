@@ -24,13 +24,14 @@ static const std::map<std::string, SYS_Type> SYS_TABLE = {
 
 class IOHandle {
 private:
-	const uint8_t _permission ;
+	const uint8_t _permission;
 protected:
 	std::mutex _io_mutex;
 public:
+	virtual ~IOHandle() {}
 	IOHandle() : _permission(Permission::Read) {}
 	IOHandle(const uint8_t permission) : _permission(permission) {}
-	virtual size_t read(char* buffer, const size_t buffer_size)  { return 0; }
+	virtual size_t read(char* buffer, const size_t buffer_size) { return 0; }
 	virtual size_t write(char* buffer, const size_t buffer_size) { return 0; }
 	virtual void close() {}
 	void check_ACL(Permission acl) {
@@ -60,15 +61,14 @@ public:
 
 class IOHandle_File : public IOHandle {
 private:
-	const std::vector<uint16_t> _parrent_sectors;
 	const kiv_fs::Drive_Desc _drive;
 	kiv_fs::File_Desc _file;
 
 	size_t seek = 0;
 
 public:
-	IOHandle_File(const kiv_fs::Drive_Desc drive, const kiv_fs::File_Desc file, const uint8_t permission, const std::vector<uint16_t> parrent_sectors) :
-		IOHandle(permission), _drive(drive), _file(file), _parrent_sectors(parrent_sectors) {}
+	IOHandle_File(const kiv_fs::Drive_Desc drive, const kiv_fs::File_Desc file, const uint8_t permission) :
+		IOHandle(permission), _drive(drive), _file(file) {}
 	virtual size_t read(char* buffer, const size_t buffer_size) final override;
 	virtual size_t write(char* buffer, const size_t buffer_size) final override;
 };
@@ -82,7 +82,7 @@ public:
 	IOHandle_SYS(const SYS_Type type) : _type(type) {}
 	virtual size_t read(char* buffer, const size_t buffer_size) final override;
 	virtual size_t write(char* buffer, const size_t buffer_size) final override {
-		IOHandle::check_ACL(Permission::Write); return 0; 
+		IOHandle::check_ACL(Permission::Write); return 0;
 	}
 };
 
