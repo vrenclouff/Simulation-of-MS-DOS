@@ -14,7 +14,7 @@ void rgen_Sigterm_Handler(const kiv_hal::TRegisters &regs) {
 }
 
 void ctrlZ_Sigterm_Handler(const kiv_hal::TRegisters &regs) {
-	kiv_os_rtl::Exit(0);
+	//kiv_os_rtl::Exit(0);
 }
 
 void wait_For_Ctrlz(const kiv_hal::TRegisters &regs) {
@@ -32,9 +32,11 @@ void wait_For_Ctrlz(const kiv_hal::TRegisters &regs) {
 		}
 	}
 
-	*generating = false;
-	kiv_os_rtl::Exit(0);
-	return;
+	if (!rgen_exit_signaled)
+	{
+		*generating = false;
+		kiv_os_rtl::Exit(0);
+	}
 }
 
 size_t __stdcall rgen(const kiv_hal::TRegisters &regs) {
@@ -70,8 +72,11 @@ size_t __stdcall rgen(const kiv_hal::TRegisters &regs) {
 		kiv_os_rtl::Write_File(std_out, fltout, strlen(fltout), written);
 	}
 
-	kiv_os_rtl::Wait_For(handler);
-	kiv_os_rtl::Read_Exit_Code(handler);
+	if (!rgen_exit_signaled)
+	{
+		kiv_os_rtl::Wait_For(handler);
+		kiv_os_rtl::Read_Exit_Code(handler);
+	}
 
 	kiv_os_rtl::Exit(0);
 	return 0;

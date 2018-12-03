@@ -28,5 +28,4 @@ public:
 	void start();
 	void stop(uint16_t exitCode);
 	static std::condition_variable endCond; // condition for process end
-	static std::mutex endMtx; // endCond mutex
 };

@@ -14,10 +14,6 @@
 size_t ProcessManager::_getRunningTid()
 {
 	size_t thread_id = std::hash<std::thread::id>()(std::this_thread::get_id());
-	if (overriden_running_thread)
-	{
-		thread_id = overriden_running_thread->tid;
-	}
 	return thread_id;
 }
 
@@ -90,13 +86,13 @@ void ProcessManager::removeProcess(kiv_os::THandle handle)
 
 Process* ProcessManager::getRunningProcess()
 {
-	std::lock_guard<std::recursive_mutex> lock(mtx);
+	std::lock_guard<std::mutex> lock(mtx);
 	return _getRunningProcess();
 }
 
 Thread* ProcessManager::getRunningThread()
 {
-	std::lock_guard<std::recursive_mutex> lock(mtx);
+	std::lock_guard<std::mutex> lock(mtx);
 	return _getRunningThread();
 }
 
@@ -140,7 +136,7 @@ void ProcessManager::handleClone(kiv_hal::TRegisters &regs)
 
 void ProcessManager::createProcess(kiv_hal::TRegisters &regs, bool first_process)
 {
-	std::lock_guard<std::recursive_mutex> lock(mtx);
+	std::lock_guard<std::mutex> lock(mtx);
 	regs.flags.carry = 0;
 	char* funcName = reinterpret_cast<char*>(regs.rdx.r);
 	std::string funcNameStr(funcName);
@@ -192,7 +188,7 @@ void ProcessManager::createProcess(kiv_hal::TRegisters &regs, bool first_process
 
 void ProcessManager::createThread(kiv_hal::TRegisters &regs)
 {	
-	std::lock_guard<std::recursive_mutex> lock(mtx);
+	std::lock_guard<std::mutex> lock(mtx);
 	regs.flags.carry = 0;
 	kiv_os::TThread_Proc programAddress = (kiv_os::TThread_Proc) regs.rdx.r;
 
@@ -223,20 +219,19 @@ void ProcessManager::handleWaitFor(kiv_hal::TRegisters &regs)
 {
 	// RDX = array of handles
 	// RCX = array size
+	std::unique_lock<std::mutex> lock(mtx);
 	regs.flags.carry = 0;
 	kiv_os::THandle *registered_handles = reinterpret_cast<kiv_os::THandle*>(regs.rdx.r);
 	size_t handles_size = static_cast<size_t>(regs.rcx.r);
 	std::vector<Thread*> waiting_for(handles_size);
 
 
-	std::unique_lock<std::mutex> lk(Thread::endMtx);
 	for (int i = 0; i < handles_size; i++)
 	{
 		if (handles.count(registered_handles[i]) == 0)
 		{
 			regs.flags.carry = 1;
 			regs.rax.x = static_cast<uint16_t>(kiv_os::NOS_Error::Invalid_Argument);
-			lk.unlock();
 			return;
 		}
 		size_t tid = handles[registered_handles[i]];
@@ -244,14 +239,13 @@ void ProcessManager::handleWaitFor(kiv_hal::TRegisters &regs)
 		if (waiting_for[i]->state == ThreadState::stopped)
 		{
 			regs.rax.r = static_cast<uint64_t>(registered_handles[i]);
-			lk.unlock();
 			return;
 		}
 	}
 
 	while (true)
 	{
-		Thread::endCond.wait(lk);
+		Thread::endCond.wait(lock);
 		for (int i = 0; i < handles_size; i++)
 		{
 			if (waiting_for[i]->state == ThreadState::stopped)
@@ -266,11 +260,15 @@ void ProcessManager::handleWaitFor(kiv_hal::TRegisters &regs)
 void ProcessManager::handleExit(kiv_hal::TRegisters &regs)
 {
 	// CX = exit code
-	std::unique_lock <std::recursive_mutex> lock(mtx);
-	uint16_t exitCode = static_cast<uint16_t>(regs.rcx.x);
-	Process* thisProcess = _getRunningProcess();
-	size_t thread_id = _getRunningTid();
-	lock.unlock();
+	uint16_t exitCode;
+	size_t thread_id;
+	Process* thisProcess;
+	{
+		std::lock_guard<std::mutex> lock(mtx);
+		exitCode = static_cast<uint16_t>(regs.rcx.x);
+		thisProcess = _getRunningProcess();
+		thread_id = _getRunningTid();
+	}
 	thisProcess->stopThread(exitCode, thread_id);
 }
 
@@ -278,7 +276,7 @@ void ProcessManager::handleReadExitCode(kiv_hal::TRegisters &regs)
 {
 	// dx = process / thread handle
 	// OUT: cx = exitcode
-	std::lock_guard<std::recursive_mutex> lock(mtx);
+	std::lock_guard<std::mutex> lock(mtx);
 	kiv_os::THandle target_handle = static_cast<uint16_t>(regs.rdx.x);
 	regs.flags.carry = 0;
 	if (handles.count(target_handle) == 0)
@@ -315,7 +313,7 @@ void ProcessManager::registerSignalHandler(kiv_hal::TRegisters &regs)
 {
 	// rcx NSignal_Id
 	// rdx: pointer na TThread_Proc, kde pri jeho volani context.rcx bude id signalu (0 = default handler)
-	std::lock_guard<std::recursive_mutex> lock(mtx);
+	std::lock_guard<std::mutex> lock(mtx);
 	regs.flags.carry = 0;
 	kiv_os::NSignal_Id signal = static_cast<kiv_os::NSignal_Id>(regs.rcx.r);
 	if (signal != kiv_os::NSignal_Id::Terminate)
@@ -343,7 +341,7 @@ void ProcessManager::shutdown(kiv_hal::TRegisters &regs)
 {
 	// rcx NSignal_Id
 	// rdx: pointer na TThread_Proc, kde pri jeho volani context.rcx bude id signalu (0 = default handler)
-	std::lock_guard<std::recursive_mutex> lock(mtx);
+	std::lock_guard<std::mutex> lock(mtx);
 
 	// send sigterm
 	kiv_hal::TRegisters sigterm_regs{ 0 };
@@ -352,16 +350,15 @@ void ProcessManager::shutdown(kiv_hal::TRegisters &regs)
 	{
 		for (auto const& thread_entry : process_entry.second->threads)
 		{
-			overriden_running_thread = thread_entry.second.get();
 			thread_entry.second->handlers[kiv_os::NSignal_Id::Terminate](sigterm_regs);
-			overriden_running_thread = nullptr;
 		}
 	}
+
 }
 
 std::string ProcessManager::getProcessTable()
 {
-	std::lock_guard<std::recursive_mutex> lock(mtx);
+	std::lock_guard<std::mutex> lock(mtx);
 	std::ostringstream result;
 
 	for (auto const& process_entry : processes) {
