@@ -6,7 +6,7 @@
 #include <string>
 #include <iostream>
 
-#include "io.h"
+#include "drive.h"
 
 
 // ---PRIVATE METHODS---
@@ -167,7 +167,8 @@ void ProcessManager::createProcess(kiv_hal::TRegisters &regs, bool first_process
 		dir = currentProcess->working_dir;
 	}
 	else {
-		dir = io::main_drive().append("\\");
+		auto volume = drive::main_volume();
+		dir = volume.append("\\");
 	}
 
 	std::unique_ptr<Process> newProcess = std::make_unique<Process>(funcNameStr, parent_pid);

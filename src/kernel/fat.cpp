@@ -87,17 +87,17 @@ void format_fat16(unsigned char* boot_block, const kiv_hal::TDrive_Parameters& p
 	boot_block[0x3d] = 0x20;
 }
 
-bool kiv_fs::new_entire_dir(kiv_fs::FATEntire_Directory & entry, const std::string name, const uint8_t attributes, kiv_os::NOS_Error& error) {
+bool kiv_fs::new_entire_dir(kiv_fs::FATEntire_Directory & entry, const std::string name, const uint8_t attributes, kiv_hal::NDisk_Status& error) {
 
 	const auto filename = fat_tool::parse_entire_name(name);
 
 	if (filename.name.size() > sizeof kiv_fs::FATEntire_Directory::file_name) {
-		error = kiv_os::NOS_Error::Invalid_Argument;
+		error = kiv_hal::NDisk_Status::Bad_Command;
 		return false;
 	}
 
 	if (filename.extension.size() > sizeof kiv_fs::FATEntire_Directory::extension) {
-		error = kiv_os::NOS_Error::Invalid_Argument;
+		error = kiv_hal::NDisk_Status::Bad_Command;
 		return false;
 	}
 

@@ -67,7 +67,7 @@ namespace kiv_fs {
 		Edit = 3,
 	};
 
-	bool new_entire_dir(kiv_fs::FATEntire_Directory& entry, const std::string name, const uint8_t attributes, kiv_os::NOS_Error& error);
+	bool new_entire_dir(kiv_fs::FATEntire_Directory& entry, const std::string name, const uint8_t attributes, kiv_hal::NDisk_Status& error);
 
 	void format_disk(const FAT_Version version, void* boot_block, const kiv_hal::TDrive_Parameters &params);
 	bool is_formatted(const void* sector);

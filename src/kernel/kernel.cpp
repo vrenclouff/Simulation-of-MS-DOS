@@ -3,9 +3,8 @@
 #include "kernel.h"
 #include <Windows.h>
 
+#include "drive.h"
 #include "io.h"
-#include "fat.h"
-#include "fat_tools.h"
 #include "process.h"
 #include "common.h"
 
@@ -73,9 +72,7 @@ void __stdcall Bootstrap_Loader(kiv_hal::TRegisters &context) {
 			kiv_fs::boot_block(boot_block, params.bytes_per_sector, arr.data());
 
 			char volume[2] = { drive_name++, ':'};
-			if (io::register_drive(std::string(volume, sizeof(volume)), regs.rdx.l, boot_block)) {
-				// TODO exception -> can't register disk drive
-			}
+			drive::save(std::string(volume, sizeof(volume)), regs.rdx.l, boot_block);
 		}
 
 		if (regs.rdx.l == 255) break;
