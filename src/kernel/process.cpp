@@ -33,7 +33,8 @@ void Process::stopThread(uint16_t code, size_t tid)
 void Process::cleanThread(size_t tid)
 {
 	Thread* thread_to_clean = threads[tid].get();
-	WaitForSingleObject(thread_to_clean->thread_obj->native_handle(), INFINITE);
+	thread_to_clean->thread_obj.join();
+	//WaitForSingleObject(thread_to_clean->thread_obj->native_handle(), INFINITE);
 	threads.erase(tid);
 	if (threads.size() == 0)
 	{
