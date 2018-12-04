@@ -38,7 +38,7 @@ IOHandle* Open_Exist_File(const std::string& drive_volume, const std::vector<std
 		}
 		const auto read_only = fat_tool::is_attr(static_cast<uint8_t>(attributes), kiv_os::NFile_Attributes::Read_Only);
 		const auto is_root = components.size() == 1;
-		return new IOHandle_File(drive, files.back(), read_only);
+		return new IOHandle_File(drive, files.back(), read_only, read_only ? std::vector<uint16_t>(0) : files.end()[-2].sectors);
 	}
 }
 
@@ -139,7 +139,7 @@ IOHandle* Open_New_File(const std::string& drive_volume, const std::vector<std::
 	const auto is_read_only = fat_tool::is_attr(new_file.entire_dir.attributes, kiv_os::NFile_Attributes::Read_Only);
 	uint8_t permission = is_read_only ? Permission::Read : Permission::Read | Permission::Write;
 
-	return is_newfile_dir ? new IOHandle() : new IOHandle_File(drive, new_file, permission);
+	return is_newfile_dir ? new IOHandle() : new IOHandle_File(drive, new_file, permission, is_read_only ? std::vector<uint16_t>(0) : parent_file.sectors);
 }
 
 IOHandle* io::Open_File(std::string absolute_path, const kiv_os::NOpen_File fm, const kiv_os::NFile_Attributes attributes, kiv_os::NOS_Error& error) {

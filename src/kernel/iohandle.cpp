@@ -155,6 +155,14 @@ size_t IOHandle_File::write(char * buffer, const size_t buffer_size, kiv_os::NOS
 		}
 	}
 
+	_file.entire_dir.size = static_cast<uint32_t>(seek);
+
+	if (!kiv_fs::save_to_dir(_drive.id, _parrent_sectors, bytes_per_sector, _file.entire_dir, kiv_fs::Edit_Type::Edit, disk_status)) {
+		error = kiv_os::NOS_Error::IO_Error;
+		return 0;
+	}
+
+
 	return buffer_size;
 }
 
