@@ -2,6 +2,8 @@
 #include "rtl.h"
 #include "error.h"
 
+#include <vector>
+#include <sstream>
 
 size_t __stdcall type(const kiv_hal::TRegisters &regs) {
 
@@ -34,16 +36,6 @@ size_t __stdcall type(const kiv_hal::TRegisters &regs) {
 		}
 	}
 	else {
-		const kiv_os::NOS_Error error = kiv_os::NOS_Error::Invalid_Argument;
-		const auto error_msg = Error_Message(error);
-		const auto error_code = static_cast<uint16_t>(error);
-
-		kiv_os_rtl::Write_File(std_out, error_msg.c_str(), error_msg.length(), written);
-		kiv_os_rtl::Exit(error_code);
-		return error_code;
-	}
-	/*
-	else {
 		std::vector<std::string> elements;
 		do {
 			if (kiv_os_rtl::Read_File(std_in, buffer, sizeof buffer, read)) {
@@ -57,7 +49,6 @@ size_t __stdcall type(const kiv_hal::TRegisters &regs) {
 		const auto res = lines.str();
 		kiv_os_rtl::Write_File(std_out, res.c_str(), res.length(), written);
 	}
-	*/
 
 	kiv_os_rtl::Exit(0);
 	return 0;
