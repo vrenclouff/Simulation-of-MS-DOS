@@ -372,7 +372,7 @@ std::string ProcessManager::getProcessTable()
 			case ProcessState::stopped:		result << "stopped";	break;
 			default:						result << "unknown";	break;
 		}
-		result << "\t" << process->parent_handle << "\n";
+		result << "\t" << process->handle << "\n";
 	}
 	return result.str();
 }
