@@ -11,31 +11,31 @@
 
 // ---PRIVATE METHODS---
 
-size_t ProcessManager::_getRunningTid()
+size_t Process_Manager::_get_running_tid()
 {
 	size_t thread_id = std::hash<std::thread::id>()(std::this_thread::get_id());
 	return thread_id;
 }
 
-Process* ProcessManager::_getRunningProcess()
+Process* Process_Manager::_get_running_process()
 {
-	size_t thread_id = _getRunningTid();
+	size_t thread_id = _get_running_tid();
 	// check if thread is main thread
 	if (processes.find(thread_id) != processes.end())
 	{
 		Process* ret = processes[thread_id].get();
 		return ret;
 	}
-	return getProcessByTid(thread_id);
+	return get_process_by_tid(thread_id);
 }
 
-Thread* ProcessManager::_getRunningThread()
+Thread* Process_Manager::_get_running_thread()
 {
-	size_t thread_id = _getRunningTid();
-	return getThreadByTid(thread_id);
+	size_t thread_id = _get_running_tid();
+	return get_thread_by_tid(thread_id);
 }
 
-Thread* ProcessManager::getThreadByTid(size_t tid)
+Thread* Process_Manager::get_thread_by_tid(size_t tid)
 {
 	for (auto const& processes_item : processes)
 	{
@@ -52,7 +52,7 @@ Thread* ProcessManager::getThreadByTid(size_t tid)
 	return nullptr;
 }
 
-Process* ProcessManager::getProcessByTid(size_t tid)
+Process* Process_Manager::get_process_by_tid(size_t tid)
 {
 	for (auto const& processes_item : processes)
 	{
@@ -69,12 +69,12 @@ Process* ProcessManager::getProcessByTid(size_t tid)
 	return nullptr;
 }
 
-void ProcessManager::removeHandle(kiv_os::THandle handle)
+void Process_Manager::remove_handle(kiv_os::THandle handle)
 {
 	handles.erase(handle);
 }
 
-void ProcessManager::removeProcess(kiv_os::THandle handle)
+void Process_Manager::remove_process(kiv_os::THandle handle)
 {
 	size_t pid = handles[handle];
 	Process* target_process = processes[pid].get();
@@ -84,36 +84,36 @@ void ProcessManager::removeProcess(kiv_os::THandle handle)
 
 // ---PUBLIC METHODS---
 
-Process* ProcessManager::getRunningProcess()
+Process* Process_Manager::get_running_process()
 {
 	std::lock_guard<std::mutex> lock(mtx);
-	return _getRunningProcess();
+	return _get_running_process();
 }
 
-Thread* ProcessManager::getRunningThread()
+Thread* Process_Manager::get_running_thread()
 {
 	std::lock_guard<std::mutex> lock(mtx);
-	return _getRunningThread();
+	return _get_running_thread();
 }
 
-void ProcessManager::SysCall(kiv_hal::TRegisters &regs)
+void Process_Manager::sys_call(kiv_hal::TRegisters &regs)
 {
 	switch (static_cast<kiv_os::NOS_Process>(regs.rax.l))
 	{
 		case kiv_os::NOS_Process::Clone:
-			handleClone(regs);
+			handle_clone(regs);
 			break;
 		case kiv_os::NOS_Process::Wait_For:
-			handleWaitFor(regs);
+			handle_wait_for(regs);
 			break;
 		case kiv_os::NOS_Process::Exit:
-			handleExit(regs);
+			handle_exit(regs);
 			break;
 		case kiv_os::NOS_Process::Read_Exit_Code:
-			handleReadExitCode(regs);
+			handle_read_exit_code(regs);
 			break;
 		case kiv_os::NOS_Process::Register_Signal_Handler:
-			registerSignalHandler(regs);
+			register_signal_handler(regs);
 			break;
 		case kiv_os::NOS_Process::Shutdown:
 			shutdown(regs);
@@ -121,20 +121,20 @@ void ProcessManager::SysCall(kiv_hal::TRegisters &regs)
 	}
 }
 
-void ProcessManager::handleClone(kiv_hal::TRegisters &regs)
+void Process_Manager::handle_clone(kiv_hal::TRegisters &regs)
 {
 	switch (static_cast<kiv_os::NClone>(regs.rcx.r))
 	{
 	case kiv_os::NClone::Create_Process:
-		createProcess(regs);
+		create_process(regs);
 		break;
 	case kiv_os::NClone::Create_Thread:
-		createThread(regs);
+		create_thread(regs);
 		break;
 	}
 }
 
-void ProcessManager::createProcess(kiv_hal::TRegisters &regs, bool first_process)
+void Process_Manager::create_process(kiv_hal::TRegisters &regs, bool first_process)
 {
 	std::lock_guard<std::mutex> lock(mtx);
 	regs.flags.carry = 0;
@@ -157,7 +157,7 @@ void ProcessManager::createProcess(kiv_hal::TRegisters &regs, bool first_process
 
 	if (!first_process)
 	{
-		Process* currentProcess = _getRunningProcess();
+		Process* currentProcess = _get_running_process();
 		parent_pid = currentProcess->pid;
 		parent_handle = currentProcess->handle;
 		dir = currentProcess->working_dir;
@@ -174,7 +174,7 @@ void ProcessManager::createProcess(kiv_hal::TRegisters &regs, bool first_process
 	child_context.rax.x = stdin_handle; // stdin
 	child_context.rbx.x = stdout_handle; // stdout
 
-	newProcess->startThread(child_context, programAddress);
+	newProcess->start_thread(child_context, programAddress);
 	handles[++last_handle] = newProcess->pid;
 	newProcess->handle = last_handle;
 	newProcess->parent_handle = parent_handle;
@@ -186,7 +186,7 @@ void ProcessManager::createProcess(kiv_hal::TRegisters &regs, bool first_process
 	regs.rax.x = static_cast<kiv_os::THandle>(last_handle);
 }
 
-void ProcessManager::createThread(kiv_hal::TRegisters &regs)
+void Process_Manager::create_thread(kiv_hal::TRegisters &regs)
 {	
 	std::lock_guard<std::mutex> lock(mtx);
 	regs.flags.carry = 0;
@@ -202,20 +202,20 @@ void ProcessManager::createThread(kiv_hal::TRegisters &regs)
 	kiv_os::THandle stdin_handle = regs.rbx.e >> 16;
 	kiv_os::THandle stdout_handle = regs.rbx.e & 0x00ff;
 
-	Process* currentProcess = _getRunningProcess();
+	Process* currentProcess = _get_running_process();
 
 	kiv_hal::TRegisters child_context{ 0 };
 	child_context.rdi.r = regs.rdi.r; // pointer to shared data
 	child_context.rax.x = stdin_handle; // stdin
 	child_context.rbx.x = stdout_handle; // stdout
 	 
-	handles[++last_handle] = currentProcess->startThread(child_context, programAddress);
+	handles[++last_handle] = currentProcess->start_thread(child_context, programAddress);
 
 	// Save child pid to parent ax
 	regs.rax.x = static_cast<kiv_os::THandle>(last_handle);
 }
 
-void ProcessManager::handleWaitFor(kiv_hal::TRegisters &regs)
+void Process_Manager::handle_wait_for(kiv_hal::TRegisters &regs)
 {
 	// RDX = array of handles
 	// RCX = array size
@@ -235,7 +235,7 @@ void ProcessManager::handleWaitFor(kiv_hal::TRegisters &regs)
 			return;
 		}
 		size_t tid = handles[registered_handles[i]];
-		waiting_for[i] = getThreadByTid(tid);
+		waiting_for[i] = get_thread_by_tid(tid);
 		if (waiting_for[i]->state == ThreadState::stopped)
 		{
 			regs.rax.r = static_cast<uint64_t>(registered_handles[i]);
@@ -257,7 +257,7 @@ void ProcessManager::handleWaitFor(kiv_hal::TRegisters &regs)
 	}
 }
 
-void ProcessManager::handleExit(kiv_hal::TRegisters &regs)
+void Process_Manager::handle_exit(kiv_hal::TRegisters &regs)
 {
 	// CX = exit code
 	uint16_t exitCode;
@@ -266,13 +266,13 @@ void ProcessManager::handleExit(kiv_hal::TRegisters &regs)
 	{
 		std::lock_guard<std::mutex> lock(mtx);
 		exitCode = static_cast<uint16_t>(regs.rcx.x);
-		thisProcess = _getRunningProcess();
-		thread_id = _getRunningTid();
+		thisProcess = _get_running_process();
+		thread_id = _get_running_tid();
 	}
-	thisProcess->stopThread(exitCode, thread_id);
+	thisProcess->stop_thread(exitCode, thread_id);
 }
 
-void ProcessManager::handleReadExitCode(kiv_hal::TRegisters &regs)
+void Process_Manager::handle_read_exit_code(kiv_hal::TRegisters &regs)
 {
 	// dx = process / thread handle
 	// OUT: cx = exitcode
@@ -286,7 +286,7 @@ void ProcessManager::handleReadExitCode(kiv_hal::TRegisters &regs)
 		return;
 	}
 	size_t target_tid = handles[target_handle];
-	Thread* target_thread = getThreadByTid(target_tid);
+	Thread* target_thread = get_thread_by_tid(target_tid);
 	if (target_thread->state != ThreadState::stopped)
 	{
 		regs.flags.carry = 1;
@@ -296,20 +296,20 @@ void ProcessManager::handleReadExitCode(kiv_hal::TRegisters &regs)
 	uint16_t exit_code = target_thread->exitCode;
 	regs.rcx.x = exit_code;
 
-	Process* target_process = getProcessByTid(target_tid);
-	target_process->cleanThread(target_tid);
+	Process* target_process = get_process_by_tid(target_tid);
+	target_process->clean_thread(target_tid);
 
 	if (target_process->state == ProcessState::stopped)
 	{
-		removeProcess(target_handle);
+		remove_process(target_handle);
 	}
 	else
 	{
-		removeHandle(target_handle);
+		remove_handle(target_handle);
 	}
 }
 
-void ProcessManager::registerSignalHandler(kiv_hal::TRegisters &regs)
+void Process_Manager::register_signal_handler(kiv_hal::TRegisters &regs)
 {
 	// rcx NSignal_Id
 	// rdx: pointer na TThread_Proc, kde pri jeho volani context.rcx bude id signalu (0 = default handler)
@@ -333,11 +333,11 @@ void ProcessManager::registerSignalHandler(kiv_hal::TRegisters &regs)
 		handle = reinterpret_cast<kiv_os::TThread_Proc>(regs.rdx.r);
 	}
 
-	Thread* this_thread = _getRunningThread();
+	Thread* this_thread = _get_running_thread();
 	this_thread->handlers[signal] = handle;
 }
 
-void ProcessManager::shutdown(kiv_hal::TRegisters &regs)
+void Process_Manager::shutdown(kiv_hal::TRegisters &regs)
 {
 	// rcx NSignal_Id
 	// rdx: pointer na TThread_Proc, kde pri jeho volani context.rcx bude id signalu (0 = default handler)
@@ -356,7 +356,7 @@ void ProcessManager::shutdown(kiv_hal::TRegisters &regs)
 
 }
 
-std::string ProcessManager::getProcessTable()
+std::string Process_Manager::get_process_table()
 {
 	std::lock_guard<std::mutex> lock(mtx);
 	std::ostringstream result;

@@ -31,7 +31,7 @@ public:
 	std::map<size_t, std::unique_ptr<Thread>> threads;
 
 	Process(std::string userfunc_name, size_t parent_pid);
-	size_t startThread(kiv_hal::TRegisters thread_context, kiv_os::TThread_Proc address);
-	void stopThread(uint16_t exitCode, size_t tid);
-	void cleanThread(size_t tid);
+	size_t start_thread(kiv_hal::TRegisters thread_context, kiv_os::TThread_Proc address);
+	void stop_thread(uint16_t exitCode, size_t tid);
+	void clean_thread(size_t tid);
 };

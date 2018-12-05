@@ -10,7 +10,7 @@ void defaultTerminateHandle(const kiv_hal::TRegisters &context)
 Process::Process(std::string userfunc_name, size_t parent_pid) :
 	userfunc_name(userfunc_name), parent_pid(parent_pid), state(ProcessState::prepared), handle(0), parent_handle(0), pid(0) {}
 
-size_t Process::startThread(kiv_hal::TRegisters child_context, kiv_os::TThread_Proc address)
+size_t Process::start_thread(kiv_hal::TRegisters child_context, kiv_os::TThread_Proc address)
 {
 	std::unique_ptr<Thread> thread = std::make_unique<Thread>(address, child_context);
 	thread->handlers[kiv_os::NSignal_Id::Terminate] = reinterpret_cast<kiv_os::TThread_Proc>(defaultTerminateHandle);
@@ -25,12 +25,12 @@ size_t Process::startThread(kiv_hal::TRegisters child_context, kiv_os::TThread_P
 	return temp_tid;
 }
 
-void Process::stopThread(uint16_t code, size_t tid)
+void Process::stop_thread(uint16_t code, size_t tid)
 {
 	threads[tid]->stop(code);
 }
 
-void Process::cleanThread(size_t tid)
+void Process::clean_thread(size_t tid)
 {
 	Thread* thread_to_clean = threads[tid].get();
 	thread_to_clean->thread_obj.join();

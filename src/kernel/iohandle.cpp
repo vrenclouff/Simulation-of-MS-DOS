@@ -292,7 +292,7 @@ size_t IOHandle_File::read(char* buffer, const size_t buffer_size, kiv_os::NOS_E
 }
 
 size_t procfs(char* buffer, const size_t buffer_size) {
-	const auto result = process_manager->getProcessTable();
+	const auto result = process_manager->get_process_table();
 	const auto size = result.size() > buffer_size ? buffer_size : result.size();
 	const auto str = result.data();
 	std::copy(str, str + size, buffer);

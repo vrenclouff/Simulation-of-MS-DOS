@@ -77,7 +77,7 @@ void Write_File(kiv_hal::TRegisters &regs) {
 
 void Delete_File(kiv_hal::TRegisters &regs) {
 	auto path = std::string(reinterpret_cast<char*>(regs.rdx.r));
-	const auto process = process_manager->getRunningProcess();
+	const auto process = process_manager->get_running_process();
 
 	kiv_os::NOS_Error error = kiv_os::NOS_Error::Success;
 	const auto success = io::Remove_File(fs_tool::to_absolute_path(process->working_dir, path), error);
@@ -102,7 +102,7 @@ void Close_Handle(kiv_hal::TRegisters &regs) {
 void Get_Working_Dir(kiv_hal::TRegisters &regs) {
 	auto path_buffer = reinterpret_cast<char*>(regs.rdx.r);
 	const auto buffer_size = regs.rcx.r;
-	const auto process = process_manager->getRunningProcess();
+	const auto process = process_manager->get_running_process();
 	const auto working_dir = std::string(process->working_dir);
 	const size_t size = buffer_size <= working_dir.size() ? buffer_size : working_dir.size();
 	std::copy(&working_dir[0], &working_dir[0] + size, path_buffer);
@@ -113,7 +113,7 @@ void Get_Working_Dir(kiv_hal::TRegisters &regs) {
 
 void Set_Working_Dir(kiv_hal::TRegisters &regs) {
 	const auto path = std::string(reinterpret_cast<char*>(regs.rdx.r));
-	const auto process = process_manager->getRunningProcess();
+	const auto process = process_manager->get_running_process();
 	const auto full_path = fs_tool::to_absolute_path(process->working_dir, path);
 	const auto is_exist = io::is_exist_dir(full_path);
 

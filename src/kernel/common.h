@@ -4,4 +4,4 @@
 #include "process_manager.h"
 
 extern HMODULE User_Programs;
-extern ProcessManager *process_manager;
+extern Process_Manager *process_manager;

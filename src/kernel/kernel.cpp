@@ -9,7 +9,7 @@
 #include "common.h"
 
 HMODULE User_Programs;
-ProcessManager *process_manager = new ProcessManager();
+Process_Manager *process_manager = new Process_Manager();
 
 void Initialize_Kernel() {
 	User_Programs = LoadLibraryW(L"user.dll");
@@ -28,7 +28,7 @@ void __stdcall Sys_Call(kiv_hal::TRegisters &regs) {
 			Handle_IO(regs);
 			break;
 		case kiv_os::NOS_Service_Major::Process:
-			process_manager->SysCall(regs);
+			process_manager->sys_call(regs);
 			break;
 	}
 
@@ -87,14 +87,14 @@ void __stdcall Bootstrap_Loader(kiv_hal::TRegisters &context) {
 	const uint16_t stdout_handle = std_handle.out;
 	regs.rbx.e = (stdin_handle << 16) | stdout_handle;
 
-	process_manager->createProcess(regs, true);
+	process_manager->create_process(regs, true);
 	kiv_os::THandle shell_handle = static_cast<kiv_os::THandle>(regs.rax.x);
 	// wait for shell to exit (syscall Wait_For)
 	regs.rax.h = static_cast<decltype(regs.rax.h)>(kiv_os::NOS_Service_Major::Process);
 	regs.rax.l = static_cast<decltype(regs.rax.l)>(kiv_os::NOS_Process::Wait_For);
 	regs.rdx.r = reinterpret_cast<decltype(regs.rdx.r)>(&shell_handle);
 	regs.rcx.r = 1;
-	process_manager->handleWaitFor(regs);
+	process_manager->handle_wait_for(regs);
 
 	regs.rax.l = static_cast<uint8_t>(kiv_os::NOS_File_System::Close_Handle);
 	regs.rdx.x = std_handle.in;
