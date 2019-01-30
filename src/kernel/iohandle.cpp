@@ -4,6 +4,8 @@
 #include "fat_tools.h"
 #include "common.h"
 
+// @author: Lukas Cerny
+
 size_t IOHandle_VGA::write(char* buffer, const size_t buffer_size, kiv_os::NOS_Error& error) {
 	if (!IOHandle::check_ACL(Permission::Write)) {
 		error = kiv_os::NOS_Error::Permission_Denied;

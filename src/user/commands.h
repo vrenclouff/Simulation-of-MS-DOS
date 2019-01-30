@@ -7,6 +7,8 @@
 #include <vector>
 #include <functional>
 
+// @author: Lukas Cerny
+
 std::string& normalize_process_name(std::string& process_name);
 bool parse_cmd(const std::string& cmd_line, const kiv_os::THandle std_in, const kiv_os::THandle std_out, cmd::Error& error);
 

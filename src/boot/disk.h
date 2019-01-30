@@ -6,6 +6,8 @@
 #include <fstream>
 #include <vector>
 
+// @author: template
+
 class CDisk_Drive {
 protected:
 	size_t mBytes_Per_Sector;

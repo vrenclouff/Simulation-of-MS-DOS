@@ -5,6 +5,8 @@
 #include <string>
 #include <array>
 
+// @author: template & Lukas Cerny & Lenka Simeckova
+
 namespace kiv_os_rtl {
 
 	extern std::atomic<kiv_os::NOS_Error> Last_Error;

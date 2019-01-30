@@ -8,6 +8,8 @@
 #include <ctime>
 #include <vector>
 
+// @author: Lukas Cerny
+
 #define MULTIPLY_CONST	0x02
 
 #define START_OF_FAT std::div_t{ 1,  MULTIPLY_CONST * MULTIPLY_CONST }

@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <string>
 
+// @author: Lukas Cerny
+
 fat_tool::File fat_tool::parse_entire_name(std::string file_name) {
 	std::transform(file_name.begin(), file_name.end(), file_name.begin(), ::toupper);
 	const auto pos = file_name.find_last_of(".");
@@ -44,29 +46,4 @@ std::string& fat_tool::rtrim(std::string &s) {
 		return ch >= 48 && ch <= 122; // 0 - z
 	}).base(), s.end());
 	return s;
-}
-
-void fat_tool::print_sector(size_t sector_num, void* sector, std::function<void(const char*)> print_str) {
-	print_str("Block ");
-	print_str(std::to_string(sector_num).c_str());
-	print_str("\n");
-	print_str("\t0\t1\t2\t3\t4\t5\t6\t7\t8\t9");
-	print_str("\ta\tb\tc\td\te\tf");
-	print_str("\n");
-	const auto arr = static_cast<const char*>(sector);
-	for (uint8_t i = 0; i < 32; i++) {
-		print_str(std::to_string(i).c_str());
-		char line[17]; line[16] = '\0';
-		for (uint8_t j = 0; j < 16; j++) {
-			print_str("\t");
-			unsigned char val = arr[(i * 16) + j];
-			line[j] = val == '\0' ? '.' : val;
-			std::stringstream ss;
-			ss << std::setfill('0') << std::setw(2) << std::hex << (int)val;
-			print_str(ss.str().c_str());
-		}
-		print_str("\t");
-		print_str(line);
-		print_str("\n");
-	}
 }

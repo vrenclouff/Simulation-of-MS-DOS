@@ -2,6 +2,9 @@
 #include "rtl.h"
 #include "error.h"
 
+// @author: Lukas Cerny
+
+
 #define MAX_ENTRY_ITEMS	 16
 
 size_t __stdcall dir(const kiv_hal::TRegisters &regs) {

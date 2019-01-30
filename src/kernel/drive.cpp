@@ -2,6 +2,8 @@
 
 #include <mutex>
 
+// @author: Lukas Cerny
+
 std::mutex Drive_Guard;
 std::map<std::string, kiv_fs::Drive_Desc> Drivers;
 

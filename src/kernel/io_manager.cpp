@@ -7,6 +7,8 @@
 #include <filesystem>
 #include <mutex>
 
+// @author: Lukas Cerny
+
 std::mutex _io_mutex;
 
 bool io::is_exist_dir(std::string path) {

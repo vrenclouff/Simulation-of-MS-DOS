@@ -5,6 +5,8 @@
 
 #include "hal.h"
 
+// @author: template
+
 namespace kiv_os {
 	const kiv_hal::NInterrupt System_Int_Number = kiv_hal::NInterrupt(0x21);
 			//je to libovolne arbitrarni cislo, ktere neni uz obsazene v kiv_hal::NInterrupt

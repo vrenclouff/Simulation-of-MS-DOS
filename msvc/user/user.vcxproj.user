@@ -3,9 +3,11 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LocalDebuggerCommand>..\..\compiled\Boot.exe</LocalDebuggerCommand>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+    <LocalDebuggerCommandArguments>&lt; ..\..\compiled\testdir.txt</LocalDebuggerCommandArguments>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <LocalDebuggerCommand>C:\Programy\OS\Semestralka\compiled\Boot.exe</LocalDebuggerCommand>
+    <LocalDebuggerCommand>..\..\compiled\Boot.exe</LocalDebuggerCommand>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+    <LocalDebuggerCommandArguments>&lt; ..\..\compiled\test.txt</LocalDebuggerCommandArguments>
   </PropertyGroup>
 </Project>

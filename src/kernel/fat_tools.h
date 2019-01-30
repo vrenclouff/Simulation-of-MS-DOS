@@ -6,11 +6,7 @@
 #include <ctime>
 #include <string>
 
-// for print_sector
-#include <sstream>
-#include <iomanip>
-#include <array>
-#include <functional>
+// @author: Lukas Cerny
 
 namespace fat_tool {
 
@@ -25,7 +21,4 @@ namespace fat_tool {
 	bool is_attr(const uint8_t attributes, kiv_os::NFile_Attributes attribute);
 	std::tm makedate(const uint16_t date, const uint16_t time);
 	std::string& rtrim(std::string &s);
-
-
-	void print_sector(size_t sector_num, void* sector, std::function<void(const char*)> print_str);
 }

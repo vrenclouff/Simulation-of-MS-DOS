@@ -2,6 +2,8 @@
 
 #include "..\api\api.h"
 
+// @author: Petr Volf & Lukas Cerny
+
 extern "C" size_t __stdcall test(const kiv_hal::TRegisters &regs);
 extern "C" size_t __stdcall test_delay(const kiv_hal::TRegisters &regs);
 extern "C" size_t __stdcall test_exit0(const kiv_hal::TRegisters &regs);

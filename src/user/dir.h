@@ -2,7 +2,6 @@
 
 #include "..\api\api.h"
 
-/*
-	vypise obsah zadaneho adresare
-*/
+// @author: template
+
 extern "C" size_t __stdcall dir(const kiv_hal::TRegisters &regs);

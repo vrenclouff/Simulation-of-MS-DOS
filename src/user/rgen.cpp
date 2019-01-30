@@ -7,6 +7,8 @@
 #include <cfloat>
 #include <limits>
 
+// @author: Lukas Cerny & Petr Volf & Lenka Simeckova
+
 bool rgen_exit_signaled = false;
 
 void rgen_Sigterm_Handler(const kiv_hal::TRegisters &regs) {

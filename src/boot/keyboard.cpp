@@ -3,6 +3,8 @@
 
 #include <iostream>
 
+// @author: template
+
 HANDLE hConsoleInput = GetStdHandle(STD_INPUT_HANDLE);
 bool Std_In_Redirected = GetFileType(hConsoleInput) != FILE_TYPE_CHAR;
 

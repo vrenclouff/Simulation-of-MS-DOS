@@ -11,6 +11,8 @@
 	#endif
 #endif
 
+// @author: template
+
 kiv_hal::TInterrupt_Handler *interrupt_descriptor_table;
 
 namespace kiv_hal {

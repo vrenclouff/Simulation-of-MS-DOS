@@ -8,6 +8,7 @@
 
 #include "drive.h"
 
+// @author: Petr Volf
 
 // ---PRIVATE METHODS---
 

@@ -179,6 +179,7 @@
       <SDLCheck>true</SDLCheck>
       <CallingConvention>VectorCall</CallingConvention>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <EnableEnhancedInstructionSet>AdvancedVectorExtensions</EnableEnhancedInstructionSet>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>

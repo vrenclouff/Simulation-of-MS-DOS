@@ -5,6 +5,8 @@
 
 #include <filesystem>
 
+// @author: template
+
 struct TCMOS_Drive_Parameters {
 	bool is_present = false;
 	bool is_ram_disk = true;												//bud vytvorime neformatovany RAM disk

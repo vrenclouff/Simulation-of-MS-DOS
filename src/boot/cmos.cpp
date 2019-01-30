@@ -2,6 +2,8 @@
 
 #include <fstream>
 
+// @author: template
+
 CCMOS cmos{};
 
 extern "C" char __ImageBase;

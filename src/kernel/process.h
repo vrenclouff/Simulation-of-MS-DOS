@@ -9,6 +9,8 @@
 #include "thread.h"
 #include <memory>
 
+// @author: Petr Volf
+
 enum class ProcessState
 {
 	prepared = 1,

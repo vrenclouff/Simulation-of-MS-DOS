@@ -4,6 +4,8 @@
 
 #include <sstream>
 
+// @author: Lukas Cerny & Lenka Simeckova
+
 size_t __stdcall echo(const kiv_hal::TRegisters &regs) {
 
 	const auto std_out = static_cast<kiv_os::THandle>(regs.rbx.x);

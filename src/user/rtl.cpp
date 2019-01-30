@@ -8,6 +8,8 @@
 #include <filesystem>
 #include <array>
 
+// @author: template & Lukas Cerny & Lenka Simeckova
+
 std::atomic<kiv_os::NOS_Error> kiv_os_rtl::Last_Error;
 
 kiv_hal::TRegisters Prepare_SysCall_Context(kiv_os::NOS_Service_Major major, uint8_t minor) {

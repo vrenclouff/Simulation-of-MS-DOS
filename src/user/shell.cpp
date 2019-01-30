@@ -2,6 +2,8 @@
 #include "rtl.h"
 #include "commands.h"
 
+// @author: Lukas Cerny
+
 #define EXIT	"exit"
 
 std::atomic_bool is_sigterm_shell = false;

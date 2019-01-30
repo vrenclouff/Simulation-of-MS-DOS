@@ -2,7 +2,6 @@
 
 #include "..\api\api.h"
 
-/*
-	maze zadany adresar
-*/
+// @author: template
+
 extern "C" size_t __stdcall rd(const kiv_hal::TRegisters &regs);

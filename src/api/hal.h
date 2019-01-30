@@ -2,6 +2,8 @@
 
 #include <cstdint>
 
+// @author: template
+
 //HAL aka hardware abstraction layer for the kiv_os namespace
 
 namespace kiv_hal {

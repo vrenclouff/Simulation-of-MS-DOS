@@ -8,6 +8,8 @@
 #include <string>
 #include <array>
 
+// @author: Lukas Cerny
+
 #define REDIRECT_OUT	">"
 #define REDIRECT_IN		"<"
 #define PIPE			"|"

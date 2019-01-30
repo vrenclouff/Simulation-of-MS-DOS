@@ -8,6 +8,8 @@
 #include "process.h"
 #include "common.h"
 
+// @author: template & Lukas Cerny & Petr Volf
+
 HMODULE User_Programs;
 Process_Manager *process_manager = new Process_Manager();
 

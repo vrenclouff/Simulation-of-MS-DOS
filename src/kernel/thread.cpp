@@ -1,6 +1,8 @@
 #include "thread.h"
 #include <Windows.h>
 
+// @author: Petr Volf
+
 std::condition_variable Thread::endCond;
 
 Thread::Thread(kiv_os::TThread_Proc func_addr, kiv_hal::TRegisters thread_context) :

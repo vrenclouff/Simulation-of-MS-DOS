@@ -6,6 +6,8 @@
 #include <memory>
 #include <Windows.h>
 
+// @author: template
+
 extern kiv_hal::TInterrupt_Handler* interrupt_descriptor_table;
 
 kiv_hal::TInterrupt_Handler interrupt_descriptor_table_storage[256];

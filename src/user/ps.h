@@ -2,5 +2,6 @@
 
 #include "..\api\api.h"
 
-// tasklist - ps
+// @author: template
+
 extern "C" size_t __stdcall ps(const kiv_hal::TRegisters &regs);

@@ -5,6 +5,8 @@
 #include <map>
 #include <string>
 
+// @author: Lukas Cerny
+
 namespace drive {
 	std::string main_volume();
 	void save(const std::string volume, const uint8_t id, const kiv_fs::FATBoot_Block& book_block);

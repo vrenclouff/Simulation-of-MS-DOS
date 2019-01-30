@@ -5,6 +5,8 @@
 #include "process.h"
 #include <memory>
 
+// @author: Petr Volf
+
 class Process_Manager
 {
 private:

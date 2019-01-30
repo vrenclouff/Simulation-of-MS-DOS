@@ -2,6 +2,8 @@
 
 #include <filesystem>
 
+// @author: Lukas Cerny
+
 namespace fs = std::filesystem;
 
 std::string fs_tool::to_absolute_path(std::string base_path, std::string path) {

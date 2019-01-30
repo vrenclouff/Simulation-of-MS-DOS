@@ -1,5 +1,7 @@
 #include "circular_buffer.h"
 
+// @author: Lukas Cerny
+
 size_t Circular_buffer::size() const {
 	return !full ? (start >= end ? start - end : ((start - end) + BUFFER_SIZE)) : BUFFER_SIZE;
 }

@@ -9,6 +9,9 @@
 #include <memory>
 #include <iostream>
 
+// @author: Petr Volf
+
+
 enum class ThreadState
 {
 	prepared = 1,

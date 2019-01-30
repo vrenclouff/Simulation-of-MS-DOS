@@ -7,6 +7,8 @@
 # include <windows.h>
 #include <vector>
 
+// @author: Petr Volf & Lukas Cerny
+
 // ----- HELPER FUNCTIONS -----
 template<typename T>
 void assertEqual(T first, T second, uint16_t std_out)

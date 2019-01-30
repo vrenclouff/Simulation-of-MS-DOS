@@ -4,6 +4,8 @@
 
 #include <string>
 
+// @author: Lukas Cerny
+
 namespace cmd {
 	struct Error {
 		std::string what;

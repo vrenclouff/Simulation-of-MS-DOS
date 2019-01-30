@@ -7,6 +7,8 @@
 #include <functional>
 #include <mutex>
 
+// @author: Lukas Cerny
+
 enum class SYS_Type : uint8_t {
 	PROCFS = 1,
 };

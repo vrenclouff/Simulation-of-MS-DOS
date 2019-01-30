@@ -2,6 +2,7 @@
 #include <Windows.h>
 #include "common.h"
 
+// @author: Petr Volf
 
 void defaultTerminateHandle(const kiv_hal::TRegisters &context)
 {

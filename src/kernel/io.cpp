@@ -8,6 +8,8 @@
 #include <functional>
 #include <vector>
 
+// @author: Lukas Cerny
+
 std::mutex Pipe_Guard;
 std::vector<kiv_os::THandle> pipes;
 

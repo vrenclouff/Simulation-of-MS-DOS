@@ -2,6 +2,8 @@
 
 #include <Windows.h>
 
+// @author: template
+
 HANDLE hConsoleOutput = GetStdHandle(STD_OUTPUT_HANDLE);
 
 

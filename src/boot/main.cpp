@@ -6,6 +6,7 @@
 #include "idt.h"
 #include "keyboard.h"
 
+// @author: template
 
 bool Setup_HW() {
 	if (!Init_Keyboard()) {

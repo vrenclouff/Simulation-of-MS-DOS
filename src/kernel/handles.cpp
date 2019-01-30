@@ -4,6 +4,8 @@
 #include <mutex>
 #include <random>
 
+// @author: template
+
 std::map<kiv_os::THandle, HANDLE> Handles;
 std::mutex Handles_Guard;
 kiv_os::THandle Last_Handle = 0;

@@ -7,6 +7,7 @@
 #include <sstream>
 #include <algorithm>
 
+// @author: Lukas Cerny & Lenka Simeckova
 
 size_t __stdcall sort(const kiv_hal::TRegisters &regs) {
 

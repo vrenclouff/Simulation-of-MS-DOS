@@ -4,6 +4,8 @@
 
 #include <array>
 
+// @author: template
+
 std::array<std::unique_ptr<CDisk_Drive>, 256> disk_drives;
 
 #undef max

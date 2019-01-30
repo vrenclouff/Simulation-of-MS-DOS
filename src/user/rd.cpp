@@ -2,6 +2,8 @@
 #include "rtl.h"
 #include "error.h"
 
+// @author: Lukas Cerny
+
 size_t __stdcall rd(const kiv_hal::TRegisters &regs) {
 
 	const auto std_out = static_cast<kiv_os::THandle>(regs.rbx.x);

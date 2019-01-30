@@ -5,6 +5,8 @@
 
 #include <memory>
 
+// @author: Lukas Cerny
+
 struct STDHandle {
 	kiv_os::THandle in;
 	kiv_os::THandle out;

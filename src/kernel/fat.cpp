@@ -81,7 +81,7 @@ void format_fat16(unsigned char* boot_block, const kiv_hal::TDrive_Parameters& p
 	boot_block[0x37] = 'A';
 	boot_block[0x38] = 'T';
 	boot_block[0x39] = '1';
-	boot_block[0x3a] = '2';
+	boot_block[0x3a] = '6';
 	boot_block[0x3b] = 0x20;
 	boot_block[0x3c] = 0x20;
 	boot_block[0x3d] = 0x20;
